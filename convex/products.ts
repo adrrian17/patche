@@ -18,23 +18,6 @@ const productValidator = v.object({
   updatedAt: v.number(),
 });
 
-interface Product {
-  _id: string;
-  _creationTime: number;
-  name: string;
-  slug: string;
-  description: string;
-  basePrice: number;
-  type: "physical" | "digital";
-  preparationDays: number | null;
-  images: string[];
-  categoryId: string;
-  collectionIds: string[];
-  isActive: boolean;
-  createdAt: number;
-  updatedAt: number;
-}
-
 // Listar productos con filtros
 export const list = query({
   args: {
@@ -45,53 +28,56 @@ export const list = query({
   },
   returns: v.array(productValidator),
   handler: async (ctx, args) => {
-    const products: Product[] = [];
-
+    // Usar collect() directamente sin reasignación de variables
     if (args.activeOnly && args.type) {
       const typeValue = args.type;
-      const filtered = await ctx.db
+      const products = await ctx.db
         .query("products")
         .withIndex("by_active_type", (q) =>
           q.eq("isActive", true).eq("type", typeValue)
         )
         .collect();
-      products.push(...filtered);
-    } else if (args.activeOnly) {
-      const filtered = await ctx.db
+      return args.limit ? products.slice(0, args.limit) : products;
+    }
+
+    if (args.activeOnly) {
+      const products = await ctx.db
         .query("products")
         .withIndex("by_active", (q) => q.eq("isActive", true))
         .collect();
-      products.push(...filtered);
-    } else if (args.type) {
+      // Aplicar filtro de categoría si es necesario
+      let filtered = products;
+      if (args.categoryId) {
+        filtered = products.filter((p) => p.categoryId === args.categoryId);
+      }
+      return args.limit ? filtered.slice(0, args.limit) : filtered;
+    }
+
+    if (args.type) {
       const typeValue = args.type;
-      const filtered = await ctx.db
+      const products = await ctx.db
         .query("products")
         .withIndex("by_type", (q) => q.eq("type", typeValue))
         .collect();
-      products.push(...filtered);
-    } else if (args.categoryId) {
+      // Aplicar filtro de categoría si es necesario
+      let filtered = products;
+      if (args.categoryId) {
+        filtered = products.filter((p) => p.categoryId === args.categoryId);
+      }
+      return args.limit ? filtered.slice(0, args.limit) : filtered;
+    }
+
+    if (args.categoryId) {
       const categoryIdValue = args.categoryId;
-      const filtered = await ctx.db
+      const products = await ctx.db
         .query("products")
         .withIndex("by_category", (q) => q.eq("categoryId", categoryIdValue))
         .collect();
-      products.push(...filtered);
-    } else {
-      const all = await ctx.db.query("products").collect();
-      products.push(...all);
+      return args.limit ? products.slice(0, args.limit) : products;
     }
 
-    // Filtros adicionales que no pueden usar índices
-    let filtered = products;
-    if (args.categoryId && (args.activeOnly || args.type)) {
-      filtered = filtered.filter((p) => p.categoryId === args.categoryId);
-    }
-
-    if (args.limit) {
-      filtered = filtered.slice(0, args.limit);
-    }
-
-    return filtered;
+    const products = await ctx.db.query("products").collect();
+    return args.limit ? products.slice(0, args.limit) : products;
   },
 });
 
@@ -124,16 +110,12 @@ export const getByCollection = query({
   },
   returns: v.array(productValidator),
   handler: async (ctx, args) => {
-    let products: Product[];
-
-    if (args.activeOnly) {
-      products = await ctx.db
-        .query("products")
-        .withIndex("by_active", (q) => q.eq("isActive", true))
-        .collect();
-    } else {
-      products = await ctx.db.query("products").collect();
-    }
+    const products = args.activeOnly
+      ? await ctx.db
+          .query("products")
+          .withIndex("by_active", (q) => q.eq("isActive", true))
+          .collect()
+      : await ctx.db.query("products").collect();
 
     return products.filter((p) => p.collectionIds.includes(args.collectionId));
   },
@@ -147,16 +129,12 @@ export const search = query({
   },
   returns: v.array(productValidator),
   handler: async (ctx, args) => {
-    let products: Product[];
-
-    if (args.activeOnly) {
-      products = await ctx.db
-        .query("products")
-        .withIndex("by_active", (q) => q.eq("isActive", true))
-        .collect();
-    } else {
-      products = await ctx.db.query("products").collect();
-    }
+    const products = args.activeOnly
+      ? await ctx.db
+          .query("products")
+          .withIndex("by_active", (q) => q.eq("isActive", true))
+          .collect()
+      : await ctx.db.query("products").collect();
 
     const term = args.searchTerm.toLowerCase();
 
