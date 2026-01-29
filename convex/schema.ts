@@ -6,8 +6,8 @@ export default defineSchema({
   categories: defineTable({
     name: v.string(),
     slug: v.string(),
-    order: v.optional(v.number()),
-    image: v.optional(v.union(v.string(), v.null())),
+    order: v.number(),
+    image: v.union(v.string(), v.null()),
   })
     .index("by_slug", ["slug"])
     .index("by_order", ["order"]),
@@ -16,10 +16,10 @@ export default defineSchema({
   collections: defineTable({
     name: v.string(),
     slug: v.string(),
-    description: v.optional(v.union(v.string(), v.null())),
-    image: v.optional(v.union(v.string(), v.null())),
-    isActive: v.optional(v.boolean()),
-    createdAt: v.optional(v.number()),
+    description: v.union(v.string(), v.null()),
+    image: v.union(v.string(), v.null()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
   })
     .index("by_slug", ["slug"])
     .index("by_active", ["isActive"]),
@@ -28,17 +28,16 @@ export default defineSchema({
   products: defineTable({
     name: v.string(),
     slug: v.string(),
-    description: v.optional(v.string()),
-    basePrice: v.optional(v.number()),
-    price: v.optional(v.number()), // Legacy field for backward compatibility
-    type: v.optional(v.union(v.literal("physical"), v.literal("digital"))),
-    preparationDays: v.optional(v.union(v.number(), v.null())),
-    images: v.optional(v.array(v.string())),
-    categoryId: v.optional(v.id("categories")),
-    collectionIds: v.optional(v.array(v.id("collections"))),
-    isActive: v.optional(v.boolean()),
-    createdAt: v.optional(v.number()),
-    updatedAt: v.optional(v.number()),
+    description: v.string(),
+    basePrice: v.number(),
+    type: v.union(v.literal("physical"), v.literal("digital")),
+    preparationDays: v.union(v.number(), v.null()),
+    images: v.array(v.string()),
+    categoryId: v.id("categories"),
+    collectionIds: v.array(v.id("collections")),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
     .index("by_category", ["categoryId"])
@@ -50,14 +49,12 @@ export default defineSchema({
   variants: defineTable({
     productId: v.id("products"),
     name: v.string(),
-    attributes: v.optional(
-      v.object({
-        size: v.optional(v.string()),
-        color: v.optional(v.string()),
-      })
-    ),
-    price: v.optional(v.union(v.number(), v.null())),
-    stock: v.optional(v.number()),
+    attributes: v.object({
+      size: v.optional(v.string()),
+      color: v.optional(v.string()),
+    }),
+    price: v.union(v.number(), v.null()),
+    stock: v.number(),
     sku: v.string(),
   })
     .index("by_product", ["productId"])
@@ -68,7 +65,7 @@ export default defineSchema({
     productId: v.id("products"),
     name: v.string(),
     storageId: v.string(),
-    fileSize: v.optional(v.number()),
+    fileSize: v.number(),
   }).index("by_product", ["productId"]),
 
   // Enlaces de descarga

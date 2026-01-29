@@ -10,8 +10,8 @@ export const list = query({
       _creationTime: v.number(),
       name: v.string(),
       slug: v.string(),
-      order: v.optional(v.number()),
-      image: v.optional(v.union(v.string(), v.null())),
+      order: v.number(),
+      image: v.union(v.string(), v.null()),
     })
   ),
   handler: async (ctx) => {
@@ -28,8 +28,8 @@ export const getBySlug = query({
       _creationTime: v.number(),
       name: v.string(),
       slug: v.string(),
-      order: v.optional(v.number()),
-      image: v.optional(v.union(v.string(), v.null())),
+      order: v.number(),
+      image: v.union(v.string(), v.null()),
     }),
     v.null()
   ),
@@ -50,8 +50,8 @@ export const getById = query({
       _creationTime: v.number(),
       name: v.string(),
       slug: v.string(),
-      order: v.optional(v.number()),
-      image: v.optional(v.union(v.string(), v.null())),
+      order: v.number(),
+      image: v.union(v.string(), v.null()),
     }),
     v.null()
   ),
@@ -66,7 +66,7 @@ export const create = mutation({
     name: v.string(),
     slug: v.string(),
     order: v.number(),
-    image: v.optional(v.union(v.string(), v.null())),
+    image: v.union(v.string(), v.null()),
   },
   returns: v.id("categories"),
   handler: async (ctx, args) => {
