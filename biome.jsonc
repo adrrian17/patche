@@ -13,6 +13,20 @@
       }
     },
     {
+      "includes": ["convex/seed.ts"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off",
+            "useLiteralKeys": "off"
+          },
+          "style": {
+            "useBlockStatements": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["src/components/ui/**/*"],
       "linter": {
         "enabled": false
