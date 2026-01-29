@@ -117,11 +117,21 @@ const downloadLinkValidator = v.object({
   createdAt: v.number(),
 })
 
-// Generar token único usando CSPRNG
-function generateToken(): string {
-  const { randomBytes } = require('crypto')
-  return randomBytes(32).toString('base64url')
-}
+// Nota: La generación de tokens requiere crypto, que no está disponible en mutations.
+// Usar una action para generar tokens - ver generateTokenAction en convex/downloads.ts
+
+// Action para generar token (usa crypto de Node.js)
+'use node'
+import { action } from './_generated/server'
+import { randomBytes } from 'crypto'
+
+export const generateTokenAction = action({
+  args: {},
+  returns: v.string(),
+  handler: async () => {
+    return randomBytes(32).toString('base64url')
+  },
+})
 
 // Crear enlaces de descarga para una orden (interno)
 export const createForOrder = internalMutation({
@@ -185,8 +195,8 @@ export const createForOrder = internalMutation({
             token: existingLink.token,
           })
         } else {
-          // Crear nuevo enlace
-          const token = generateToken()
+          // Crear nuevo enlace - llamar a action para generar token
+          const token = await ctx.runAction(api.downloads.generateTokenAction, {})
           await ctx.db.insert('downloadLinks', {
             orderId: args.orderId,
             fileId: file._id,
@@ -1419,11 +1429,12 @@ if (args.status === 'shipped' && args.trackingNumber) {
 En `convex/stripe.ts`, después de generar el voucher OXXO en `createPaymentIntent`:
 
 ```typescript
-// Después de obtener oxxoVoucher, enviar email
-if (oxxoVoucher) {
+// Después de obtener oxxoVoucher, enviar email (solo con número de orden real)
+// Nota: El voucher OXXO se envía después de crear la orden para tener un orderNumber válido
+if (oxxoVoucher && orderId) {
   await ctx.scheduler.runAfter(0, internal.emails.sendOxxoVoucher, {
     email,
-    orderNumber: 'Pendiente', // Se asignará cuando se confirme el pago
+    orderNumber, // Usar el número de orden real generado
     customerName: shippingAddress?.name || email.split('@')[0],
     voucherNumber: oxxoVoucher.number,
     amount: total,
@@ -1512,6 +1523,9 @@ function DescargaPage() {
 
       // Descargar el archivo
       const response = await fetch(getFileUrl)
+      if (!response.ok) {
+        throw new Error(`Error al descargar: ${response.status} ${response.statusText}`)
+      }
       const blob = await response.blob()
 
       // Crear enlace de descarga

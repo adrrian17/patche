@@ -59,7 +59,7 @@ export const update = internalMutation({
   args: {
     id: v.id("digitalFiles"),
     name: v.optional(v.string()),
-    storageId: v.optional(v.id("_storage")),
+    storageId: v.optional(v.nullable(v.id("_storage"))),
     fileSize: v.optional(v.number()),
   },
   returns: v.null(),
