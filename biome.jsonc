@@ -7,7 +7,12 @@
       "linter": {
         "rules": {
           "style": {
-            "useFilenamingConvention": "off"
+            "useFilenamingConvention": "off",
+            "noNonNullAssertion": "off"
+          },
+          "suspicious": {
+            "noImplicitAnyLet": "off",
+            "noEvolvingTypes": "off"
           }
         }
       }
