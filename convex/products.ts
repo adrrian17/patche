@@ -18,6 +18,23 @@ const productValidator = v.object({
   updatedAt: v.number(),
 });
 
+interface Product {
+  _id: string;
+  _creationTime: number;
+  name: string;
+  slug: string;
+  description: string;
+  basePrice: number;
+  type: "physical" | "digital";
+  preparationDays: number | null;
+  images: string[];
+  categoryId: string;
+  collectionIds: string[];
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // Listar productos con filtros
 export const list = query({
   args: {
@@ -28,32 +45,40 @@ export const list = query({
   },
   returns: v.array(productValidator),
   handler: async (ctx, args) => {
-    let products;
+    const products: Product[] = [];
 
     if (args.activeOnly && args.type) {
-      products = await ctx.db
+      const typeValue = args.type;
+      const filtered = await ctx.db
         .query("products")
         .withIndex("by_active_type", (q) =>
-          q.eq("isActive", true).eq("type", args.type!)
+          q.eq("isActive", true).eq("type", typeValue)
         )
         .collect();
+      products.push(...filtered);
     } else if (args.activeOnly) {
-      products = await ctx.db
+      const filtered = await ctx.db
         .query("products")
         .withIndex("by_active", (q) => q.eq("isActive", true))
         .collect();
+      products.push(...filtered);
     } else if (args.type) {
-      products = await ctx.db
+      const typeValue = args.type;
+      const filtered = await ctx.db
         .query("products")
-        .withIndex("by_type", (q) => q.eq("type", args.type!))
+        .withIndex("by_type", (q) => q.eq("type", typeValue))
         .collect();
+      products.push(...filtered);
     } else if (args.categoryId) {
-      products = await ctx.db
+      const categoryIdValue = args.categoryId;
+      const filtered = await ctx.db
         .query("products")
-        .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+        .withIndex("by_category", (q) => q.eq("categoryId", categoryIdValue))
         .collect();
+      products.push(...filtered);
     } else {
-      products = await ctx.db.query("products").collect();
+      const all = await ctx.db.query("products").collect();
+      products.push(...all);
     }
 
     // Filtros adicionales que no pueden usar índices
@@ -99,7 +124,7 @@ export const getByCollection = query({
   },
   returns: v.array(productValidator),
   handler: async (ctx, args) => {
-    let products;
+    let products: Product[];
 
     if (args.activeOnly) {
       products = await ctx.db
@@ -122,7 +147,7 @@ export const search = query({
   },
   returns: v.array(productValidator),
   handler: async (ctx, args) => {
-    let products;
+    let products: Product[];
 
     if (args.activeOnly) {
       products = await ctx.db
