@@ -1,7 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/")({
@@ -9,87 +8,47 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const {
-    data: { viewer, numbers },
-  } = useSuspenseQuery(convexQuery(api.myFunctions.listNumbers, { count: 10 }));
-
-  const addNumber = useMutation(api.myFunctions.addNumber);
+  const { data: categories } = useSuspenseQuery(
+    convexQuery(api.categories.list, {})
+  );
 
   return (
     <main className="flex flex-col gap-16 p-8">
-      <h1 className="text-center font-bold text-4xl">
-        Convex + Tanstack Start
-      </h1>
+      <h1 className="text-center font-bold text-4xl">Patche.mx</h1>
       <div className="mx-auto flex max-w-lg flex-col gap-8">
-        <p>Welcome {viewer ?? "Anonymous"}!</p>
+        <p>Bienvenido a la tienda de Patche!</p>
+        <p>Categorías disponibles: {categories.length}</p>
         <p>
-          Click the button below and open this page in another window - this
-          data is persisted in the Convex cloud database!
-        </p>
-        <p>
-          <button
-            className="rounded-md border-2 bg-dark px-4 py-2 text-light text-sm dark:bg-light dark:text-dark"
-            onClick={() => {
-              addNumber({ value: Math.floor(Math.random() * 10) });
-            }}
-            type="button"
-          >
-            Add a random number
-          </button>
-        </p>
-        <p>
-          Numbers:{" "}
-          {numbers.length === 0 ? "Click the button!" : numbers.join(", ")}
-        </p>
-        <p>
-          Edit{" "}
-          <code className="rounded-md bg-slate-200 px-1 py-0.5 font-bold font-mono text-sm dark:bg-slate-800">
-            convex/myFunctions.ts
-          </code>{" "}
-          to change your backend
-        </p>
-        <p>
-          Edit{" "}
-          <code className="rounded-md bg-slate-200 px-1 py-0.5 font-bold font-mono text-sm dark:bg-slate-800">
-            src/routes/index.tsx
-          </code>{" "}
-          to change your frontend
-        </p>
-        <p>
-          Open{" "}
           <Link
             className="text-blue-600 underline hover:no-underline"
             to="/another-page"
           >
-            another page
-          </Link>{" "}
-          to send an action.
+            Ver otra página
+          </Link>
         </p>
         <div className="flex flex-col">
-          <p className="font-bold text-lg">Useful resources:</p>
+          <p className="font-bold text-lg">Recursos útiles:</p>
           <div className="flex gap-2">
             <div className="flex w-1/2 flex-col gap-2">
               <ResourceCard
-                description="Read comprehensive documentation for all Convex features."
+                description="Lee la documentación completa de Convex."
                 href="https://docs.convex.dev/home"
                 title="Convex docs"
               />
               <ResourceCard
-                description="Learn about best practices, use cases, and more from a growing
-            collection of articles, videos, and walkthroughs."
+                description="Documentación de TypeScript."
                 href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html"
-                title="Stack articles"
+                title="TypeScript"
               />
             </div>
             <div className="flex w-1/2 flex-col gap-2">
               <ResourceCard
-                description="Browse our collection of templates to get started quickly."
+                description="Explora plantillas de Convex."
                 href="https://www.convex.dev/templates"
                 title="Templates"
               />
               <ResourceCard
-                description="Join our developer community to ask questions, trade tips & tricks,
-            and show off your projects."
+                description="Únete a la comunidad de Convex."
                 href="https://www.convex.dev/community"
                 title="Discord"
               />

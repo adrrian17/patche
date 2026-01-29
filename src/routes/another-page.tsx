@@ -1,7 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/another-page")({
@@ -9,36 +8,20 @@ export const Route = createFileRoute("/another-page")({
 });
 
 function AnotherPage() {
-  const callMyAction = useAction(api.myFunctions.myAction);
-
-  const { data } = useSuspenseQuery(
-    convexQuery(api.myFunctions.listNumbers, { count: 10 })
+  const { data: collections } = useSuspenseQuery(
+    convexQuery(api.collections.list, { activeOnly: true })
   );
 
   return (
     <main className="flex flex-col gap-16 p-8">
-      <h1 className="text-center font-bold text-4xl">
-        Convex + Tanstack Start
-      </h1>
+      <h1 className="text-center font-bold text-4xl">Otra Página</h1>
       <div className="mx-auto flex max-w-lg flex-col gap-8">
-        <p>Numbers: {data.numbers.join(", ")}</p>
-        <p>Click the button below to add a random number to the database.</p>
+        <p>Colecciones activas: {collections.length}</p>
         <p>
-          <button
-            className="rounded-md border-2 bg-dark px-4 py-2 text-light text-sm dark:bg-light dark:text-dark"
-            onClick={() => {
-              callMyAction({
-                first: Math.round(Math.random() * 100),
-              });
-            }}
-            type="button"
-          >
-            Call action to add a random number
-          </button>
+          <Link className="text-blue-600 underline hover:no-underline" to="/">
+            Regresar
+          </Link>
         </p>
-        <Link className="text-blue-600 underline hover:no-underline" to="/">
-          Back
-        </Link>
       </div>
     </main>
   );
