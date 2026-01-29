@@ -8,7 +8,15 @@
  * @module
  */
 
-import type * as myFunctions from "../myFunctions.js";
+import type * as categories from "../categories.js";
+import type * as cleanup from "../cleanup.js";
+import type * as collections from "../collections.js";
+import type * as digitalFiles from "../digitalFiles.js";
+import type * as products from "../products.js";
+import type * as seed from "../seed.js";
+import type * as storage from "../storage.js";
+import type * as storeSettings from "../storeSettings.js";
+import type * as variants from "../variants.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +25,15 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  myFunctions: typeof myFunctions;
+  categories: typeof categories;
+  cleanup: typeof cleanup;
+  collections: typeof collections;
+  digitalFiles: typeof digitalFiles;
+  products: typeof products;
+  seed: typeof seed;
+  storage: typeof storage;
+  storeSettings: typeof storeSettings;
+  variants: typeof variants;
 }>;
 
 /**

@@ -1,5 +1,20 @@
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
+
+// Tipos auxiliares para los productos
+interface ProductInput {
+  name: string;
+  slug: string;
+  description: string;
+  basePrice: number;
+  type: "physical" | "digital";
+  preparationDays: number | null;
+  images: string[];
+  categoryId: Id<"categories">;
+  collectionIds: Id<"collections">[];
+  isActive: boolean;
+}
 
 // Datos de prueba completos para desarrollo
 export const seedAll = internalMutation({
@@ -27,7 +42,7 @@ export const seedAll = internalMutation({
       { name: "Merchandising", slug: "merchandising", order: 4, image: null },
     ];
 
-    const categoryIds: Record<string, string> = {};
+    const categoryIds: Record<string, Id<"categories">> = {};
     for (const cat of categories) {
       const existing = await ctx.db
         .query("categories")
@@ -68,7 +83,7 @@ export const seedAll = internalMutation({
       },
     ];
 
-    const collectionIds: Record<string, string> = {};
+    const collectionIds: Record<string, Id<"collections">> = {};
     for (const col of collections) {
       const existing = await ctx.db
         .query("collections")
@@ -88,7 +103,7 @@ export const seedAll = internalMutation({
     }
 
     // 4. Crear productos físicos
-    const physicalProducts = [
+    const physicalProducts: ProductInput[] = [
       {
         name: "Agenda Patche 2025",
         slug: "agenda-2025",
@@ -142,7 +157,7 @@ export const seedAll = internalMutation({
       },
     ];
 
-    const productIds: Record<string, string> = {};
+    const productIds: Record<string, Id<"products">> = {};
     for (const prod of physicalProducts) {
       const existing = await ctx.db
         .query("products")
@@ -154,7 +169,16 @@ export const seedAll = internalMutation({
       } else {
         const now = Date.now();
         const id = await ctx.db.insert("products", {
-          ...prod,
+          name: prod.name,
+          slug: prod.slug,
+          description: prod.description,
+          basePrice: prod.basePrice,
+          type: prod.type,
+          preparationDays: prod.preparationDays,
+          images: prod.images,
+          categoryId: prod.categoryId,
+          collectionIds: prod.collectionIds,
+          isActive: prod.isActive,
           createdAt: now,
           updatedAt: now,
         });
@@ -164,7 +188,7 @@ export const seedAll = internalMutation({
     }
 
     // 5. Crear productos digitales
-    const digitalProducts = [
+    const digitalProducts: ProductInput[] = [
       {
         name: "Planner Digital 2025",
         slug: "planner-digital-2025",
@@ -217,7 +241,16 @@ export const seedAll = internalMutation({
       } else {
         const now = Date.now();
         const id = await ctx.db.insert("products", {
-          ...prod,
+          name: prod.name,
+          slug: prod.slug,
+          description: prod.description,
+          basePrice: prod.basePrice,
+          type: prod.type,
+          preparationDays: prod.preparationDays,
+          images: prod.images,
+          categoryId: prod.categoryId,
+          collectionIds: prod.collectionIds,
+          isActive: prod.isActive,
           createdAt: now,
           updatedAt: now,
         });
@@ -227,7 +260,16 @@ export const seedAll = internalMutation({
     }
 
     // 6. Crear variantes para productos físicos
-    const variants = [
+    interface VariantInput {
+      productId: Id<"products">;
+      name: string;
+      attributes: Record<string, string>;
+      price: number | null;
+      stock: number;
+      sku: string;
+    }
+
+    const variants: VariantInput[] = [
       // Variantes de Agenda
       {
         productId: productIds["agenda-2025"],
@@ -281,13 +323,26 @@ export const seedAll = internalMutation({
         .unique();
 
       if (!existing) {
-        await ctx.db.insert("variants", variant);
+        await ctx.db.insert("variants", {
+          productId: variant.productId,
+          name: variant.name,
+          attributes: variant.attributes,
+          price: variant.price,
+          stock: variant.stock,
+          sku: variant.sku,
+        });
         console.log(`✓ Variant created: ${variant.name}`);
       }
     }
 
     // 7. Crear archivos digitales para productos digitales
-    const digitalFiles = [
+    interface DigitalFileInput {
+      productId: Id<"products">;
+      name: string;
+      storageId: string;
+      fileSize: number;
+    }
+    const digitalFiles: DigitalFileInput[] = [
       {
         productId: productIds["planner-digital-2025"],
         name: "Planner_2025_Completo.pdf",
@@ -324,7 +379,12 @@ export const seedAll = internalMutation({
 
       const alreadyExists = existing.some((f) => f.name === file.name);
       if (!alreadyExists) {
-        await ctx.db.insert("digitalFiles", file);
+        await ctx.db.insert("digitalFiles", {
+          productId: file.productId,
+          name: file.name,
+          storageId: file.storageId,
+          fileSize: file.fileSize,
+        });
         console.log(`✓ Digital file created: ${file.name}`);
       }
     }
