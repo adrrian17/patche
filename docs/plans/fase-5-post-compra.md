@@ -117,14 +117,10 @@ const downloadLinkValidator = v.object({
   createdAt: v.number(),
 })
 
-// Generar token único
+// Generar token único usando CSPRNG
 function generateToken(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let token = ''
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return token
+  const { randomBytes } = require('crypto')
+  return randomBytes(32).toString('base64url')
 }
 
 // Crear enlaces de descarga para una orden (interno)
@@ -263,7 +259,7 @@ export const getByToken = query({
       file: v.object({
         _id: v.id('digitalFiles'),
         name: v.string(),
-        storageId: v.string(),
+        storageId: v.union(v.id('_storage'), v.null()),
         fileSize: v.number(),
       }),
     }),
@@ -319,7 +315,7 @@ export const registerDownload = mutation({
   returns: v.union(
     v.object({
       success: v.literal(true),
-      storageId: v.string(),
+      storageId: v.union(v.id('_storage'), v.null()),
       fileName: v.string(),
     }),
     v.object({
