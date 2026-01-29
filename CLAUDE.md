@@ -17,8 +17,7 @@ pnpm run build        # Build for production
 pnpm start            # Start production server
 
 # Code quality
-pnpm run lint         # TypeScript check + ESLint
-pnpm run format       # Prettier formatting
+pnpm run lint:fix     # Ultracite format and fix
 ```
 
 ## Architecture

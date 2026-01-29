@@ -10,8 +10,9 @@
     "dev:convex": "npx convex dev",
     "build": "vite build && tsc --noEmit",
     "start": "node .output/server/index.mjs",
-    "format": "prettier --write .",
-    "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "ultracite check",
+    "format": "ultracite fix",
+    "lint:fix": "ultracite check && ultracite fix",
     "prepare": "lefthook install"
   },
   "dependencies": {
@@ -51,7 +52,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "pnpm dlx ultracite fix"
+      "ultracite fix"
     ]
   }
 }
