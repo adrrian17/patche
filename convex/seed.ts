@@ -339,32 +339,32 @@ export const seedAll = internalMutation({
     interface DigitalFileInput {
       productId: Id<"products">;
       name: string;
-      storageId: string;
+      storageId: Id<"_storage"> | null;
       fileSize: number;
     }
     const digitalFiles: DigitalFileInput[] = [
       {
         productId: productIds["planner-digital-2025"],
         name: "Planner_2025_Completo.pdf",
-        storageId: "placeholder_planner_2025",
+        storageId: null,
         fileSize: 15_240_000,
       },
       {
         productId: productIds["planner-digital-2025"],
         name: "Guia_de_Uso.pdf",
-        storageId: "placeholder_guia_uso",
+        storageId: null,
         fileSize: 2_100_000,
       },
       {
         productId: productIds["wallpapers-pack"],
         name: "Wallpapers_Patche_2025.zip",
-        storageId: "placeholder_wallpapers",
+        storageId: null,
         fileSize: 85_600_000,
       },
       {
         productId: productIds["kit-planificacion"],
         name: "Kit_Planificacion_Imprimible.pdf",
-        storageId: "placeholder_kit_plan",
+        storageId: null,
         fileSize: 45_100_000,
       },
     ];

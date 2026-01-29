@@ -9,7 +9,6 @@
  */
 
 import type * as categories from "../categories.js";
-import type * as cleanup from "../cleanup.js";
 import type * as collections from "../collections.js";
 import type * as digitalFiles from "../digitalFiles.js";
 import type * as products from "../products.js";
@@ -26,7 +25,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   categories: typeof categories;
-  cleanup: typeof cleanup;
   collections: typeof collections;
   digitalFiles: typeof digitalFiles;
   products: typeof products;

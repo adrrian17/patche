@@ -6,7 +6,7 @@ const digitalFileValidator = v.object({
   _creationTime: v.number(),
   productId: v.id("products"),
   name: v.string(),
-  storageId: v.string(),
+  storageId: v.union(v.id("_storage"), v.null()),
   fileSize: v.number(),
 });
 
@@ -36,7 +36,7 @@ export const create = mutation({
   args: {
     productId: v.id("products"),
     name: v.string(),
-    storageId: v.string(),
+    storageId: v.union(v.id("_storage"), v.null()),
     fileSize: v.number(),
   },
   returns: v.id("digitalFiles"),
@@ -59,7 +59,7 @@ export const update = mutation({
   args: {
     id: v.id("digitalFiles"),
     name: v.optional(v.string()),
-    storageId: v.optional(v.string()),
+    storageId: v.optional(v.id("_storage")),
     fileSize: v.optional(v.number()),
   },
   returns: v.null(),
@@ -86,8 +86,14 @@ export const remove = mutation({
       throw new Error("Digital file not found");
     }
 
-    // Eliminar archivo del storage
-    await ctx.storage.delete(file.storageId);
+    // Eliminar archivo del storage (con guardia para placeholders null)
+    if (file.storageId) {
+      try {
+        await ctx.storage.delete(file.storageId);
+      } catch (error) {
+        console.error("Error deleting file from storage:", error);
+      }
+    }
 
     // Eliminar registro
     await ctx.db.delete(args.id);

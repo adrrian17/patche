@@ -43,6 +43,7 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  type,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
@@ -50,12 +51,16 @@ function Button({
   }) {
   const Comp = asChild ? Slot : "button";
 
+  // Establecer type="button" por defecto cuando no es asChild y no se pasó type explícitamente
+  const buttonType = !asChild && type === undefined ? "button" : type;
+
   return (
     <Comp
       className={cn(buttonVariants({ variant, size, className }))}
       data-size={size}
       data-slot="button"
       data-variant={variant}
+      type={buttonType}
       {...props}
     />
   );

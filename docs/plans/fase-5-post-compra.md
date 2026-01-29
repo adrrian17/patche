@@ -62,7 +62,7 @@ git checkout -b feat/fase-5-post-compra
 
 Agregar a `.env.local.example`:
 
-```
+```bash
 # Resend (Email)
 RESEND_API_KEY=re_...
 
@@ -76,7 +76,7 @@ STORE_EMAIL=hola@patche.mx
 
 Agregar a `convex/.env.local`:
 
-```
+```bash
 RESEND_API_KEY=re_tu_api_key_aqui
 STORE_NAME=Patche
 STORE_URL=http://localhost:3000

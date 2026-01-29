@@ -64,7 +64,7 @@ export default defineSchema({
   digitalFiles: defineTable({
     productId: v.id("products"),
     name: v.string(),
-    storageId: v.string(),
+    storageId: v.union(v.id("_storage"), v.null()),
     fileSize: v.number(),
   }).index("by_product", ["productId"]),
 

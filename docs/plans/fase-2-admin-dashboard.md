@@ -109,28 +109,44 @@ import { action, mutation, query } from './_generated/server'
 import { internal } from './_generated/api'
 import { v } from 'convex/values'
 import { SignJWT, jwtVerify } from 'jose'
+import { randomBytes, scrypt, timingSafeEqual } from 'crypto'
+import { promisify } from 'util'
+
+const scryptAsync = promisify(scrypt)
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'development-secret-change-in-production'
+  (() => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET environment variable is required in production');
+    }
+    return secret || 'development-secret-change-in-production';
+  })()
 )
 const JWT_EXPIRATION = '7d'
 
-// Función auxiliar para hash de contraseña (simple para desarrollo)
+// Función para hash de contraseña usando scrypt (KDF seguro)
 async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+  const salt = randomBytes(16).toString('hex')
+  const derivedKey = await scryptAsync(password, salt, 64) as Buffer
+  return `${salt}:${derivedKey.toString('hex')}`
 }
 
-// Verificar contraseña
+// Verificar contraseña usando scrypt con timingSafeEqual
 async function verifyPassword(
   password: string,
-  hash: string
+  storedHash: string
 ): Promise<boolean> {
-  const passwordHash = await hashPassword(password)
-  return passwordHash === hash
+  const [salt, key] = storedHash.split(':')
+  if (!salt || !key) {
+    return false
+  }
+  const derivedKey = await scryptAsync(password, salt, 64) as Buffer
+  const storedKey = Buffer.from(key, 'hex')
+  if (derivedKey.length !== storedKey.length) {
+    return false
+  }
+  return timingSafeEqual(derivedKey, storedKey)
 }
 
 // Inicializar usuario admin (solo si no existe)

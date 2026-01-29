@@ -731,7 +731,6 @@ export const Route = createFileRoute('/admin/pedidos/$id')({
 
 function AdminPedidoDetalle() {
   const { id } = Route.useParams()
-  const navigate = useNavigate()
   const [trackingNumber, setTrackingNumber] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
 

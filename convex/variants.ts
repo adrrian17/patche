@@ -151,6 +151,15 @@ export const decrementStock = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // Validar que quantity sea positivo
+    if (
+      typeof args.quantity !== "number" ||
+      !Number.isFinite(args.quantity) ||
+      args.quantity <= 0
+    ) {
+      throw new Error("Quantity must be a positive number");
+    }
+
     const variant = await ctx.db.get(args.id);
     if (!variant) {
       throw new Error("Variant not found");

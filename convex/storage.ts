@@ -1,8 +1,8 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 
 // Generar URL de subida
-export const generateUploadUrl = mutation({
+export const generateUploadUrl = internalMutation({
   args: {},
   returns: v.string(),
   handler: async (ctx) => {
@@ -11,7 +11,7 @@ export const generateUploadUrl = mutation({
 });
 
 // Obtener URL de archivo
-export const getUrl = query({
+export const getUrl = internalQuery({
   args: { storageId: v.string() },
   returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
@@ -20,7 +20,7 @@ export const getUrl = query({
 });
 
 // Obtener múltiples URLs
-export const getUrls = query({
+export const getUrls = internalQuery({
   args: { storageIds: v.array(v.string()) },
   returns: v.array(v.union(v.string(), v.null())),
   handler: async (ctx, args) => {
@@ -31,7 +31,7 @@ export const getUrls = query({
 });
 
 // Eliminar archivo
-export const deleteFile = mutation({
+export const deleteFile = internalMutation({
   args: { storageId: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
