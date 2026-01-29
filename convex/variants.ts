@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 
 const variantValidator = v.object({
   _id: v.id("variants"),
@@ -49,7 +49,7 @@ export const getBySku = query({
 });
 
 // Crear variante
-export const create = mutation({
+export const create = internalMutation({
   args: {
     productId: v.id("products"),
     name: v.string(),
@@ -84,7 +84,7 @@ export const create = mutation({
 });
 
 // Actualizar variante
-export const update = mutation({
+export const update = internalMutation({
   args: {
     id: v.id("variants"),
     name: v.optional(v.string()),
@@ -126,7 +126,7 @@ export const update = mutation({
 });
 
 // Actualizar stock
-export const updateStock = mutation({
+export const updateStock = internalMutation({
   args: {
     id: v.id("variants"),
     stock: v.number(),
@@ -144,7 +144,7 @@ export const updateStock = mutation({
 });
 
 // Decrementar stock (para pedidos)
-export const decrementStock = mutation({
+export const decrementStock = internalMutation({
   args: {
     id: v.id("variants"),
     quantity: v.number(),
@@ -175,7 +175,7 @@ export const decrementStock = mutation({
 });
 
 // Eliminar variante
-export const remove = mutation({
+export const remove = internalMutation({
   args: { id: v.id("variants") },
   returns: v.null(),
   handler: async (ctx, args) => {

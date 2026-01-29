@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 
 const digitalFileValidator = v.object({
   _id: v.id("digitalFiles"),
@@ -32,7 +32,7 @@ export const getById = query({
 });
 
 // Crear archivo digital
-export const create = mutation({
+export const create = internalMutation({
   args: {
     productId: v.id("products"),
     name: v.string(),
@@ -55,7 +55,7 @@ export const create = mutation({
 });
 
 // Actualizar archivo digital
-export const update = mutation({
+export const update = internalMutation({
   args: {
     id: v.id("digitalFiles"),
     name: v.optional(v.string()),
@@ -77,7 +77,7 @@ export const update = mutation({
 });
 
 // Eliminar archivo digital
-export const remove = mutation({
+export const remove = internalMutation({
   args: { id: v.id("digitalFiles") },
   returns: v.null(),
   handler: async (ctx, args) => {
