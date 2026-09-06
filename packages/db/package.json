@@ -1,0 +1,29 @@
+{
+  "name": "@patche/db",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:deploy": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@libsql/client": "catalog:",
+    "@patche/env": "workspace:*",
+    "dotenv": "catalog:",
+    "drizzle-orm": "1.0.0-rc.5-ab785fc",
+    "libsql": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@patche/config": "workspace:*",
+    "drizzle-kit": "1.0.0-rc.5-ab785fc",
+    "typescript": "catalog:"
+  }
+}

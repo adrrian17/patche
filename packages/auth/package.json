@@ -1,0 +1,24 @@
+{
+  "name": "@patche/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@patche/db": "workspace:*",
+    "@patche/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@patche/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
