@@ -19,6 +19,7 @@ export const web = Cloudflare.Website.Vite("web", {
     port: 3001,
   },
   env: {
+    ADMIN_EMAIL: Config.string("ADMIN_EMAIL"),
     BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: Cloudflare.Worker.URL,
     DB: db,

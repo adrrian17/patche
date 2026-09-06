@@ -15,6 +15,24 @@ export function createAuth() {
       provider: "sqlite",
       schema,
     }),
+    databaseHooks: {
+      user: {
+        create: {
+          before(user) {
+            if (user.email !== env.ADMIN_EMAIL) {
+              return Promise.resolve();
+            }
+
+            return Promise.resolve({
+              data: {
+                ...user,
+                role: "admin",
+              },
+            });
+          },
+        },
+      },
+    },
     emailAndPassword: {
       enabled: true,
     },
