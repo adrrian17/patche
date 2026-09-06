@@ -8,14 +8,10 @@ import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
 
-import Loader from "./loader";
-
 function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
   const navigate = useNavigate({
     from: "/",
   });
-  const { isPending } = authClient.useSession();
-
   const form = useForm({
     defaultValues: {
       email: "",
@@ -50,10 +46,6 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
       }),
     },
   });
-
-  if (isPending) {
-    return <Loader />;
-  }
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md p-6">

@@ -7,6 +7,9 @@
     "./server": "./src/server.ts",
     "./web": "./src/web.ts"
   },
+  "scripts": {
+    "check-types": "tsgo --noEmit"
+  },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.11",
     "dotenv": "catalog:",
@@ -16,6 +19,7 @@
     "@patche/config": "workspace:*",
     "@patche/infra": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "^8.1.5"
   }
 }

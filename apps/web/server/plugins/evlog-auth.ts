@@ -1,14 +1,19 @@
 import { createAuth } from "@patche/auth";
-import { createAuthIdentifier } from "evlog/better-auth";
+import { createAuthMiddleware } from "evlog/better-auth";
 import type { BetterAuthInstance } from "evlog/better-auth";
+import { useLogger } from "evlog/nitro/v3";
+import { definePlugin } from "nitro";
 
-export default defineNitroPlugin((nitroApp) => {
+export default definePlugin((nitroApp) => {
+  // SAFETY: createAuth returns a Better Auth instance with api.getSession.
+  const identify = createAuthMiddleware(createAuth() as BetterAuthInstance, {
+    exclude: ["/api/auth/**"],
+    maskEmail: true,
+  });
+
   nitroApp.hooks.hook("request", async (event) => {
-    // SAFETY: createAuth returns the Better Auth instance used by evlog's adapter.
-    const identify = createAuthIdentifier(createAuth() as BetterAuthInstance, {
-      exclude: ["/api/auth/**"],
-      maskEmail: true,
-    });
-    await identify(event);
+    const path = new URL(event.req.url).pathname;
+
+    await identify(useLogger(event), event.req.headers, path);
   });
 });
