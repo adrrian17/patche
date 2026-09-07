@@ -1,12 +1,9 @@
 import { Button } from "@patche/ui/components/button";
 import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import {
-  BoxesIcon,
   LayoutDashboardIcon,
   ListTreeIcon,
   NotebookTabsIcon,
-  PackageSearchIcon,
-  Settings2Icon,
   StoreIcon,
 } from "lucide-react";
 
@@ -105,8 +102,5 @@ function AdminLayout() {
 const adminLinks = [
   { icon: LayoutDashboardIcon, label: "Resumen", to: "/admin" },
   { icon: NotebookTabsIcon, label: "Productos", to: "/admin/products" },
-  { icon: BoxesIcon, label: "Inventario", to: "/admin/inventory" },
-  { icon: PackageSearchIcon, label: "Órdenes", to: "/admin/orders" },
   { icon: ListTreeIcon, label: "Categorías", to: "/admin/categories" },
-  { icon: Settings2Icon, label: "Ajustes", to: "/admin/settings" },
 ] as const;
