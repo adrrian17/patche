@@ -14,6 +14,7 @@
     "@patche/db": "workspace:*",
     "@patche/env": "workspace:*",
     "@patche/payments": "workspace:*",
+    "@patche/storage": "workspace:*",
     "@patche/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-form": "^1.33.2",

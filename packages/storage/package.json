@@ -1,0 +1,20 @@
+{
+  "name": "@patche/storage",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "aws4fetch": "^1.0.20"
+  },
+  "devDependencies": {
+    "@patche/config": "workspace:*",
+    "@types/bun": "^1.4.1",
+    "typescript": "catalog:"
+  }
+}

@@ -1,6 +1,7 @@
 import { redirect } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
 
+import { isAdminUser } from "@/lib/session";
 import { authMiddleware } from "@/middleware/auth";
 
 export const adminMiddleware = createMiddleware()
@@ -10,8 +11,7 @@ export const adminMiddleware = createMiddleware()
       throw redirect({ to: "/login" });
     }
 
-    const isAdmin =
-      "role" in context.session.user && context.session.user.role === "admin";
+    const isAdmin = isAdminUser(context.session.user);
 
     if (!isAdmin) {
       throw redirect({ to: "/dashboard" });

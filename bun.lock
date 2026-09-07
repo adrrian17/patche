@@ -34,6 +34,7 @@
         "@patche/db": "workspace:*",
         "@patche/env": "workspace:*",
         "@patche/payments": "workspace:*",
+        "@patche/storage": "workspace:*",
         "@patche/ui": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "@tanstack/react-form": "^1.33.2",
@@ -139,6 +140,17 @@
       "name": "@patche/payments",
       "dependencies": {
         "stripe": "catalog:",
+      },
+      "devDependencies": {
+        "@patche/config": "workspace:*",
+        "@types/bun": "^1.4.1",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/storage": {
+      "name": "@patche/storage",
+      "dependencies": {
+        "aws4fetch": "^1.0.20",
       },
       "devDependencies": {
         "@patche/config": "workspace:*",
@@ -800,6 +812,8 @@
     "@patche/infra": ["@patche/infra@workspace:packages/infra"],
 
     "@patche/payments": ["@patche/payments@workspace:packages/payments"],
+
+    "@patche/storage": ["@patche/storage@workspace:packages/storage"],
 
     "@patche/ui": ["@patche/ui@workspace:packages/ui"],
 

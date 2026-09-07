@@ -4,8 +4,14 @@ import type Stripe from "stripe";
 
 import { startCheckout } from "./checkout";
 import type { CheckoutDependencies } from "./checkout";
+import { stockFromMovements } from "./stock";
 
 describe("startCheckout", () => {
+  test("derived Stock is the sum of Stock Movements", () => {
+    expect(stockFromMovements([10, -3, 1, -8])).toBe(0);
+    expect(stockFromMovements([5, -2])).toBe(3);
+  });
+
   test("blocks checkout when a Physical Variant has no Stock", async () => {
     let sessionsCreated = 0;
     const dependencies: CheckoutDependencies = {
@@ -22,7 +28,7 @@ describe("startCheckout", () => {
             id: "variant_1",
             kind: "physical",
             priceAmount: 25_000,
-            stock: 0,
+            stock: stockFromMovements([4, -1, -3]),
             stripePriceId: "price_1",
           },
         ]);

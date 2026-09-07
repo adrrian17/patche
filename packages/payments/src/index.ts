@@ -1,6 +1,7 @@
 import { Stripe as StripeClient } from "stripe";
 
 export { startCheckout } from "./checkout";
+export { stockFromMovements } from "./stock";
 export { processStripeEvent } from "./webhook-events";
 export type {
   CheckoutDependencies,
