@@ -23,11 +23,15 @@ export const web = Cloudflare.Website.Vite("web", {
     BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: Cloudflare.Worker.URL,
     DB: db,
+    STRIPE_SECRET_KEY: Config.redacted("STRIPE_SECRET_KEY"),
+    STRIPE_WEBHOOK_SECRET: Config.redacted("STRIPE_WEBHOOK_SECRET"),
   },
   rootDir: "../../apps/web",
 });
 
-export type WebEnv = Cloudflare.InferEnv<typeof web>;
+export type WebEnv = Cloudflare.InferEnv<typeof web> & {
+  ALCHEMY_STAGE: string;
+};
 
 export default Alchemy.Stack(
   "patche",
