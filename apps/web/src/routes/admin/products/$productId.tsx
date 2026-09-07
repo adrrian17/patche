@@ -1,4 +1,4 @@
-import { Button } from "@patche/ui/components/button";
+import { Button, buttonVariants } from "@patche/ui/components/button";
 import {
   Card,
   CardContent,
@@ -74,10 +74,13 @@ function ProductDetailPage() {
     <>
       <AdminPageHeader
         actions={
-          <Button render={<Link to="/admin/products" />} variant="outline">
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            to="/admin/products"
+          >
             <ArrowLeftIcon data-icon="inline-start" />
             Catálogo
-          </Button>
+          </Link>
         }
         description="Edita la ficha, imágenes, variantes, precios y archivos digitales."
         eyebrow="Producto"
@@ -217,14 +220,14 @@ function ProductBasics({
             <form.Field name="categoryId">
               {(field) => (
                 <Field>
-                  <FieldLabel>Categoría</FieldLabel>
+                  <FieldLabel htmlFor="product-category">Categoría</FieldLabel>
                   <Select
                     value={field.state.value}
                     onValueChange={(value) =>
                       field.handleChange(value ?? "none")
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full" id="product-category">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -244,7 +247,7 @@ function ProductBasics({
             <form.Field name="status">
               {(field) => (
                 <Field>
-                  <FieldLabel>Estado</FieldLabel>
+                  <FieldLabel htmlFor="product-status">Estado</FieldLabel>
                   <Select
                     value={field.state.value}
                     onValueChange={(value) =>
@@ -253,7 +256,7 @@ function ProductBasics({
                       )
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full" id="product-status">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -484,7 +487,7 @@ function VariantManager({ data }: { data: ProductData }) {
               <form.Field name="kind">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Tipo</FieldLabel>
+                    <FieldLabel htmlFor="variant-kind">Tipo</FieldLabel>
                     <Select
                       value={field.state.value}
                       onValueChange={(value) =>
@@ -493,7 +496,7 @@ function VariantManager({ data }: { data: ProductData }) {
                         )
                       }
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full" id="variant-kind">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

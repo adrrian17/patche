@@ -1,4 +1,4 @@
-import { Button } from "@patche/ui/components/button";
+import { Button, buttonVariants } from "@patche/ui/components/button";
 import {
   Card,
   CardContent,
@@ -165,19 +165,17 @@ function ProductsPage() {
                       </TableCell>
                       <TableCell>{formatDate(item.createdAt)}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          render={
-                            <Link
-                              params={{ productId: item.id }}
-                              to="/admin/products/$productId"
-                            />
-                          }
-                          size="icon-sm"
-                          variant="ghost"
+                        <Link
+                          className={buttonVariants({
+                            size: "icon-sm",
+                            variant: "ghost",
+                          })}
+                          params={{ productId: item.id }}
+                          to="/admin/products/$productId"
                         >
                           <ArrowRightIcon />
                           <span className="sr-only">Editar {item.name}</span>
-                        </Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -271,14 +269,19 @@ function ProductsPage() {
                 <form.Field name="categoryId">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Categoría</FieldLabel>
+                      <FieldLabel htmlFor="new-product-category">
+                        Categoría
+                      </FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(value) =>
                           field.handleChange(value ?? "none")
                         }
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger
+                          className="w-full"
+                          id="new-product-category"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -298,7 +301,9 @@ function ProductsPage() {
                 <form.Field name="status">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Estado inicial</FieldLabel>
+                      <FieldLabel htmlFor="new-product-status">
+                        Estado inicial
+                      </FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(value) =>
@@ -307,7 +312,10 @@ function ProductsPage() {
                           )
                         }
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger
+                          className="w-full"
+                          id="new-product-status"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

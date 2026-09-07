@@ -1,4 +1,4 @@
-import { Button } from "@patche/ui/components/button";
+import { buttonVariants } from "@patche/ui/components/button";
 import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import {
   BoxesIcon,
@@ -24,8 +24,8 @@ export const Route = createFileRoute("/admin")({
 function AdminLayout() {
   const { session } = Route.useRouteContext();
   return (
-    <div className="admin-shell bg-background text-foreground min-h-svh">
-      <aside className="border-border/70 bg-card/75 border-b px-4 py-3 backdrop-blur md:fixed md:inset-y-0 md:left-0 md:w-64 md:border-r md:border-b-0 md:px-5 md:py-7">
+    <div className="admin-shell bg-background text-foreground min-h-svh min-w-0">
+      <aside className="border-border/70 bg-card/75 min-w-0 border-b px-4 py-3 backdrop-blur md:fixed md:inset-y-0 md:left-0 md:w-64 md:border-r md:border-b-0 md:px-5 md:py-7">
         <div className="flex items-center justify-between md:flex-col md:items-stretch md:gap-8">
           <Link className="flex items-center gap-3" to="/admin">
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-full">
@@ -45,21 +45,19 @@ function AdminLayout() {
             className="hidden flex-col gap-1 md:flex"
           >
             {adminLinks.map(({ icon: Icon, label, to }) => (
-              <Button
-                className="data-[active=true]:bg-accent justify-start"
+              <Link
+                activeOptions={{ exact: to === "/admin" }}
+                activeProps={{ "data-active": true }}
+                className={buttonVariants({
+                  className: "data-[active=true]:bg-accent justify-start",
+                  variant: "ghost",
+                })}
                 key={to}
-                render={
-                  <Link
-                    activeOptions={{ exact: to === "/admin" }}
-                    activeProps={{ "data-active": true }}
-                    to={to}
-                  />
-                }
-                variant="ghost"
+                to={to}
               >
                 <Icon data-icon="inline-start" />
                 {label}
-              </Button>
+              </Link>
             ))}
           </nav>
           <div className="border-border/70 hidden border-t pt-5 md:block">
@@ -71,25 +69,23 @@ function AdminLayout() {
         </div>
         <nav
           aria-label="Administración móvil"
-          className="mt-3 flex gap-1 overflow-x-auto pb-1 md:hidden"
+          className="mt-3 flex w-full min-w-0 gap-1 overflow-x-auto pb-1 md:hidden"
         >
           {adminLinks.map(({ icon: Icon, label, to }) => (
-            <Button
-              className="data-[active=true]:bg-accent shrink-0"
+            <Link
+              activeOptions={{ exact: to === "/admin" }}
+              activeProps={{ "data-active": true }}
+              className={buttonVariants({
+                className: "data-[active=true]:bg-accent shrink-0",
+                size: "sm",
+                variant: "ghost",
+              })}
               key={to}
-              render={
-                <Link
-                  activeOptions={{ exact: to === "/admin" }}
-                  activeProps={{ "data-active": true }}
-                  to={to}
-                />
-              }
-              size="sm"
-              variant="ghost"
+              to={to}
             >
               <Icon data-icon="inline-start" />
               {label}
-            </Button>
+            </Link>
           ))}
         </nav>
       </aside>

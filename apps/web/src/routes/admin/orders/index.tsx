@@ -1,4 +1,4 @@
-import { Button } from "@patche/ui/components/button";
+import { buttonVariants } from "@patche/ui/components/button";
 import {
   Card,
   CardContent,
@@ -85,19 +85,17 @@ function OrdersPage() {
                       {formatMoney(item.totalAmount)}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        render={
-                          <Link
-                            params={{ orderId: item.id }}
-                            to="/admin/orders/$orderId"
-                          />
-                        }
-                        size="icon-sm"
-                        variant="ghost"
+                      <Link
+                        className={buttonVariants({
+                          size: "icon-sm",
+                          variant: "ghost",
+                        })}
+                        params={{ orderId: item.id }}
+                        to="/admin/orders/$orderId"
                       >
                         <ArrowRightIcon />
                         <span className="sr-only">Ver orden {item.id}</span>
-                      </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}

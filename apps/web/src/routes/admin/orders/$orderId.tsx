@@ -1,4 +1,4 @@
-import { Button } from "@patche/ui/components/button";
+import { Button, buttonVariants } from "@patche/ui/components/button";
 import {
   Card,
   CardContent,
@@ -87,10 +87,13 @@ function OrderDetailPage() {
     <>
       <AdminPageHeader
         actions={
-          <Button render={<Link to="/admin/orders" />} variant="outline">
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            to="/admin/orders"
+          >
             <ArrowLeftIcon data-icon="inline-start" />
             Órdenes
-          </Button>
+          </Link>
         }
         description={`Creada ${formatDate(data.order.createdAt)} por ${data.customerName}.`}
         eyebrow={`Orden ${data.order.id}`}
@@ -223,20 +226,15 @@ function OrderDetailPage() {
                   <p className="text-muted-foreground break-all">
                     {data.order.stripePaymentIntentId}
                   </p>
-                  <Button
-                    render={
-                      <a
-                        aria-label="Ver pago en Stripe"
-                        href={`https://dashboard.stripe.com/test/payment_intents/${data.order.stripePaymentIntentId}`}
-                        rel="noopener"
-                        target="_blank"
-                      />
-                    }
-                    variant="outline"
+                  <a
+                    className={buttonVariants({ variant: "outline" })}
+                    href={`https://dashboard.stripe.com/test/payment_intents/${data.order.stripePaymentIntentId}`}
+                    rel="noopener"
+                    target="_blank"
                   >
                     <ExternalLinkIcon data-icon="inline-start" />
                     Ver en Stripe
-                  </Button>
+                  </a>
                 </>
               ) : null}
             </CardContent>

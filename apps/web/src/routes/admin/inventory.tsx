@@ -157,14 +157,16 @@ function InventoryPage() {
                 <form.Field name="variantId">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Variante</FieldLabel>
+                      <FieldLabel htmlFor="movement-variant">
+                        Variante
+                      </FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(value) =>
                           field.handleChange(value ?? "")
                         }
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full" id="movement-variant">
                           <SelectValue placeholder="Selecciona" />
                         </SelectTrigger>
                         <SelectContent>
@@ -183,7 +185,7 @@ function InventoryPage() {
                 <form.Field name="reason">
                   {(field) => (
                     <Field>
-                      <FieldLabel>Motivo</FieldLabel>
+                      <FieldLabel htmlFor="movement-reason">Motivo</FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(value) => {
@@ -194,7 +196,7 @@ function InventoryPage() {
                           }
                         }}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full" id="movement-reason">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
