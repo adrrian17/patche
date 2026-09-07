@@ -20,6 +20,7 @@
     "dotenv": "catalog:",
     "drizzle-orm": "1.0.0-rc.5-ab785fc",
     "libsql": "catalog:",
+    "nanoid": "^5.1.6",
     "zod": "catalog:"
   },
   "devDependencies": {
