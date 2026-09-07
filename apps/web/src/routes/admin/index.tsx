@@ -1,0 +1,143 @@
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@patche/ui/components/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@patche/ui/components/empty";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@patche/ui/components/table";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  AlertTriangleIcon,
+  PackageCheckIcon,
+  ReceiptTextIcon,
+} from "lucide-react";
+
+import { AdminPageHeader } from "@/components/admin/page-header";
+import { getAdminDashboard } from "@/functions/admin-dashboard";
+
+export const Route = createFileRoute("/admin/")({
+  component: AdminDashboardPage,
+});
+
+function AdminDashboardPage() {
+  const dashboard = useQuery({
+    queryFn: () => getAdminDashboard(),
+    queryKey: ["admin", "dashboard"],
+  });
+  return (
+    <>
+      <AdminPageHeader
+        description="Una lectura rápida del trabajo que requiere atención hoy."
+        eyebrow="Mesa de trabajo"
+        title="Buenos días"
+      />
+      <section
+        aria-label="Indicadores"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <MetricCard
+          icon={ReceiptTextIcon}
+          label="Órdenes de hoy"
+          value={dashboard.data?.todayOrders}
+        />
+        <MetricCard
+          icon={PackageCheckIcon}
+          label="Por preparar"
+          value={dashboard.data?.pendingOrders}
+        />
+        <MetricCard
+          icon={AlertTriangleIcon}
+          label="Stock bajo"
+          value={dashboard.data?.lowStockVariants.length}
+        />
+      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif text-2xl">
+            Stock que pide atención
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {dashboard.data?.lowStockVariants.length ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead className="text-right">Existencia</TableHead>
+                  <TableHead className="text-right">Umbral</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dashboard.data.lowStockVariants.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <span className="font-medium">{item.productName}</span>
+                      <span className="text-muted-foreground block text-xs">
+                        {item.variantName}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {item.sku}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {item.stock}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {item.lowStockThreshold}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>Inventario en orden</EmptyTitle>
+                <EmptyDescription>
+                  No hay variantes físicas debajo de su umbral.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+interface MetricCardProps {
+  icon: typeof ReceiptTextIcon;
+  label: string;
+  value: number | undefined;
+}
+
+function MetricCard({ icon: Icon, label, value }: MetricCardProps) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between gap-3 pb-2">
+        <CardTitle className="text-muted-foreground text-sm font-medium">
+          {label}
+        </CardTitle>
+        <Icon aria-hidden="true" className="text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <p className="font-serif text-4xl tabular-nums">{value ?? "—"}</p>
+      </CardContent>
+    </Card>
+  );
+}

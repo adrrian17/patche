@@ -1,1 +1,41 @@
 @import "@patche/ui/globals.css";
+
+@theme inline {
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+  body {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--border) 28%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--border) 22%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 28px 28px;
+  }
+}
+
+.admin-shell {
+  --background: oklch(0.965 0.018 78);
+  --foreground: oklch(0.23 0.025 48);
+  --card: oklch(0.985 0.012 78 / 92%);
+  --card-foreground: oklch(0.23 0.025 48);
+  --primary: oklch(0.43 0.11 38);
+  --primary-foreground: oklch(0.985 0.012 78);
+  --secondary: oklch(0.91 0.025 72);
+  --secondary-foreground: oklch(0.27 0.03 48);
+  --muted: oklch(0.92 0.018 76);
+  --muted-foreground: oklch(0.49 0.035 50);
+  --accent: oklch(0.89 0.035 68);
+  --accent-foreground: oklch(0.28 0.045 43);
+  --border: oklch(0.82 0.025 65);
+  --input: oklch(0.82 0.025 65);
+  --ring: oklch(0.51 0.1 40);
+}
