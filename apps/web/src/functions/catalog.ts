@@ -22,6 +22,7 @@ const slugSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u);
 const priceSchema = z.number().int().min(0).max(100_000_000);
 const productNotFoundMessage = "Product no encontrado";
+const variantNotFoundMessage = "Variant no encontrada";
 
 export const createProduct = createServerFn({ method: "POST" })
   .middleware([adminMiddleware])
@@ -220,7 +221,7 @@ export const changeVariantPrice = createServerFn({ method: "POST" })
       .where(eq(variant.id, data.id))
       .get();
     if (!current) {
-      throw new Error("Variant no encontrada");
+      throw new Error(variantNotFoundMessage);
     }
     if (current.priceAmount === data.priceAmount) {
       return { priceAmount: current.priceAmount };
@@ -256,6 +257,51 @@ export const changeVariantPrice = createServerFn({ method: "POST" })
     }
   });
 
+export const updateVariant = createServerFn({ method: "POST" })
+  .middleware([adminMiddleware])
+  .validator(
+    z.object({
+      id: idSchema,
+      lowStockThreshold: z.number().int().min(0).max(1_000_000),
+      name: nameSchema,
+      sku: z.string().trim().min(1).max(100),
+    })
+  )
+  .handler(async ({ data }) => {
+    const db = createDb();
+    const current = await db
+      .select()
+      .from(variant)
+      .where(eq(variant.id, data.id))
+      .get();
+    if (!current) {
+      throw new Error(variantNotFoundMessage);
+    }
+
+    const next = {
+      lowStockThreshold: data.lowStockThreshold,
+      name: data.name,
+      sku: data.sku,
+    };
+    await db.update(variant).set(next).where(eq(variant.id, data.id));
+    try {
+      await getStripeClient().prices.update(current.stripePriceId, {
+        nickname: data.name,
+      });
+      return { ...current, ...next };
+    } catch (error) {
+      await db
+        .update(variant)
+        .set({
+          lowStockThreshold: current.lowStockThreshold,
+          name: current.name,
+          sku: current.sku,
+        })
+        .where(eq(variant.id, data.id));
+      throw error;
+    }
+  });
+
 export const archiveVariant = createServerFn({ method: "POST" })
   .middleware([adminMiddleware])
   .validator(z.object({ id: idSchema }))
@@ -270,7 +316,7 @@ export const archiveVariant = createServerFn({ method: "POST" })
       .where(eq(variant.id, data.id))
       .get();
     if (!current) {
-      throw new Error("Variant no encontrada");
+      throw new Error(variantNotFoundMessage);
     }
     if (current.archivedAt) {
       return { archivedAt: current.archivedAt };
