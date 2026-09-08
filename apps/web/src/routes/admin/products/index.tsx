@@ -139,7 +139,26 @@ function ProductsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {products.data?.length ? (
+            {products.isPending && (
+              <p className="text-muted-foreground text-sm">
+                Cargando productos…
+              </p>
+            )}
+            {products.isError && (
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-destructive text-sm">
+                  No se pudieron cargar los productos.
+                </p>
+                <Button
+                  onClick={async () => await products.refetch()}
+                  size="sm"
+                  variant="outline"
+                >
+                  Reintentar
+                </Button>
+              </div>
+            )}
+            {products.isSuccess && products.data.length > 0 && (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -181,7 +200,8 @@ function ProductsPage() {
                   ))}
                 </TableBody>
               </Table>
-            ) : (
+            )}
+            {products.isSuccess && products.data.length === 0 && (
               <Empty>
                 <EmptyHeader>
                   <EmptyTitle>Aún no hay productos</EmptyTitle>

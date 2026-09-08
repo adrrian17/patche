@@ -48,8 +48,15 @@ function OrderDetailPage() {
     queryKey: ["admin", "orders", orderId],
   });
   const { data } = orderQuery;
-  if (!data) {
+  if (orderQuery.isPending) {
     return <p className="text-muted-foreground text-sm">Cargando orden…</p>;
+  }
+  if (orderQuery.isError || !data) {
+    return (
+      <p className="text-destructive text-sm">
+        No se pudo encontrar o cargar la orden.
+      </p>
+    );
   }
   async function setFulfillment(status: "delivered" | "shipped") {
     try {
@@ -105,13 +112,13 @@ function OrderDetailPage() {
       >
         <StatusBadge status={data.order.paymentStatus} />
         <StatusBadge status={data.order.fulfillmentStatus} />
-        {data.order.fulfillmentStatus === "unfulfilled" ? (
+        {data.order.fulfillmentStatus === "unfulfilled" && (
           <Button onClick={() => setFulfillment("shipped")} size="sm">
             <TruckIcon data-icon="inline-start" />
             Marcar enviada
           </Button>
-        ) : null}
-        {data.order.fulfillmentStatus === "delivered" ? null : (
+        )}
+        {data.order.fulfillmentStatus !== "delivered" && (
           <Button
             onClick={() => setFulfillment("delivered")}
             size="sm"
@@ -121,12 +128,12 @@ function OrderDetailPage() {
             Marcar entregada
           </Button>
         )}
-        {data.order.paymentStatus === "succeeded" ? (
+        {data.order.paymentStatus === "succeeded" && (
           <Button onClick={refund} size="sm" variant="destructive">
             <RotateCcwIcon data-icon="inline-start" />
             Reembolso total
           </Button>
-        ) : null}
+        )}
       </section>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <Card>
@@ -167,7 +174,7 @@ function OrderDetailPage() {
                         {formatMoney(item.unitAmount)}
                       </TableCell>
                       <TableCell>
-                        {grant && !grant.revokedAt ? (
+                        {grant && !grant.revokedAt && (
                           <Button
                             onClick={() => downloadGrant(grant.id)}
                             size="sm"
@@ -175,7 +182,7 @@ function OrderDetailPage() {
                           >
                             Descargar
                           </Button>
-                        ) : null}
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -200,12 +207,12 @@ function OrderDetailPage() {
                 <address className="text-muted-foreground not-italic">
                   {address.line1}
                   <br />
-                  {address.line2 ? (
+                  {address.line2 && (
                     <>
                       {address.line2}
                       <br />
                     </>
-                  ) : null}
+                  )}
                   {address.postalCode} {address.city}, {address.state}
                   <br />
                   {address.country}
@@ -221,7 +228,7 @@ function OrderDetailPage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2 font-mono text-xs">
               <p className="break-all">{data.order.stripeCheckoutSessionId}</p>
-              {data.order.stripePaymentIntentId ? (
+              {data.order.stripePaymentIntentId && (
                 <>
                   <p className="text-muted-foreground break-all">
                     {data.order.stripePaymentIntentId}
@@ -236,7 +243,7 @@ function OrderDetailPage() {
                     Ver en Stripe
                   </a>
                 </>
-              ) : null}
+              )}
             </CardContent>
           </Card>
         </div>

@@ -5,6 +5,8 @@ import {
   DIGITAL_UPLOAD_EXPIRES_SECONDS,
 } from "@patche/storage";
 
+const storageDeleteAttempts = 3;
+
 function getPresignConfig() {
   return {
     accessKeyId: env.R2_ACCESS_KEY_ID,
@@ -20,6 +22,20 @@ export function getMediaBucket(): R2Bucket {
 
 export function getDigitalBucket(): R2Bucket {
   return env.DIGITAL_BUCKET;
+}
+
+export async function deleteStorageObjectWithRetry(
+  bucket: R2Bucket,
+  key: string,
+  attempts = storageDeleteAttempts
+): Promise<void> {
+  try {
+    await bucket.delete(key);
+  } catch {
+    if (attempts > 1) {
+      await deleteStorageObjectWithRetry(bucket, key, attempts - 1);
+    }
+  }
 }
 
 export function getMediaPublicBaseUrl(): string {

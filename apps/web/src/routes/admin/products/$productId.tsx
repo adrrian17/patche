@@ -67,8 +67,15 @@ function ProductDetailPage() {
     queryFn: () => listCategories(),
     queryKey: ["admin", "categories"],
   });
-  if (!product.data) {
+  if (product.isPending) {
     return <p className="text-muted-foreground text-sm">Cargando producto…</p>;
+  }
+  if (product.isError || !product.data) {
+    return (
+      <p className="text-destructive text-sm">
+        No se pudo encontrar o cargar el producto.
+      </p>
+    );
   }
   return (
     <>
@@ -398,10 +405,14 @@ function MediaManager({ data }: { data: ProductData }) {
                 </Field>
               )}
             </form.Field>
-            <Button type="submit">
-              <ImagePlusIcon data-icon="inline-start" />
-              Subir
-            </Button>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
+                <Button disabled={isSubmitting} type="submit">
+                  <ImagePlusIcon data-icon="inline-start" />
+                  {isSubmitting ? "Subiendo…" : "Subir"}
+                </Button>
+              )}
+            </form.Subscribe>
           </FieldGroup>
         </form>
       </CardContent>
@@ -527,10 +538,14 @@ function VariantManager({ data }: { data: ProductData }) {
                   </Field>
                 )}
               </form.Field>
-              <Button type="submit">
-                <PlusIcon data-icon="inline-start" />
-                Crear variante
-              </Button>
+              <form.Subscribe selector={(state) => state.isSubmitting}>
+                {(isSubmitting) => (
+                  <Button disabled={isSubmitting} type="submit">
+                    <PlusIcon data-icon="inline-start" />
+                    {isSubmitting ? "Creando…" : "Crear variante"}
+                  </Button>
+                )}
+              </form.Subscribe>
             </FieldGroup>
           </form>
         </CardContent>
@@ -557,6 +572,15 @@ function VariantCard({
       sku: item.sku,
     },
     onSubmit: async ({ value }) => {
+      if (
+        !Number.isInteger(value.priceAmount) ||
+        value.priceAmount < 0 ||
+        value.priceAmount > 100_000_000
+      ) {
+        toast.error("Escribe un precio válido en centavos");
+        return;
+      }
+
       try {
         await updateVariant({
           data: {
@@ -721,7 +745,7 @@ function VariantCard({
                 </Field>
               )}
             </form.Field>
-            {item.kind === "digital" ? (
+            {item.kind === "digital" && (
               <Field className="sm:col-span-2">
                 <FieldLabel htmlFor={`${item.id}-file`}>
                   Archivo digital
@@ -748,7 +772,7 @@ function VariantCard({
                   </FieldDescription>
                 )}
               </Field>
-            ) : null}
+            )}
           </FieldGroup>
         </form>
       </CardContent>

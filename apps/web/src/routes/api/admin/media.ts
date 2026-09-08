@@ -10,7 +10,11 @@ import { eq, max } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { getRequestSession, isAdminUser } from "@/lib/session";
-import { getMediaBucket, getMediaPublicBaseUrl } from "@/lib/storage.server";
+import {
+  deleteStorageObjectWithRetry,
+  getMediaBucket,
+  getMediaPublicBaseUrl,
+} from "@/lib/storage.server";
 
 const allowedMediaTypes = new Set([
   "image/avif",
@@ -59,21 +63,29 @@ export const Route = createFileRoute("/api/admin/media")({
           .where(eq(productMedia.productId, productId))
           .get();
         const key = mediaObjectKey(productId, nanoid());
-        await getMediaBucket().put(key, file, {
+        const mediaBucket = getMediaBucket();
+        await mediaBucket.put(key, file, {
           httpMetadata: { contentType: file.type },
         });
 
-        const media = await db
-          .insert(productMedia)
-          .values({
-            alt,
-            productId,
-            r2Key: key,
-            sort: (currentSort?.sort ?? -1) + 1,
-          })
-          .returning()
-          .get();
+        let media: typeof productMedia.$inferSelect | undefined;
+        try {
+          media = await db
+            .insert(productMedia)
+            .values({
+              alt,
+              productId,
+              r2Key: key,
+              sort: (currentSort?.sort ?? -1) + 1,
+            })
+            .returning()
+            .get();
+        } catch {
+          await deleteStorageObjectWithRetry(mediaBucket, key);
+          return new Response("No se pudo guardar la Media", { status: 500 });
+        }
         if (!media) {
+          await deleteStorageObjectWithRetry(mediaBucket, key);
           return new Response("No se pudo guardar la Media", { status: 500 });
         }
 

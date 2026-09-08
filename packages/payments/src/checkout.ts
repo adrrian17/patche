@@ -1,5 +1,7 @@
 import type Stripe from "stripe";
 
+const stripeMetadataValueMaxLength = 500;
+
 export interface CheckoutItem {
   quantity: number;
   variantId: string;
@@ -37,6 +39,16 @@ export async function startCheckout(
   input: StartCheckoutInput,
   dependencies: CheckoutDependencies
 ): Promise<CheckoutSessionResult> {
+  const metadataItems = JSON.stringify(
+    input.items.map((item) => ({
+      qty: item.quantity,
+      variantId: item.variantId,
+    }))
+  );
+  if (metadataItems.length > stripeMetadataValueMaxLength) {
+    throw new Error("El carrito excede el límite permitido");
+  }
+
   const variants = await dependencies.getVariants(
     input.items.map((item) => item.variantId)
   );
@@ -74,12 +86,7 @@ export async function startCheckout(
       quantity: item.quantity,
     })),
     metadata: {
-      items: JSON.stringify(
-        input.items.map((item) => ({
-          qty: item.quantity,
-          variantId: item.variantId,
-        }))
-      ),
+      items: metadataItems,
     },
     mode: "payment",
     payment_method_types: ["card"],

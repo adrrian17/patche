@@ -5,7 +5,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { getDigitalBucket } from "@/lib/storage.server";
+import {
+  deleteStorageObjectWithRetry,
+  getDigitalBucket,
+} from "@/lib/storage.server";
 import { adminMiddleware } from "@/middleware/admin";
 
 export const confirmDigitalUpload = createServerFn({ method: "POST" })
@@ -27,6 +30,7 @@ export const confirmDigitalUpload = createServerFn({ method: "POST" })
     const db = createDb();
     const matchingVariant = await db
       .select({
+        digitalFileKey: variant.digitalFileKey,
         kind: variant.kind,
       })
       .from(variant)
@@ -53,14 +57,29 @@ export const confirmDigitalUpload = createServerFn({ method: "POST" })
       throw new Error("El tipo del Digital File no coincide");
     }
 
-    await db
+    const updated = await db
       .update(variant)
       .set({
         digitalFileKey: data.key,
         digitalFileName: data.fileName,
         digitalFileSize: object.size,
       })
-      .where(eq(variant.id, data.variantId));
+      .where(eq(variant.id, data.variantId))
+      .returning({ id: variant.id })
+      .get();
+    if (!updated) {
+      throw new Error("No se pudo confirmar el Digital File");
+    }
+
+    if (
+      matchingVariant.digitalFileKey &&
+      matchingVariant.digitalFileKey !== data.key
+    ) {
+      await deleteStorageObjectWithRetry(
+        getDigitalBucket(),
+        matchingVariant.digitalFileKey
+      );
+    }
 
     return {
       digitalFileKey: data.key,

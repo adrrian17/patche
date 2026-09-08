@@ -94,26 +94,47 @@ function CategoriesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Acciones</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.data?.map((item) => (
-                  <CategoryRow
-                    item={item}
-                    key={item.id}
-                    queryClient={queryClient}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+            {categories.isPending && (
+              <p className="text-muted-foreground text-sm">
+                Cargando categorías…
+              </p>
+            )}
+            {categories.isError && (
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-destructive text-sm">
+                  No se pudieron cargar las categorías.
+                </p>
+                <Button
+                  onClick={async () => await categories.refetch()}
+                  size="sm"
+                  variant="outline"
+                >
+                  Reintentar
+                </Button>
+              </div>
+            )}
+            {categories.isSuccess && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Acciones</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categories.data.map((item) => (
+                    <CategoryRow
+                      item={item}
+                      key={item.id}
+                      queryClient={queryClient}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
         <Card>

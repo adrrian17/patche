@@ -145,4 +145,73 @@ describe("startCheckout", () => {
     expect(capturedParams?.shipping_options).toBeUndefined();
     expect(shippingRateReads).toBe(0);
   });
+
+  test("allows checkout metadata at Stripe's 500-character boundary", async () => {
+    let capturedParams: Stripe.Checkout.SessionCreateParams | undefined;
+    const variantIds = Array.from({ length: 10 }, (_, index) =>
+      `${index}`.padEnd(index === 0 ? 24 : 25, "a")
+    );
+    const dependencies: CheckoutDependencies = {
+      createSession(params) {
+        capturedParams = params;
+        return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
+      },
+      getShippingRateAmount() {
+        return Promise.resolve(0);
+      },
+      getVariants() {
+        return Promise.resolve(
+          variantIds.map((id) => ({
+            id,
+            kind: "digital" as const,
+            priceAmount: 100,
+            stock: 0,
+            stripePriceId: `price_${id}`,
+          }))
+        );
+      },
+    };
+
+    await startCheckout(
+      {
+        customerId: "customer_1",
+        items: variantIds.map((variantId) => ({ quantity: 1, variantId })),
+        origin: "https://patche.mx",
+      },
+      dependencies
+    );
+
+    expect(capturedParams?.metadata?.items).toHaveLength(500);
+  });
+
+  test("rejects checkout metadata over Stripe's 500-character limit", async () => {
+    let sessionsCreated = 0;
+    const variantIds = Array.from({ length: 10 }, (_, index) =>
+      `${index}`.padEnd(25, "a")
+    );
+    const dependencies: CheckoutDependencies = {
+      createSession() {
+        sessionsCreated += 1;
+        return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
+      },
+      getShippingRateAmount() {
+        return Promise.resolve(0);
+      },
+      getVariants() {
+        return Promise.resolve([]);
+      },
+    };
+
+    await expect(
+      startCheckout(
+        {
+          customerId: "customer_1",
+          items: variantIds.map((variantId) => ({ quantity: 1, variantId })),
+          origin: "https://patche.mx",
+        },
+        dependencies
+      )
+    ).rejects.toThrow("El carrito excede el límite permitido");
+    expect(sessionsCreated).toBe(0);
+  });
 });

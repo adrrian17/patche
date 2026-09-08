@@ -7,12 +7,17 @@ import {
   orderItem,
 } from "@patche/db/schema/orders";
 import { createServerFn } from "@tanstack/react-start";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { adminMiddleware } from "@/middleware/admin";
 
 const idSchema = z.string().min(1).max(32);
+const orderNotFoundMessage = "Order no encontrada";
+const fulfillmentConflictMessage =
+  "Una Order entregada no puede volver a Shipped";
+const concurrentFulfillmentConflictMessage =
+  "La Order cambió mientras se actualizaba. Vuelve a intentarlo";
 
 export const listAdminOrders = createServerFn({ method: "GET" })
   .middleware([adminMiddleware])
@@ -49,7 +54,7 @@ export const getAdminOrder = createServerFn({ method: "GET" })
       .where(eq(order.id, data.id))
       .get();
     if (!matchingOrder) {
-      throw new Error("Order no encontrada");
+      throw new Error(orderNotFoundMessage);
     }
 
     const items = await db
@@ -78,29 +83,49 @@ export const updateOrderFulfillment = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }) => {
-    const current = await createDb()
+    const db = createDb();
+    const current = await db
       .select({ fulfillmentStatus: order.fulfillmentStatus })
       .from(order)
       .where(eq(order.id, data.id))
       .get();
     if (!current) {
-      throw new Error("Order no encontrada");
+      throw new Error(orderNotFoundMessage);
     }
     if (
       current.fulfillmentStatus === "delivered" &&
       data.status !== "delivered"
     ) {
-      throw new Error("Una Order entregada no puede volver a Shipped");
+      throw new Error(fulfillmentConflictMessage);
     }
 
-    const updated = await createDb()
+    const updated = await db
       .update(order)
       .set({ fulfillmentStatus: data.status })
-      .where(eq(order.id, data.id))
+      .where(
+        and(
+          eq(order.id, data.id),
+          eq(order.fulfillmentStatus, current.fulfillmentStatus)
+        )
+      )
       .returning({ fulfillmentStatus: order.fulfillmentStatus })
       .get();
     if (!updated) {
-      throw new Error("No se pudo actualizar la Order");
+      const latest = await db
+        .select({ fulfillmentStatus: order.fulfillmentStatus })
+        .from(order)
+        .where(eq(order.id, data.id))
+        .get();
+      if (!latest) {
+        throw new Error(orderNotFoundMessage);
+      }
+      if (
+        latest.fulfillmentStatus === "delivered" &&
+        data.status !== "delivered"
+      ) {
+        throw new Error(fulfillmentConflictMessage);
+      }
+      throw new Error(concurrentFulfillmentConflictMessage);
     }
     return updated;
   });

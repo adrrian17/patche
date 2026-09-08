@@ -1,4 +1,4 @@
-import { buttonVariants } from "@patche/ui/components/button";
+import { Button, buttonVariants } from "@patche/ui/components/button";
 import {
   Card,
   CardContent,
@@ -51,7 +51,24 @@ function OrdersPage() {
           <CardDescription>{orders.data?.length ?? 0} órdenes</CardDescription>
         </CardHeader>
         <CardContent>
-          {orders.data?.length ? (
+          {orders.isPending && (
+            <p className="text-muted-foreground text-sm">Cargando órdenes…</p>
+          )}
+          {orders.isError && (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-destructive text-sm">
+                No se pudieron cargar las órdenes.
+              </p>
+              <Button
+                onClick={async () => await orders.refetch()}
+                size="sm"
+                variant="outline"
+              >
+                Reintentar
+              </Button>
+            </div>
+          )}
+          {orders.isSuccess && orders.data.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -101,7 +118,8 @@ function OrdersPage() {
                 ))}
               </TableBody>
             </Table>
-          ) : (
+          )}
+          {orders.isSuccess && orders.data.length === 0 && (
             <Empty>
               <EmptyHeader>
                 <EmptyTitle>No hay órdenes</EmptyTitle>

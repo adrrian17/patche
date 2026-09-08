@@ -235,7 +235,7 @@ export const changeVariantPrice = createServerFn({ method: "POST" })
         product: current.stripeProductId,
         unit_amount: data.priceAmount,
       },
-      { idempotencyKey: `variant:price:${data.id}:${data.priceAmount}` }
+      { idempotencyKey: `variant:price:${data.id}:${crypto.randomUUID()}` }
     );
     try {
       await stripe.prices.update(current.stripePriceId, { active: false });

@@ -42,9 +42,31 @@ function SettingsPage() {
         eyebrow="Tienda"
         title="Ajustes"
       />
-      {settings.data ? (
+      {settings.isPending && (
+        <p className="text-muted-foreground text-sm">Cargando ajustes…</p>
+      )}
+      {settings.isError && (
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-destructive text-sm">
+            No se pudieron cargar los ajustes.
+          </p>
+          <Button
+            onClick={async () => await settings.refetch()}
+            size="sm"
+            variant="outline"
+          >
+            Reintentar
+          </Button>
+        </div>
+      )}
+      {settings.isSuccess && settings.data && (
         <ShippingForm shippingRateAmount={settings.data.shippingRateAmount} />
-      ) : null}
+      )}
+      {settings.isSuccess && !settings.data && (
+        <p className="text-destructive text-sm">
+          No se encontraron los ajustes.
+        </p>
+      )}
     </>
   );
 }
