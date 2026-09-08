@@ -25,8 +25,14 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           return new Response("Invalid Stripe signature", { status: 400 });
         }
 
-        const result = await processStripeEvent(event, createWebhookStore());
-        return Response.json({ received: true, result });
+        try {
+          const result = await processStripeEvent(event, createWebhookStore());
+          return Response.json({ received: true, result });
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Webhook handler failed";
+          return new Response(message, { status: 500 });
+        }
       },
     },
   },
