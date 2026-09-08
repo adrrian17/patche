@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "autofix": {
+      "source": "coderabbitai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/autofix/SKILL.md",
+      "computedHash": "421f9102c20fb1c91d87a10ca9bee2e91c7e632e644dfdd3dc013e53865df6c1"
+    },
     "better-auth-best-practices": {
       "source": "better-auth/skills",
       "sourceType": "github",
@@ -19,6 +25,12 @@
       "sourceType": "well-known",
       "computedHash": "34be4d1320b6de64dd98999b253960cb8bbd6921a0854ebd361d1506dfa6f506",
       "wellKnownDigest": "sha256:1602c48107604d925c3338071ca539d72f9af1df21ba5b6e8f1977c1668e32c5"
+    },
+    "code-review": {
+      "source": "coderabbitai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/code-review/SKILL.md",
+      "computedHash": "6d117c3f8797e0c770c6b00a646a07028f3440b5d8042e8f841e88ed1116788f"
     },
     "email-and-password-best-practices": {
       "source": "better-auth/skills",
