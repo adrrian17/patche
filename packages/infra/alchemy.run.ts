@@ -1,5 +1,6 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
+import { map as mapOutput } from "alchemy/Output";
 import { config } from "dotenv";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -7,22 +8,45 @@ import * as Effect from "effect/Effect";
 config({ path: "./.env" });
 config({ path: "../../apps/web/.env" });
 
-function createResources(stage: string) {
-  const stageHostname = stage.replaceAll("_", "-").toLowerCase();
-  const mediaHostname =
-    stage === "production"
-      ? "media.patche.mx"
-      : `media-${stageHostname}.patche.mx`;
-  const allowedOrigins =
-    stage === "production"
-      ? ["https://patche.mx"]
-      : ["https://patche.mx", "http://localhost:3001"];
+const productionMediaHostname = "media.patche.mx";
+
+function getR2PublicBaseUrl(publicDomain: string | undefined): string {
+  if (!publicDomain) {
+    throw new Error("R2 did not provide a public domain for the media bucket");
+  }
+  return `https://${publicDomain}`;
+}
+
+function createResources(stage: string, isLocal: boolean) {
+  const isProduction = stage === "production";
+
+  const allowedOrigins = isProduction
+    ? ["https://patche.mx"]
+    : ["https://patche.mx", "http://localhost:3001"];
+
   const db = Cloudflare.D1.Database("database", {
     migrations: "../../packages/db/src/migrations",
   });
-  const mediaBucket = Cloudflare.R2.Bucket("media", {
-    domains: [{ name: mediaHostname }],
-  });
+
+  const mediaBucket = Cloudflare.R2.Bucket(
+    "media",
+    isProduction
+      ? { domains: [{ name: productionMediaHostname }] }
+      : { publicAccess: true }
+  );
+
+  const mediaPublicBaseUrl = (() => {
+    if (isLocal) {
+      return Cloudflare.Worker.URL;
+    }
+    if (isProduction) {
+      return `https://${productionMediaHostname}`;
+    }
+    return mediaBucket.pipe(
+      Effect.map((bucket) => mapOutput(bucket.publicDomain, getR2PublicBaseUrl))
+    );
+  })();
+
   const digitalBucket = Cloudflare.R2.Bucket("digital", {
     cors: [
       {
@@ -32,6 +56,7 @@ function createResources(stage: string) {
       },
     ],
   });
+
   const web = Cloudflare.Website.Vite("web", {
     compatibility: {
       flags: ["nodejs_compat"],
@@ -49,7 +74,8 @@ function createResources(stage: string) {
         Effect.map((bucket) => bucket.bucketName)
       ),
       MEDIA_BUCKET: mediaBucket,
-      MEDIA_PUBLIC_BASE_URL: `https://${mediaHostname}`,
+      MEDIA_PUBLIC_BASE_URL: mediaPublicBaseUrl,
+      MEDIA_PUBLIC_PROXY: isLocal,
       R2_ACCESS_KEY_ID: Config.redacted("R2_ACCESS_KEY_ID"),
       R2_SECRET_ACCESS_KEY: Config.redacted("R2_SECRET_ACCESS_KEY"),
       STRIPE_SECRET_KEY: Config.redacted("STRIPE_SECRET_KEY"),
@@ -75,7 +101,8 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* stack() {
     const stage = yield* Alchemy.Stage;
-    const { web } = createResources(stage);
+    const providerMode = yield* Alchemy.ProviderMode.defaultProviderMode;
+    const { web } = createResources(stage, providerMode === "local");
     const webWorker = yield* web;
 
     return {

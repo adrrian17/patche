@@ -6,6 +6,7 @@ import {
 } from "@patche/storage";
 
 const storageDeleteAttempts = 3;
+const localMediaProxyPath = "/api/media";
 
 function getPresignConfig() {
   return {
@@ -39,7 +40,12 @@ export async function deleteStorageObjectWithRetry(
 }
 
 export function getMediaPublicBaseUrl(): string {
-  return env.MEDIA_PUBLIC_BASE_URL;
+  const baseUrl = env.MEDIA_PUBLIC_BASE_URL.replace(/\/$/u, "");
+  return env.MEDIA_PUBLIC_PROXY ? `${baseUrl}${localMediaProxyPath}` : baseUrl;
+}
+
+export function isLocalMediaProxyEnabled(): boolean {
+  return env.MEDIA_PUBLIC_PROXY;
 }
 
 export async function createDigitalPutUrl(
