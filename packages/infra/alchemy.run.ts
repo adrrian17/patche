@@ -19,10 +19,16 @@ function getR2PublicBaseUrl(publicDomain: string | undefined): string {
 
 function createResources(stage: string, isLocal: boolean) {
   const isProduction = stage === "production";
+  const stageHostname = stage.replaceAll("_", "-").toLowerCase();
+  const webHostname = isProduction ? "patche.mx" : `${stageHostname}.patche.mx`;
 
   const allowedOrigins = isProduction
     ? ["https://patche.mx"]
-    : ["https://patche.mx", "http://localhost:3001"];
+    : [
+        "https://patche.mx",
+        ...(isLocal ? [] : [`https://${webHostname}`]),
+        "http://localhost:3001",
+      ];
 
   const db = Cloudflare.D1.Database("database", {
     migrations: "../../packages/db/src/migrations",
@@ -64,6 +70,7 @@ function createResources(stage: string, isLocal: boolean) {
     dev: {
       port: 3001,
     },
+    domain: isLocal ? undefined : webHostname,
     env: {
       BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
       BETTER_AUTH_URL: Cloudflare.Worker.URL,
