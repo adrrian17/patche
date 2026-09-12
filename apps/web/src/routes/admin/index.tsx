@@ -41,7 +41,7 @@ function AdminDashboardPage() {
   });
   return (
     <>
-      <AdminPageHeader title="Buenos días" />
+      <AdminPageHeader title="Inicio" />
       <section
         aria-label="Indicadores"
         className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card grid gap-4 *:data-[slot=card]:bg-linear-to-t sm:grid-cols-2 lg:grid-cols-3"
