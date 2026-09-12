@@ -134,7 +134,7 @@ interface MetricCardProps {
 function MetricCard({ icon: Icon, label, value }: MetricCardProps) {
   return (
     <Card className="@container/card rounded-xl shadow-sm">
-      <CardHeader className="flex-row items-center justify-between gap-3 pb-2">
+      <CardHeader className="flex! flex-row items-center justify-between gap-3 pb-2">
         <CardDescription>{label}</CardDescription>
         <span className="bg-accent text-accent-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
           <Icon aria-hidden="true" className="size-4" />
