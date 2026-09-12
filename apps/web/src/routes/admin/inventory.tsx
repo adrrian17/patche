@@ -33,7 +33,7 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowDownToLineIcon } from "lucide-react";
+import { ArrowDownToLineIcon, HistoryIcon, PackageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -92,9 +92,12 @@ function InventoryPage() {
         eyebrow="Operación"
         title="Inventario"
       />
-      <Card>
+      <Card className="rounded-xl shadow-sm">
         <CardHeader>
-          <CardTitle className="font-serif text-xl">Existencias</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <PackageIcon aria-hidden="true" className="text-primary size-4" />
+            Existencias
+          </CardTitle>
           <CardDescription>Variantes físicas activas</CardDescription>
         </CardHeader>
         <CardContent>
@@ -140,9 +143,13 @@ function InventoryPage() {
         </CardContent>
       </Card>
       <div className="grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
-            <CardTitle className="font-serif text-xl">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <ArrowDownToLineIcon
+                aria-hidden="true"
+                className="text-primary size-4"
+              />
               Registrar movimiento
             </CardTitle>
           </CardHeader>
@@ -252,9 +259,10 @@ function InventoryPage() {
             </form>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
-            <CardTitle className="font-serif text-xl">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <HistoryIcon aria-hidden="true" className="text-primary size-4" />
               Movimientos recientes
             </CardTitle>
             <CardDescription>Últimos 50 registros</CardDescription>

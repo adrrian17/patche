@@ -1,6 +1,7 @@
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@patche/ui/components/card";
@@ -47,7 +48,7 @@ function AdminDashboardPage() {
       />
       <section
         aria-label="Indicadores"
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card grid gap-4 *:data-[slot=card]:bg-linear-to-t sm:grid-cols-2 lg:grid-cols-3"
       >
         <MetricCard
           icon={ReceiptTextIcon}
@@ -65,9 +66,13 @@ function AdminDashboardPage() {
           value={dashboard.data?.lowStockVariants.length}
         />
       </section>
-      <Card>
+      <Card className="rounded-xl shadow-sm">
         <CardHeader>
-          <CardTitle className="font-serif text-2xl">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <AlertTriangleIcon
+              aria-hidden="true"
+              className="text-primary size-4"
+            />
             Stock que pide atención
           </CardTitle>
         </CardHeader>
@@ -128,15 +133,17 @@ interface MetricCardProps {
 
 function MetricCard({ icon: Icon, label, value }: MetricCardProps) {
   return (
-    <Card>
+    <Card className="@container/card rounded-xl shadow-sm">
       <CardHeader className="flex-row items-center justify-between gap-3 pb-2">
-        <CardTitle className="text-muted-foreground text-sm font-medium">
-          {label}
-        </CardTitle>
-        <Icon aria-hidden="true" className="text-muted-foreground" />
+        <CardDescription>{label}</CardDescription>
+        <span className="bg-accent text-accent-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
+          <Icon aria-hidden="true" className="size-4" />
+        </span>
       </CardHeader>
       <CardContent>
-        <p className="font-serif text-4xl tabular-nums">{value ?? "—"}</p>
+        <p className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          {value ?? "—"}
+        </p>
       </CardContent>
     </Card>
   );

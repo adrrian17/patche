@@ -18,7 +18,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeftIcon,
+  CreditCardIcon,
   ExternalLinkIcon,
+  PackageIcon,
   PackageCheckIcon,
   RotateCcwIcon,
   TruckIcon,
@@ -136,9 +138,12 @@ function OrderDetailPage() {
         )}
       </section>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
-            <CardTitle className="font-serif text-xl">Artículos</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <PackageIcon aria-hidden="true" className="text-primary size-4" />
+              Artículos
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -192,9 +197,10 @@ function OrderDetailPage() {
           </CardContent>
         </Card>
         <div className="flex flex-col gap-6">
-          <Card>
+          <Card className="rounded-xl shadow-sm">
             <CardHeader>
-              <CardTitle className="font-serif text-xl">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <TruckIcon aria-hidden="true" className="text-primary size-4" />
                 Cliente y envío
               </CardTitle>
               <CardDescription>{data.customerEmail}</CardDescription>
@@ -222,9 +228,15 @@ function OrderDetailPage() {
               )}
             </CardContent>
           </Card>
-          <Card>
+          <Card className="rounded-xl shadow-sm">
             <CardHeader>
-              <CardTitle className="font-serif text-xl">Stripe</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <CreditCardIcon
+                  aria-hidden="true"
+                  className="text-primary size-4"
+                />
+                Stripe
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 font-mono text-xs">
               <p className="break-all">{data.order.stripeCheckoutSessionId}</p>

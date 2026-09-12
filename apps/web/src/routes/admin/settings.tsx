@@ -16,7 +16,7 @@ import { Input } from "@patche/ui/components/input";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { SaveIcon } from "lucide-react";
+import { SaveIcon, TruckIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -95,9 +95,12 @@ function ShippingForm({ shippingRateAmount }: { shippingRateAmount: number }) {
     },
   });
   return (
-    <Card className="max-w-xl">
+    <Card className="max-w-xl rounded-xl shadow-sm">
       <CardHeader>
-        <CardTitle className="font-serif text-xl">Tarifa de envío</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <TruckIcon aria-hidden="true" className="text-primary size-4" />
+          Tarifa de envío
+        </CardTitle>
         <CardDescription>
           Se cobra una vez cuando el checkout contiene al menos un producto
           físico.

@@ -24,7 +24,7 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, SaveIcon, TagsIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -84,9 +84,10 @@ function CategoriesPage() {
         title="Categorías"
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
-            <CardTitle className="font-serif text-xl">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <TagsIcon aria-hidden="true" className="text-primary size-4" />
               Categorías existentes
             </CardTitle>
             <CardDescription>
@@ -137,9 +138,10 @@ function CategoriesPage() {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
-            <CardTitle className="font-serif text-xl">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <PlusIcon aria-hidden="true" className="text-primary size-4" />
               Nueva categoría
             </CardTitle>
           </CardHeader>

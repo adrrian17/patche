@@ -30,6 +30,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArchiveIcon,
   ArrowLeftIcon,
+  FileTextIcon,
+  ImageIcon,
   ImagePlusIcon,
   PlusIcon,
   SaveIcon,
@@ -181,9 +183,9 @@ function ProductBasics({
     }
   }
   return (
-    <Card>
+    <Card className="rounded-xl shadow-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-serif text-xl">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
           Ficha <StatusBadge status={product.status} />
         </CardTitle>
         <CardDescription>
@@ -340,9 +342,12 @@ function MediaManager({ data }: { data: ProductData }) {
     },
   });
   return (
-    <Card>
+    <Card className="rounded-xl shadow-sm">
       <CardHeader>
-        <CardTitle className="font-serif text-xl">Imágenes</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <ImageIcon aria-hidden="true" className="text-primary size-4" />
+          Imágenes
+        </CardTitle>
         <CardDescription>
           AVIF, GIF, JPEG, PNG o WebP. Se publican desde R2.
         </CardDescription>
@@ -351,14 +356,23 @@ function MediaManager({ data }: { data: ProductData }) {
         {data.media.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {data.media.map((item) => (
-              <figure className="bg-muted overflow-hidden border" key={item.id}>
+              <figure
+                className="bg-muted overflow-hidden rounded-xl border shadow-sm"
+                key={item.id}
+              >
                 <img
                   alt={item.alt}
                   className="aspect-square w-full object-cover"
                   src={item.url}
                 />
-                <figcaption className="text-muted-foreground truncate px-2 py-1.5 text-xs">
-                  {item.alt || "Sin texto alternativo"}
+                <figcaption className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs">
+                  <ImageIcon
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0 text-sky-500"
+                  />
+                  <span className="truncate">
+                    {item.alt || "Sin texto alternativo"}
+                  </span>
                 </figcaption>
               </figure>
             ))}
@@ -445,7 +459,7 @@ function VariantManager({ data }: { data: ProductData }) {
   return (
     <section className="flex flex-col gap-5">
       <div>
-        <h2 className="font-serif text-2xl">Variantes</h2>
+        <h2 className="text-lg font-semibold">Variantes</h2>
         <p className="text-muted-foreground text-sm">
           Cada precio es un Price inmutable en Stripe.
         </p>
@@ -455,9 +469,12 @@ function VariantManager({ data }: { data: ProductData }) {
           <VariantCard item={item} key={item.id} productId={data.product.id} />
         ))}
       </div>
-      <Card>
+      <Card className="rounded-xl shadow-sm">
         <CardHeader>
-          <CardTitle className="font-serif text-xl">Nueva variante</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <PlusIcon aria-hidden="true" className="text-primary size-4" />
+            Nueva variante
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -664,7 +681,13 @@ function VariantCard({
     }
   }
   return (
-    <Card className={item.archivedAt ? "opacity-60" : undefined}>
+    <Card
+      className={
+        item.archivedAt
+          ? "rounded-xl opacity-60 shadow-sm"
+          : "rounded-xl shadow-sm"
+      }
+    >
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-3">
           <span>{item.name}</span>
@@ -762,9 +785,15 @@ function VariantCard({
                   type="file"
                 />
                 {item.digitalFileName && item.digitalFileSize ? (
-                  <FieldDescription>
-                    {item.digitalFileName} ·{" "}
-                    {formatFileSize(item.digitalFileSize)}
+                  <FieldDescription className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                    <FileTextIcon
+                      aria-hidden="true"
+                      className="size-4 shrink-0 text-red-500"
+                    />
+                    <span className="truncate">
+                      {item.digitalFileName} ·{" "}
+                      {formatFileSize(item.digitalFileSize)}
+                    </span>
                   </FieldDescription>
                 ) : (
                   <FieldDescription>

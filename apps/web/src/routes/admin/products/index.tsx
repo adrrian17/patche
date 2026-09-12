@@ -39,7 +39,7 @@ import { Textarea } from "@patche/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRightIcon, PlusIcon } from "lucide-react";
+import { ArrowRightIcon, PackageIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -131,9 +131,12 @@ function ProductsPage() {
         title="Productos"
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
-            <CardTitle className="font-serif text-xl">Catálogo</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <PackageIcon aria-hidden="true" className="text-primary size-4" />
+              Catálogo
+            </CardTitle>
             <CardDescription>
               {products.data?.length ?? 0} productos registrados
             </CardDescription>
@@ -214,9 +217,12 @@ function ProductsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
-            <CardTitle className="font-serif text-xl">Nuevo producto</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <PlusIcon aria-hidden="true" className="text-primary size-4" />
+              Nuevo producto
+            </CardTitle>
             <CardDescription>Stripe se sincroniza al guardar.</CardDescription>
           </CardHeader>
           <CardContent>
