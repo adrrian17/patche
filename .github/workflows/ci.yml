@@ -30,11 +30,11 @@ jobs:
       - name: Run lint and formatting checks
         run: bun run check
 
+      - name: Build workspace
+        run: bun run build
+
       - name: Run type checks
         run: bun run check-types
 
       - name: Run package tests
         run: bun test packages/payments packages/storage
-
-      - name: Build workspace
-        run: bun run build
