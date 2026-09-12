@@ -19,25 +19,24 @@ interface AppSidebarProps extends ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              className="h-auto data-[slot=sidebar-menu-button]:p-1.5!"
+              className="h-auto w-full hover:bg-transparent data-[slot=sidebar-menu-button]:p-0!"
               render={<Link to="/admin" />}
             >
-              <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-xl text-base font-bold">
-                P
-              </span>
-              <span className="grid leading-tight">
-                <span className="text-base font-bold tracking-tight">
-                  Patche
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  Administración
-                </span>
-              </span>
+              <img
+                alt="Patche"
+                className="h-16 w-full object-cover group-data-[collapsible=icon]:hidden"
+                src="/logo.png"
+              />
+              <img
+                alt="Patche"
+                className="hidden size-8 object-contain group-data-[collapsible=icon]:block"
+                src="/logo-icon.png"
+              />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
