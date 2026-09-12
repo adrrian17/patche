@@ -4,7 +4,7 @@ interface AdminPageHeaderProps {
   actions?: ReactNode;
   description?: string;
   eyebrow?: string;
-  title: string;
+  title: ReactNode;
 }
 
 export function AdminPageHeader({
@@ -21,7 +21,7 @@ export function AdminPageHeader({
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="font-sans text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
+        <h1 className="flex items-center gap-3 font-sans text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
           {title}
         </h1>
         {description ? (

@@ -1,4 +1,5 @@
 import { Badge } from "@patche/ui/components/badge";
+import { cn } from "cn";
 
 const labels = new Map([
   ["active", "Activo"],
@@ -14,8 +15,15 @@ const labels = new Map([
   ["unfulfilled", "Por preparar"],
 ]);
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({
+  className,
+  status,
+}: {
+  className?: string;
+  status: string;
+}) {
   let variant: "default" | "destructive" | "secondary" = "secondary";
+  let colorClassName = "";
   if (status === "failed" || status === "canceled") {
     variant = "destructive";
   } else if (
@@ -24,6 +32,13 @@ export function StatusBadge({ status }: { status: string }) {
     status === "delivered"
   ) {
     variant = "default";
+  } else if (status === "draft") {
+    colorClassName =
+      "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
   }
-  return <Badge variant={variant}>{labels.get(status) ?? status}</Badge>;
+  return (
+    <Badge className={cn(colorClassName, className)} variant={variant}>
+      {labels.get(status) ?? status}
+    </Badge>
+  );
 }

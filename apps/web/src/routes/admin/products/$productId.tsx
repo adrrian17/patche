@@ -93,7 +93,15 @@ function ProductDetailPage() {
           </Link>
         }
         eyebrow="Producto"
-        title={product.data.product.name}
+        title={
+          <>
+            {product.data.product.name}
+            <StatusBadge
+              className="px-3 py-1 text-sm"
+              status={product.data.product.status}
+            />
+          </>
+        }
       />
       <ProductBasics categories={categories.data ?? []} data={product.data} />
       <MediaManager data={product.data} />
@@ -191,7 +199,7 @@ function ProductBasics({
     <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          Ficha <StatusBadge status={product.status} />
+          Ficha
         </CardTitle>
         <CardDescription>
           Los cambios de nombre y estado también se envían a Stripe.
