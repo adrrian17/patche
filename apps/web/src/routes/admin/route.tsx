@@ -1,5 +1,6 @@
 import { SidebarInset, SidebarProvider } from "@patche/ui/components/sidebar";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { SiteHeader } from "@/components/admin/site-header";
@@ -16,6 +17,11 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   const { session } = Route.useRouteContext();
+
+  useEffect(() => {
+    document.body.classList.add("admin-shell");
+    return () => document.body.classList.remove("admin-shell");
+  }, []);
 
   return (
     <div className="admin-shell bg-background text-foreground min-h-svh min-w-0">
