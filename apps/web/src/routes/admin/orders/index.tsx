@@ -22,7 +22,11 @@ import {
 } from "@patche/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRightIcon, ReceiptTextIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  PackageSearchIcon,
+  ReceiptTextIcon,
+} from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
@@ -40,7 +44,7 @@ function OrdersPage() {
   });
   return (
     <>
-      <AdminPageHeader title="Órdenes" />
+      <AdminPageHeader icon={PackageSearchIcon} title="Órdenes" />
       <Card className="rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">

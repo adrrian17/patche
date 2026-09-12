@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangleIcon,
+  LayoutDashboardIcon,
   PackageCheckIcon,
   ReceiptTextIcon,
 } from "lucide-react";
@@ -41,7 +42,7 @@ function AdminDashboardPage() {
   });
   return (
     <>
-      <AdminPageHeader title="Inicio" />
+      <AdminPageHeader icon={LayoutDashboardIcon} title="Inicio" />
       <section
         aria-label="Indicadores"
         className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card grid gap-4 *:data-[slot=card]:bg-linear-to-t sm:grid-cols-2 lg:grid-cols-3"

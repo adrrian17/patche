@@ -1,9 +1,11 @@
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface AdminPageHeaderProps {
   actions?: ReactNode;
   description?: string;
   eyebrow?: string;
+  icon?: LucideIcon;
   title: ReactNode;
 }
 
@@ -11,6 +13,7 @@ export function AdminPageHeader({
   actions,
   description,
   eyebrow,
+  icon: Icon,
   title,
 }: AdminPageHeaderProps) {
   return (
@@ -22,6 +25,12 @@ export function AdminPageHeader({
           </p>
         ) : null}
         <h1 className="flex items-center gap-3 font-sans text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
+          {Icon ? (
+            <Icon
+              aria-hidden="true"
+              className="text-primary size-7 shrink-0 sm:size-8"
+            />
+          ) : null}
           {title}
         </h1>
         {description ? (

@@ -46,7 +46,12 @@ import { Textarea } from "@patche/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRightIcon, PackageIcon, PlusIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  NotebookTabsIcon,
+  PackageIcon,
+  PlusIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -108,6 +113,7 @@ function ProductsPage() {
     <>
       <AdminPageHeader
         actions={<NewProductDialog categories={categories.data ?? []} />}
+        icon={NotebookTabsIcon}
         title="Productos"
       />
       <Card className="rounded-xl shadow-sm">

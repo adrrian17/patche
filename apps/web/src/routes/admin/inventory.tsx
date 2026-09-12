@@ -33,7 +33,12 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowDownToLineIcon, HistoryIcon, PackageIcon } from "lucide-react";
+import {
+  ArrowDownToLineIcon,
+  BoxesIcon,
+  HistoryIcon,
+  PackageIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -93,7 +98,7 @@ function InventoryPage() {
   });
   return (
     <>
-      <AdminPageHeader title="Inventario" />
+      <AdminPageHeader icon={BoxesIcon} title="Inventario" />
       <Card className="rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">

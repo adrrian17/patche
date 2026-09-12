@@ -24,7 +24,13 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PlusIcon, SaveIcon, TagsIcon, Trash2Icon } from "lucide-react";
+import {
+  ListTreeIcon,
+  PlusIcon,
+  SaveIcon,
+  TagsIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -78,7 +84,7 @@ function CategoriesPage() {
   });
   return (
     <>
-      <AdminPageHeader title="Categorías" />
+      <AdminPageHeader icon={ListTreeIcon} title="Categorías" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <Card className="rounded-xl shadow-sm">
           <CardHeader>

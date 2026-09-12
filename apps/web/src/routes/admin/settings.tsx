@@ -16,7 +16,7 @@ import { Input } from "@patche/ui/components/input";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { SaveIcon, TruckIcon } from "lucide-react";
+import { SaveIcon, Settings2Icon, TruckIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -37,7 +37,7 @@ function SettingsPage() {
   });
   return (
     <>
-      <AdminPageHeader title="Ajustes" />
+      <AdminPageHeader icon={Settings2Icon} title="Ajustes" />
       {settings.isPending && (
         <p className="text-muted-foreground text-sm">Cargando ajustes…</p>
       )}
