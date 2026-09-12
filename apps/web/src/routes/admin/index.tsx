@@ -41,11 +41,7 @@ function AdminDashboardPage() {
   });
   return (
     <>
-      <AdminPageHeader
-        description="Una lectura rápida del trabajo que requiere atención hoy."
-        eyebrow="Mesa de trabajo"
-        title="Buenos días"
-      />
+      <AdminPageHeader title="Buenos días" />
       <section
         aria-label="Indicadores"
         className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card grid gap-4 *:data-[slot=card]:bg-linear-to-t sm:grid-cols-2 lg:grid-cols-3"

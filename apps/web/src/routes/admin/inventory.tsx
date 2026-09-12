@@ -87,11 +87,7 @@ function InventoryPage() {
   });
   return (
     <>
-      <AdminPageHeader
-        description="La existencia se calcula con el historial de movimientos. Nunca se edita directamente."
-        eyebrow="Operación"
-        title="Inventario"
-      />
+      <AdminPageHeader title="Inventario" />
       <Card className="rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">

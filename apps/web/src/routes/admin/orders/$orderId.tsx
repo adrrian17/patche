@@ -36,7 +36,7 @@ import {
 import { createDownloadUrl } from "@/functions/create-download-url";
 import { refundOrder } from "@/functions/refund-order";
 import { errorMessage } from "@/lib/errors";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/orders/$orderId")({
   component: OrderDetailPage,
@@ -104,7 +104,6 @@ function OrderDetailPage() {
             Órdenes
           </Link>
         }
-        description={`Creada ${formatDate(data.order.createdAt)} por ${data.customerName}.`}
         eyebrow={`Orden ${data.order.id}`}
         title={formatMoney(data.order.totalAmount)}
       />

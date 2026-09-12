@@ -37,11 +37,7 @@ function SettingsPage() {
   });
   return (
     <>
-      <AdminPageHeader
-        description="Valores globales que se aplican al checkout."
-        eyebrow="Tienda"
-        title="Ajustes"
-      />
+      <AdminPageHeader title="Ajustes" />
       {settings.isPending && (
         <p className="text-muted-foreground text-sm">Cargando ajustes…</p>
       )}

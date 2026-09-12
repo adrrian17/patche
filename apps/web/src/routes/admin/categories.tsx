@@ -78,11 +78,7 @@ function CategoriesPage() {
   });
   return (
     <>
-      <AdminPageHeader
-        description="Agrupa el catálogo sin imponer una jerarquía."
-        eyebrow="Catálogo"
-        title="Categorías"
-      />
+      <AdminPageHeader title="Categorías" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <Card className="rounded-xl shadow-sm">
           <CardHeader>

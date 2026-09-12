@@ -40,11 +40,7 @@ function OrdersPage() {
   });
   return (
     <>
-      <AdminPageHeader
-        description="Pagos, preparación y entrega en un solo historial."
-        eyebrow="Operación"
-        title="Órdenes"
-      />
+      <AdminPageHeader title="Órdenes" />
       <Card className="rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">

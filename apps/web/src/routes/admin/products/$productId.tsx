@@ -91,7 +91,6 @@ function ProductDetailPage() {
             Catálogo
           </Link>
         }
-        description="Edita la ficha, imágenes, variantes, precios y archivos digitales."
         eyebrow="Producto"
         title={product.data.product.name}
       />

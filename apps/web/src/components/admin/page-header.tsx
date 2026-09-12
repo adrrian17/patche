@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 interface AdminPageHeaderProps {
   actions?: ReactNode;
-  description: string;
+  description?: string;
   eyebrow?: string;
   title: string;
 }
@@ -24,9 +24,11 @@ export function AdminPageHeader({
         <h1 className="font-sans text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
           {title}
         </h1>
-        <p className="text-muted-foreground max-w-xl text-sm leading-6">
-          {description}
-        </p>
+        {description ? (
+          <p className="text-muted-foreground max-w-xl text-sm leading-6">
+            {description}
+          </p>
+        ) : null}
       </div>
       {actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}
     </header>

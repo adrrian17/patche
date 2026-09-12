@@ -125,11 +125,7 @@ function ProductsPage() {
 
   return (
     <>
-      <AdminPageHeader
-        description="Productos físicos y digitales, sus variantes y archivos."
-        eyebrow="Catálogo"
-        title="Productos"
-      />
+      <AdminPageHeader title="Productos" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <Card className="rounded-xl shadow-sm">
           <CardHeader>
