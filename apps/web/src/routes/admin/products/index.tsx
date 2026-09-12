@@ -58,6 +58,7 @@ import { createProduct } from "@/functions/catalog";
 import { listCategories } from "@/functions/categories";
 import { errorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
+import { productStatusLabels } from "@/lib/labels";
 
 const productSchema = z.object({
   categoryId: z.string(),
@@ -336,7 +337,12 @@ function NewProductDialog({
                     }
                   >
                     <SelectTrigger className="w-full" id="new-product-category">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value: string) =>
+                          categories.find((item) => item.id === value)?.name ??
+                          "Sin categoría"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -367,7 +373,11 @@ function NewProductDialog({
                     }
                   >
                     <SelectTrigger className="w-full" id="new-product-status">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value: keyof typeof productStatusLabels) =>
+                          productStatusLabels[value]
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>

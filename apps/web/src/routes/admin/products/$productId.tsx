@@ -54,6 +54,7 @@ import { confirmDigitalUpload } from "@/functions/confirm-digital-upload";
 import { createDigitalUploadUrl } from "@/functions/create-digital-upload-url";
 import { errorMessage } from "@/lib/errors";
 import { formatFileSize, formatMoney } from "@/lib/format";
+import { productStatusLabels } from "@/lib/labels";
 
 export const Route = createFileRoute("/admin/products/$productId")({
   component: ProductDetailPage,
@@ -124,6 +125,11 @@ const newVariantDefaults: NewVariantValues = {
   priceAmount: 0,
   sku: "",
 };
+
+const variantKindLabels = {
+  digital: "Digital",
+  physical: "Físico",
+} satisfies Record<string, string>;
 
 function ProductBasics({
   categories,
@@ -236,7 +242,12 @@ function ProductBasics({
                     }
                   >
                     <SelectTrigger className="w-full" id="product-category">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value: string) =>
+                          categories.find((item) => item.id === value)?.name ??
+                          "Sin categoría"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -265,7 +276,11 @@ function ProductBasics({
                     }
                   >
                     <SelectTrigger className="w-full" id="product-status">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value: keyof typeof productStatusLabels) =>
+                          productStatusLabels[value]
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -524,7 +539,11 @@ function VariantManager({ data }: { data: ProductData }) {
                       }
                     >
                       <SelectTrigger className="w-full" id="variant-kind">
-                        <SelectValue />
+                        <SelectValue>
+                          {(value: keyof typeof variantKindLabels) =>
+                            variantKindLabels[value]
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>

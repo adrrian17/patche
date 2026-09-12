@@ -54,6 +54,12 @@ const movementDefaults: MovementValues = {
   variantId: "",
 };
 
+const movementReasonLabels = {
+  adjusted: "Ajuste",
+  received: "Recepción",
+  returned: "Devolución",
+} satisfies Record<string, string>;
+
 export const Route = createFileRoute("/admin/inventory")({
   component: InventoryPage,
 });
@@ -170,7 +176,16 @@ function InventoryPage() {
                         }
                       >
                         <SelectTrigger className="w-full" id="movement-variant">
-                          <SelectValue placeholder="Selecciona" />
+                          <SelectValue placeholder="Selecciona">
+                            {(value: string) => {
+                              const variant = inventory.data?.variants.find(
+                                (item) => item.id === value
+                              );
+                              return variant
+                                ? `${variant.productName} · ${variant.variantName}`
+                                : "Selecciona";
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
@@ -200,7 +215,11 @@ function InventoryPage() {
                         }}
                       >
                         <SelectTrigger className="w-full" id="movement-reason">
-                          <SelectValue />
+                          <SelectValue>
+                            {(value: keyof typeof movementReasonLabels) =>
+                              movementReasonLabels[value]
+                            }
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
