@@ -23,11 +23,11 @@ function AdminLayout() {
         <AppSidebar collapsible="icon" user={session.user} />
         <SidebarInset className="min-w-0">
           <SiteHeader />
-          <main className="min-w-0 px-5 py-8 sm:px-8 lg:px-10">
+          <div className="min-w-0 px-5 py-8 sm:px-8 lg:px-10">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
               <Outlet />
             </div>
-          </main>
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </div>

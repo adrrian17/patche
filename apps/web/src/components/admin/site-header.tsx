@@ -16,9 +16,10 @@ export function SiteHeader() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const current = adminLinks.find(
-    (link) => link.to !== "/admin" && isAdminLinkActive(pathname, link.to)
+  const current = adminLinks.find((link) =>
+    isAdminLinkActive(pathname, link.to)
   );
+  const isRoot = current?.to === "/admin";
 
   return (
     <header className="bg-background/80 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b backdrop-blur">
@@ -31,15 +32,15 @@ export function SiteHeader() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              {current ? (
-                <BreadcrumbLink render={<Link to="/admin" />}>
-                  Administración
-                </BreadcrumbLink>
+              {isRoot ? (
+                <BreadcrumbPage>Inicio</BreadcrumbPage>
               ) : (
-                <BreadcrumbPage>Administración</BreadcrumbPage>
+                <BreadcrumbLink render={<Link to="/admin" />}>
+                  Inicio
+                </BreadcrumbLink>
               )}
             </BreadcrumbItem>
-            {current ? (
+            {current && !isRoot ? (
               <>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>

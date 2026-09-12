@@ -1,7 +1,8 @@
 import { env } from "@patche/env/server";
 import { processStripeEvent, verifyWebhookEvent } from "@patche/payments";
 import { createFileRoute } from "@tanstack/react-router";
-import { useLogger as getServerLogger } from "evlog/nitro/v3";
+import type { AuditableLogger } from "evlog";
+import { useRequest as getRequest } from "nitro/context";
 
 import { createWebhookStore, getStripeClient } from "@/lib/payments.server";
 
@@ -30,11 +31,11 @@ export const Route = createFileRoute("/api/stripe/webhook")({
           const result = await processStripeEvent(event, createWebhookStore());
           return Response.json({ received: true, result });
         } catch (error) {
-          // SAFETY: TanStack Start exposes the Nitro request on this handler context.
-          const logger = getServerLogger({
-            req: request,
-          } as Parameters<typeof getServerLogger>[0]);
-          logger.error(
+          // SAFETY: evlog attaches an AuditableLogger to the Nitro request context.
+          const logger = getRequest().context?.log as
+            | AuditableLogger
+            | undefined;
+          logger?.error(
             error instanceof Error ? error : new Error(String(error)),
             { step: "stripe_webhook" }
           );

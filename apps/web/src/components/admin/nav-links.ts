@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 export const adminLinks = [
-  { icon: LayoutDashboardIcon, label: "Resumen", to: "/admin" },
+  { icon: LayoutDashboardIcon, label: "Inicio", to: "/admin" },
   { icon: NotebookTabsIcon, label: "Productos", to: "/admin/products" },
   { icon: BoxesIcon, label: "Inventario", to: "/admin/inventory" },
   { icon: PackageSearchIcon, label: "Órdenes", to: "/admin/orders" },
@@ -17,5 +17,7 @@ export const adminLinks = [
 ] as const;
 
 export function isAdminLinkActive(pathname: string, to: string) {
-  return to === "/admin" ? pathname === "/admin" : pathname.startsWith(to);
+  return to === "/admin"
+    ? pathname === "/admin"
+    : pathname === to || pathname.startsWith(`${to}/`);
 }
