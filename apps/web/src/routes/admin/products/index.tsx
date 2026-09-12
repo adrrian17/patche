@@ -91,9 +91,6 @@ export const Route = createFileRoute("/admin/products/")({
 });
 
 function ProductsPage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
   const products = useQuery({
     queryFn: () => listAdminProducts(),
     queryKey: ["admin", "products"],
@@ -102,6 +99,128 @@ function ProductsPage() {
     queryFn: () => listCategories(),
     queryKey: ["admin", "categories"],
   });
+
+  return (
+    <>
+      <AdminPageHeader
+        actions={<NewProductDialog categories={categories.data ?? []} />}
+        title="Productos"
+      />
+      <Card className="rounded-xl shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <PackageIcon aria-hidden="true" className="text-primary size-4" />
+            Catálogo
+          </CardTitle>
+          <CardDescription>
+            {products.data?.length ?? 0} productos registrados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {products.isPending && (
+            <p className="text-muted-foreground text-sm">Cargando productos…</p>
+          )}
+          {products.isError && (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-destructive text-sm">
+                No se pudieron cargar los productos.
+              </p>
+              <Button
+                onClick={async () => await products.refetch()}
+                size="sm"
+                variant="outline"
+              >
+                Reintentar
+              </Button>
+            </div>
+          )}
+          {products.isSuccess && products.data.length > 0 && (
+            <ProductsTable products={products.data} />
+          )}
+          {products.isSuccess && products.data.length === 0 && (
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>Aún no hay productos</EmptyTitle>
+                <EmptyDescription>
+                  Usa el botón de arriba para crear el primero.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+type ProductListItem = Awaited<ReturnType<typeof listAdminProducts>>[number];
+
+function ProductsTable({ products }: { products: ProductListItem[] }) {
+  const navigate = useNavigate();
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Producto</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead>Creado</TableHead>
+          <TableHead>
+            <span className="sr-only">Abrir</span>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {products.map((item) => (
+          <TableRow
+            className="cursor-pointer"
+            key={item.id}
+            onClick={() =>
+              navigate({
+                params: { productId: item.id },
+                to: "/admin/products/$productId",
+              })
+            }
+          >
+            <TableCell>
+              <span className="font-medium">{item.name}</span>
+              <span className="text-muted-foreground block font-mono text-xs">
+                /{item.slug}
+              </span>
+            </TableCell>
+            <TableCell>
+              <StatusBadge status={item.status} />
+            </TableCell>
+            <TableCell>{formatDate(item.createdAt)}</TableCell>
+            <TableCell className="text-right">
+              <Link
+                className={buttonVariants({
+                  size: "icon-sm",
+                  variant: "ghost",
+                })}
+                onClick={(event) => event.stopPropagation()}
+                params={{ productId: item.id }}
+                to="/admin/products/$productId"
+              >
+                <ArrowRightIcon />
+                <span className="sr-only">Editar {item.name}</span>
+              </Link>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function NewProductDialog({
+  categories,
+}: {
+  categories: { id: string; name: string }[];
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
   const form = useForm({
     defaultValues: newProductDefaults,
     onSubmit: async ({ value }) => {
@@ -135,256 +254,147 @@ function ProductsPage() {
   });
 
   return (
-    <>
-      <AdminPageHeader
-        actions={
-          <Dialog onOpenChange={setOpen} open={open}>
-            <DialogTrigger render={<Button />}>
-              <PlusIcon data-icon="inline-start" />
-              Nuevo producto
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Nuevo producto</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  form.handleSubmit();
-                }}
-              >
-                <FieldGroup>
-                  <form.Field name="name">
-                    {(field) => (
-                      <Field data-invalid={field.state.meta.errors.length > 0}>
-                        <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
-                        <Input
-                          aria-invalid={field.state.meta.errors.length > 0}
-                          id={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                        />
-                        {field.state.meta.errors.map((error) => (
-                          <FieldError key={error?.message}>
-                            {error?.message}
-                          </FieldError>
-                        ))}
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="slug">
-                    {(field) => (
-                      <Field data-invalid={field.state.meta.errors.length > 0}>
-                        <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
-                        <Input
-                          aria-invalid={field.state.meta.errors.length > 0}
-                          id={field.name}
-                          placeholder="agenda-semanal"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                        />
-                        {field.state.meta.errors.map((error) => (
-                          <FieldError key={error?.message}>
-                            {error?.message}
-                          </FieldError>
-                        ))}
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="description">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                          Descripción
-                        </FieldLabel>
-                        <Textarea
-                          id={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="categoryId">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor="new-product-category">
-                          Categoría
-                        </FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) =>
-                            field.handleChange(value ?? "none")
-                          }
-                        >
-                          <SelectTrigger
-                            className="w-full"
-                            id="new-product-category"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectItem value="none">
-                                Sin categoría
-                              </SelectItem>
-                              {categories.data?.map((item) => (
-                                <SelectItem key={item.id} value={item.id}>
-                                  {item.name}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="status">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor="new-product-status">
-                          Estado inicial
-                        </FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) =>
-                            field.handleChange(
-                              value === "active" ? "active" : "draft"
-                            )
-                          }
-                        >
-                          <SelectTrigger
-                            className="w-full"
-                            id="new-product-status"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectItem value="draft">Borrador</SelectItem>
-                              <SelectItem value="active">Activo</SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Subscribe
-                    selector={(state) => ({
-                      canSubmit: state.canSubmit,
-                      isSubmitting: state.isSubmitting,
-                    })}
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button />}>
+        <PlusIcon data-icon="inline-start" />
+        Nuevo producto
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nuevo producto</DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            form.handleSubmit();
+          }}
+        >
+          <FieldGroup>
+            <form.Field name="name">
+              {(field) => (
+                <Field data-invalid={field.state.meta.errors.length > 0}>
+                  <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
+                  <Input
+                    aria-invalid={field.state.meta.errors.length > 0}
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                  {field.state.meta.errors.map((error) => (
+                    <FieldError key={error?.message}>
+                      {error?.message}
+                    </FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field name="slug">
+              {(field) => (
+                <Field data-invalid={field.state.meta.errors.length > 0}>
+                  <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
+                  <Input
+                    aria-invalid={field.state.meta.errors.length > 0}
+                    id={field.name}
+                    placeholder="agenda-semanal"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                  {field.state.meta.errors.map((error) => (
+                    <FieldError key={error?.message}>
+                      {error?.message}
+                    </FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field name="description">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Descripción</FieldLabel>
+                  <Textarea
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+            <form.Field name="categoryId">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="new-product-category">
+                    Categoría
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) =>
+                      field.handleChange(value ?? "none")
+                    }
                   >
-                    {({ canSubmit, isSubmitting }) => (
-                      <Button
-                        disabled={!canSubmit || isSubmitting}
-                        type="submit"
-                      >
-                        <PlusIcon data-icon="inline-start" />
-                        {isSubmitting ? "Creando…" : "Crear producto"}
-                      </Button>
-                    )}
-                  </form.Subscribe>
-                </FieldGroup>
-              </form>
-            </DialogContent>
-          </Dialog>
-        }
-        title="Productos"
-      />
-      <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <PackageIcon aria-hidden="true" className="text-primary size-4" />
-            Catálogo
-          </CardTitle>
-          <CardDescription>
-            {products.data?.length ?? 0} productos registrados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {products.isPending && (
-            <p className="text-muted-foreground text-sm">Cargando productos…</p>
-          )}
-          {products.isError && (
-            <div className="flex flex-col items-start gap-3">
-              <p className="text-destructive text-sm">
-                No se pudieron cargar los productos.
-              </p>
-              <Button
-                onClick={async () => await products.refetch()}
-                size="sm"
-                variant="outline"
-              >
-                Reintentar
-              </Button>
-            </div>
-          )}
-          {products.isSuccess && products.data.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Producto</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Creado</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Abrir</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.data.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-muted-foreground block font-mono text-xs">
-                        /{item.slug}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={item.status} />
-                    </TableCell>
-                    <TableCell>{formatDate(item.createdAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <Link
-                        className={buttonVariants({
-                          size: "icon-sm",
-                          variant: "ghost",
-                        })}
-                        params={{ productId: item.id }}
-                        to="/admin/products/$productId"
-                      >
-                        <ArrowRightIcon />
-                        <span className="sr-only">Editar {item.name}</span>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          {products.isSuccess && products.data.length === 0 && (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>Aún no hay productos</EmptyTitle>
-                <EmptyDescription>
-                  Usa el botón de arriba para crear el primero.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
-        </CardContent>
-      </Card>
-    </>
+                    <SelectTrigger className="w-full" id="new-product-category">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="none">Sin categoría</SelectItem>
+                        {categories.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
+            <form.Field name="status">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="new-product-status">
+                    Estado inicial
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) =>
+                      field.handleChange(
+                        value === "active" ? "active" : "draft"
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full" id="new-product-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="draft">Borrador</SelectItem>
+                        <SelectItem value="active">Activo</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
+            <form.Subscribe
+              selector={(state) => ({
+                canSubmit: state.canSubmit,
+                isSubmitting: state.isSubmitting,
+              })}
+            >
+              {({ canSubmit, isSubmitting }) => (
+                <Button disabled={!canSubmit || isSubmitting} type="submit">
+                  <PlusIcon data-icon="inline-start" />
+                  {isSubmitting ? "Creando…" : "Crear producto"}
+                </Button>
+              )}
+            </form.Subscribe>
+          </FieldGroup>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
