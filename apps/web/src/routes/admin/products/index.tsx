@@ -100,6 +100,9 @@ function ProductsPage() {
     queryFn: () => listCategories(),
     queryKey: ["admin", "categories"],
   });
+  const productCount = products.data?.length ?? 0;
+  const productSummary =
+    productCount === 1 ? "producto registrado" : "productos registrados";
 
   return (
     <>
@@ -114,7 +117,7 @@ function ProductsPage() {
             Catálogo
           </CardTitle>
           <CardDescription>
-            {products.data?.length ?? 0} productos registrados
+            {productCount} {productSummary}
           </CardDescription>
         </CardHeader>
         <CardContent>
