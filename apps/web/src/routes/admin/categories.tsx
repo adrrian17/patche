@@ -45,10 +45,6 @@ import { errorMessage } from "@/lib/errors";
 
 const categorySchema = z.object({
   name: z.string().trim().min(1, "Escribe un nombre"),
-  slug: z
-    .string()
-    .trim()
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u, "Usa minúsculas, números y guiones"),
 });
 
 export const Route = createFileRoute("/admin/categories")({
@@ -62,7 +58,7 @@ function CategoriesPage() {
     queryKey: ["admin", "categories"],
   });
   const form = useForm({
-    defaultValues: { name: "", slug: "" },
+    defaultValues: { name: "" },
     onSubmit: async ({ value }) => {
       try {
         await createCategory({ data: value });
@@ -175,26 +171,6 @@ function CategoriesPage() {
                     </Field>
                   )}
                 </form.Field>
-                <form.Field name="slug">
-                  {(field) => (
-                    <Field data-invalid={field.state.meta.errors.length > 0}>
-                      <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
-                      <Input
-                        aria-invalid={field.state.meta.errors.length > 0}
-                        id={field.name}
-                        value={field.state.value}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <FieldError key={error?.message}>
-                          {error?.message}
-                        </FieldError>
-                      ))}
-                    </Field>
-                  )}
-                </form.Field>
                 <Button type="submit">
                   <PlusIcon data-icon="inline-start" />
                   Crear categoría
@@ -215,7 +191,7 @@ interface CategoryRowProps {
 
 function CategoryRow({ item, queryClient }: CategoryRowProps) {
   const form = useForm({
-    defaultValues: { name: item.name, slug: item.slug },
+    defaultValues: { name: item.name },
     onSubmit: async ({ value }) => {
       try {
         await updateCategory({ data: { id: item.id, ...value } });
@@ -264,16 +240,7 @@ function CategoryRow({ item, queryClient }: CategoryRowProps) {
         </form.Field>
       </TableCell>
       <TableCell>
-        <form.Field name="slug">
-          {(field) => (
-            <Input
-              aria-label={`Slug de ${item.name}`}
-              className="font-mono"
-              value={field.state.value}
-              onChange={(event) => field.handleChange(event.target.value)}
-            />
-          )}
-        </form.Field>
+        <span className="font-mono text-sm">/{item.slug}</span>
       </TableCell>
       <TableCell>
         <div className="flex justify-end gap-1">

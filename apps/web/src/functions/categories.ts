@@ -4,17 +4,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { uniqueSlug } from "@/lib/slug";
 import { adminMiddleware } from "@/middleware/admin";
 
 const idSchema = z.string().min(1).max(32);
 const categorySchema = z.object({
   name: z.string().trim().min(1).max(100),
-  slug: z
-    .string()
-    .trim()
-    .min(1)
-    .max(100)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u),
 });
 
 export const listCategories = createServerFn({ method: "GET" })
@@ -28,9 +23,18 @@ export const createCategory = createServerFn({ method: "POST" })
   .middleware([adminMiddleware])
   .validator(categorySchema)
   .handler(async ({ data }) => {
-    const created = await createDb()
+    const db = createDb();
+    const slug = await uniqueSlug(data.name, async (candidate) => {
+      const matchingCategory = await db
+        .select({ id: category.id })
+        .from(category)
+        .where(eq(category.slug, candidate))
+        .get();
+      return Boolean(matchingCategory);
+    });
+    const created = await db
       .insert(category)
-      .values(data)
+      .values({ ...data, slug })
       .returning()
       .get();
     if (!created) {
@@ -45,7 +49,7 @@ export const updateCategory = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const updated = await createDb()
       .update(category)
-      .set({ name: data.name, slug: data.slug })
+      .set({ name: data.name })
       .where(eq(category.id, data.id))
       .returning()
       .get();

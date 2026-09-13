@@ -69,10 +69,6 @@ const productSchema = z.object({
   categoryId: z.string(),
   description: z.string().max(10_000),
   name: z.string().trim().min(1, "Escribe un nombre").max(160),
-  slug: z
-    .string()
-    .trim()
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u, "Usa minúsculas, números y guiones"),
   status: z.enum(["draft", "active"]),
 });
 
@@ -80,7 +76,6 @@ interface NewProductValues {
   categoryId: string;
   description: string;
   name: string;
-  slug: string;
   status: "active" | "draft";
 }
 
@@ -88,7 +83,6 @@ const newProductDefaults: NewProductValues = {
   categoryId: "none",
   description: "",
   name: "",
-  slug: "",
   status: "draft",
 };
 
@@ -288,26 +282,6 @@ function NewProductDialog({
                   <Input
                     aria-invalid={field.state.meta.errors.length > 0}
                     id={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  />
-                  {field.state.meta.errors.map((error) => (
-                    <FieldError key={error?.message}>
-                      {error?.message}
-                    </FieldError>
-                  ))}
-                </Field>
-              )}
-            </form.Field>
-            <form.Field name="slug">
-              {(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
-                  <Input
-                    aria-invalid={field.state.meta.errors.length > 0}
-                    id={field.name}
-                    placeholder="agenda-semanal"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}

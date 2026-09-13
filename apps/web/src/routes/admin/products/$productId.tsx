@@ -155,7 +155,6 @@ function ProductBasics({
       categoryId: product.categoryId ?? "none",
       description: product.description,
       name: product.name,
-      slug: product.slug,
       status: initialStatus,
     },
     onSubmit: async ({ value }) => {
@@ -226,19 +225,15 @@ function ProductBasics({
                 </Field>
               )}
             </form.Field>
-            <form.Field name="slug">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>Slug</FieldLabel>
-                  <Input
-                    className="font-mono"
-                    id={field.name}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
+            <Field>
+              <FieldLabel>Slug</FieldLabel>
+              <p className="text-muted-foreground font-mono text-sm">
+                /{product.slug}
+              </p>
+              <FieldDescription>
+                Se genera automáticamente y se conserva al cambiar el nombre.
+              </FieldDescription>
+            </Field>
             <form.Field name="categoryId">
               {(field) => (
                 <Field>

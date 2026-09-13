@@ -10,16 +10,11 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getStripeClient } from "@/lib/payments.server";
+import { uniqueSlug } from "@/lib/slug";
 import { adminMiddleware } from "@/middleware/admin";
 
 const idSchema = z.string().min(1).max(32);
 const nameSchema = z.string().trim().min(1).max(160);
-const slugSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(160)
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u);
 const priceSchema = z.number().int().min(0).max(100_000_000);
 const productNotFoundMessage = "Product no encontrado";
 const variantNotFoundMessage = "Variant no encontrada";
@@ -31,26 +26,35 @@ export const createProduct = createServerFn({ method: "POST" })
       categoryId: idSchema.nullable().default(null),
       description: z.string().trim().max(10_000).default(""),
       name: nameSchema,
-      slug: slugSchema,
       status: z.enum(productStatuses).default("draft"),
     })
   )
   .handler(async ({ data }) => {
     const db = createDb();
     const stripe = getStripeClient();
-    const stripeProduct = await stripe.products.create(
-      {
-        active: data.status === "active",
-        description: data.description || undefined,
-        name: data.name,
-      },
-      { idempotencyKey: `product:create:${crypto.randomUUID()}` }
-    );
+    const [slug, stripeProduct] = await Promise.all([
+      uniqueSlug(data.name, async (candidate) => {
+        const matchingProduct = await db
+          .select({ id: product.id })
+          .from(product)
+          .where(eq(product.slug, candidate))
+          .get();
+        return Boolean(matchingProduct);
+      }),
+      stripe.products.create(
+        {
+          active: data.status === "active",
+          description: data.description || undefined,
+          name: data.name,
+        },
+        { idempotencyKey: `product:create:${crypto.randomUUID()}` }
+      ),
+    ]);
 
     try {
       const products = await db
         .insert(product)
-        .values({ ...data, stripeProductId: stripeProduct.id })
+        .values({ ...data, slug, stripeProductId: stripeProduct.id })
         .returning();
       const [createdProduct] = products;
       if (!createdProduct) {
@@ -71,7 +75,6 @@ export const updateProduct = createServerFn({ method: "POST" })
       description: z.string().trim().max(10_000),
       id: idSchema,
       name: nameSchema,
-      slug: slugSchema,
       status: z.enum(["draft", "active"]),
     })
   )
@@ -91,7 +94,7 @@ export const updateProduct = createServerFn({ method: "POST" })
       categoryId: data.categoryId,
       description: data.description,
       name: data.name,
-      slug: data.slug,
+      slug: current.slug,
       status: data.status,
     };
     await db.update(product).set(next).where(eq(product.id, data.id));
