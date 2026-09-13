@@ -1,0 +1,3 @@
+# The database is the catalog source of truth; Stripe mirrors it synchronously
+
+Stripe offers its own Products and Prices, so a reader may assume the catalog lives there. We decided the Drizzle/D1 schema owns Products and Variants, and every admin save creates or updates the matching Stripe Product and Price in the same request (failure aborts the save). Since Stripe Prices are immutable, a price change creates a new Price and archives the old one; the Variant always points at the current one. We chose this over Stripe-as-truth because inventory, Kind, Media, and Digital Files have no home in Stripe, and over async sync because a single Admin at low volume benefits more from an immediate, visible error than from a queue.

@@ -3,6 +3,7 @@ import * as schema from "@patche/db/schema/auth";
 import { env } from "@patche/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin } from "better-auth/plugins/admin";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 export function createAuth() {
@@ -17,7 +18,10 @@ export function createAuth() {
     emailAndPassword: {
       enabled: true,
     },
-    plugins: [tanstackStartCookies()],
+    plugins: [
+      admin({ adminRoles: ["admin"], defaultRole: "user" }),
+      tanstackStartCookies(),
+    ],
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [env.BETTER_AUTH_URL],
   });

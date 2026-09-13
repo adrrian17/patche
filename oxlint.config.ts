@@ -37,6 +37,12 @@ export default defineConfig({
       },
     },
     {
+      files: ["packages/db/src/schema/**/*.ts"],
+      rules: {
+        "sort-keys": "off",
+      },
+    },
+    {
       files: ["apps/web/src/routes/**/*.{ts,tsx}"],
       rules: {
         "func-style": "off",

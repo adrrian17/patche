@@ -1,6 +1,7 @@
 {
   "extends": "@patche/config/tsconfig.base.json",
   "compilerOptions": {
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "types": ["node", "@cloudflare/workers-types", "vite/client"]
   }
 }

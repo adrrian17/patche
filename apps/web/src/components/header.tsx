@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 
 import UserMenu from "./user-menu";
 
@@ -8,6 +8,12 @@ const links = [
 ] as const;
 
 function Header() {
+  const isAdmin = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/admin"),
+  });
+  if (isAdmin) {
+    return null;
+  }
   return (
     <div>
       <div className="flex flex-row items-center justify-between px-2 py-1">
@@ -22,7 +28,7 @@ function Header() {
           <UserMenu />
         </div>
       </div>
-      <hr />
+      <div className="border-b" />
     </div>
   );
 }

@@ -1,1 +1,54 @@
 @import "@patche/ui/globals.css";
+
+@theme inline {
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+  body {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--border) 28%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--border) 22%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 28px 28px;
+  }
+}
+
+.admin-shell {
+  --background: oklch(0.968 0.003 240);
+  --foreground: oklch(0.22 0.012 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.012 240);
+  --primary: oklch(0.6 0.11 182);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.004 240);
+  --secondary-foreground: oklch(0.3 0.012 240);
+  --muted: oklch(0.955 0.004 240);
+  --muted-foreground: oklch(0.53 0.014 240);
+  --accent: oklch(0.955 0.028 182);
+  --accent-foreground: oklch(0.48 0.09 182);
+  --border: oklch(0.91 0.005 240);
+  --input: oklch(0.91 0.005 240);
+  --ring: oklch(0.6 0.11 182);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.22 0.012 240);
+  --sidebar-primary: oklch(0.6 0.11 182);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.955 0.028 182);
+  --sidebar-accent-foreground: oklch(0.48 0.09 182);
+  --sidebar-border: oklch(0.91 0.005 240);
+  --sidebar-ring: oklch(0.6 0.11 182);
+}
+
+.admin-shell body,
+body:has(.admin-shell) {
+  background-image: none;
+}
