@@ -6,7 +6,8 @@
     "check-types": "tsgo --noEmit",
     "dev": "alchemy dev",
     "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy"
+    "destroy": "alchemy destroy",
+    "setup:github": "alchemy deploy github.run.ts --stage production"
   },
   "dependencies": {
     "dotenv": "catalog:",

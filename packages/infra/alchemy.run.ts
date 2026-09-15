@@ -1,9 +1,11 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
-import { map as mapOutput } from "alchemy/Output";
+import * as GitHub from "alchemy/GitHub";
+import { interpolate, map as mapOutput } from "alchemy/Output";
 import { config } from "dotenv";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
 config({ path: "./.env" });
 config({ path: "../../apps/web/.env" });
@@ -103,7 +105,7 @@ export type WebEnv = Cloudflare.InferEnv<
 export default Alchemy.Stack(
   "patche",
   {
-    providers: Cloudflare.providers(),
+    providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
     state: Cloudflare.state(),
   },
   Effect.gen(function* stack() {
@@ -111,6 +113,22 @@ export default Alchemy.Stack(
     const providerMode = yield* Alchemy.ProviderMode.defaultProviderMode;
     const { web } = createResources(stage, providerMode === "local");
     const webWorker = yield* web;
+    const github = yield* GitHub.GitHubEnv;
+
+    if (github?.pr) {
+      yield* GitHub.Comment("preview-comment", {
+        body: interpolate`
+          ## Preview disponible
+
+          URL: ${webWorker.url}
+
+          Commit: ${github.sha.slice(0, 7)}
+        `,
+        issueNumber: github.pr,
+        owner: github.owner,
+        repository: github.repository,
+      });
+    }
 
     return {
       web: webWorker.url,

@@ -91,6 +91,48 @@ bunx alchemy deploy --stage production
 
 Do not destroy a stage until its name and resources have been inspected.
 
+### GitHub deployments
+
+The CI workflow deploys an isolated `pr-<number>` stage when a pull request is opened or updated. It removes that stage when the pull request is closed. A push to `main` deploys the `production` stage after the quality checks pass.
+
+The infrastructure bootstrap creates `preview` and `production` environments in GitHub, restricts production deployments to `main`, and installs the Cloudflare deployment credentials. First configure an Alchemy profile whose Cloudflare credential has `API Tokens > Write`:
+
+```bash
+cd packages/infra
+bunx alchemy login github.run.ts --profile admin --configure
+cd ../..
+ALCHEMY_PROFILE=admin bun run setup:github
+```
+
+Review the plan before approving the bootstrap. Run it again to rotate the CI token or update its permissions.
+
+Add these application secrets to both GitHub environments, using test credentials for previews and live credentials for production:
+
+```text
+BETTER_AUTH_SECRET
+R2_ACCESS_KEY_ID
+R2_SECRET_ACCESS_KEY
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+```
+
+Pull requests from forks run the quality checks but do not receive deployment credentials or create previews.
+
+The Cloudflare API token used by CI needs these account permissions:
+
+```text
+Workers Scripts Write
+Workers R2 Storage Write
+D1 Write
+Account Settings Write
+Secrets Store Write
+Zone Read
+```
+
+The bootstrap does not install the application secrets because preview and production must use different values.
+
+The `patche.mx` zone must be active in the same Cloudflare account before the first deployment. Production uses `patche.mx` and `media.patche.mx`; previews use `pr-<number>.patche.mx` and an R2 development URL for public media.
+
 ## Quality checks
 
 ```bash

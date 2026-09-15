@@ -34,6 +34,7 @@
     "db:generate": "turbo run db:generate -F @patche/db --",
     "deploy": "turbo run deploy -F @patche/infra --",
     "destroy": "turbo run destroy -F @patche/infra --",
+    "setup:github": "turbo run setup:github -F @patche/infra --",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install"

@@ -1,6 +1,6 @@
 {
   "extends": "@patche/config/tsconfig.base.json",
-  "include": ["alchemy.run.ts"],
+  "include": ["*.ts"],
   "compilerOptions": {
     "strictNullChecks": true
   }
