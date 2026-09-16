@@ -11,8 +11,10 @@
   },
   "scripts": {
     "check-types": "tsgo --noEmit",
+    "dev": "drizzle-kit studio --config drizzle-local.config.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:deploy": "drizzle-kit migrate"
+    "db:migrate:deploy": "drizzle-kit migrate",
+    "db:studio:local": "drizzle-kit studio --config drizzle-local.config.ts"
   },
   "dependencies": {
     "@libsql/client": "catalog:",

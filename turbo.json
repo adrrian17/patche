@@ -21,6 +21,10 @@
       "cache": false,
       "interactive": true
     },
+    "db:studio:local": {
+      "cache": false,
+      "persistent": true
+    },
     "deploy": {
       "cache": false,
       "interactive": true
