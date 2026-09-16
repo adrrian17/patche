@@ -13,18 +13,22 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@patche/ui/components/sidebar";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { LogOutIcon } from "lucide-react";
 
+import { clearAdminQueries } from "@/lib/admin-session";
 import { authClient } from "@/lib/auth-client";
 
 export function NavUser({ user }: { user: { email: string; name: string } }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   function signOut() {
     authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
+          clearAdminQueries(queryClient);
           navigate({ to: "/login" });
         },
       },
