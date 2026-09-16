@@ -9,6 +9,7 @@ const labels = new Map([
   ["draft", "Borrador"],
   ["failed", "Fallido"],
   ["pending", "Pendiente"],
+  ["refund_pending", "Reembolso pendiente"],
   ["refunded", "Reembolsado"],
   ["shipped", "Enviado"],
   ["succeeded", "Pagado"],

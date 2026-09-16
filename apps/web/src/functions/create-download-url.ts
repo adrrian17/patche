@@ -1,13 +1,12 @@
 import { createDb } from "@patche/db";
 import { variant } from "@patche/db/schema/catalog";
-import { downloadGrant } from "@patche/db/schema/orders";
+import { downloadGrant, order, orderItem } from "@patche/db/schema/orders";
 import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { isAdminUser } from "@/lib/session";
-import { createDigitalGetUrl } from "@/lib/storage.server";
 import { authMiddleware } from "@/middleware/auth";
 
 export const createDownloadUrl = createServerFn({ method: "POST" })
@@ -27,8 +26,14 @@ export const createDownloadUrl = createServerFn({ method: "POST" })
       })
       .from(downloadGrant)
       .innerJoin(variant, eq(downloadGrant.variantId, variant.id))
+      .innerJoin(orderItem, eq(downloadGrant.orderItemId, orderItem.id))
+      .innerJoin(order, eq(orderItem.orderId, order.id))
       .where(
-        and(eq(downloadGrant.id, data.grantId), isNull(downloadGrant.revokedAt))
+        and(
+          eq(downloadGrant.id, data.grantId),
+          isNull(downloadGrant.revokedAt),
+          eq(order.paymentStatus, "succeeded")
+        )
       )
       .get();
     if (!grant?.digitalFileKey) {
@@ -40,5 +45,5 @@ export const createDownloadUrl = createServerFn({ method: "POST" })
       throw new Error("Download Grant no disponible");
     }
 
-    return { url: await createDigitalGetUrl(grant.digitalFileKey) };
+    return { url: `/api/download/${encodeURIComponent(data.grantId)}` };
   });
