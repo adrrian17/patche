@@ -1,9 +1,9 @@
 import { createAuth } from "@patche/auth";
 import { createDb } from "@patche/db";
-import { user } from "@patche/db/schema/auth";
+import { rateLimit, user } from "@patche/db/schema/auth";
 import { env } from "@patche/env/server";
 import { createServerFn } from "@tanstack/react-start";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const requestSchema = z.object({
@@ -24,7 +24,34 @@ export const requestMagicLink = createServerFn({ method: "POST" })
   .validator(requestSchema)
   .handler(async ({ data }) => {
     const email = data.email.trim().toLowerCase();
-    const existingUser = await createDb()
+    const db = createDb();
+    const now = Math.floor(Date.now() / 1000);
+
+    await db.run(sql`
+      INSERT INTO ${rateLimit} (key, count, last_request)
+      VALUES (${`magic-link:${email}`}, 1, ${now})
+      ON CONFLICT (key) DO UPDATE SET
+        count = CASE
+          WHEN ${now} - last_request >= 60 THEN 1
+          ELSE count + 1
+        END,
+        last_request = CASE
+          WHEN ${now} - last_request >= 60 THEN ${now}
+          ELSE last_request
+        END
+    `);
+
+    const currentRateLimit = await db
+      .select({ count: rateLimit.count })
+      .from(rateLimit)
+      .where(eq(rateLimit.key, `magic-link:${email}`))
+      .get();
+
+    if (currentRateLimit && currentRateLimit.count > 5) {
+      return { accepted: true };
+    }
+
+    const existingUser = await db
       .select({ id: user.id })
       .from(user)
       .where(eq(user.email, email))
