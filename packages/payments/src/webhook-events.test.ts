@@ -8,6 +8,8 @@ class MemoryWebhookStore implements WebhookStore, WebhookTransaction {
   readonly orders = new Map<string, "succeeded" | "failed" | "refunded">();
   readonly processedEvents = new Set<string>();
   checkoutEffects = 0;
+  releasedReservations: string[] = [];
+  releasedSessions = 0;
 
   createOrder(session: Stripe.Checkout.Session): Promise<void> {
     this.checkoutEffects += 1;
@@ -19,7 +21,13 @@ class MemoryWebhookStore implements WebhookStore, WebhookTransaction {
     return Promise.resolve();
   }
 
-  markPaymentFailed(paymentIntentId: string): Promise<void> {
+  markPaymentFailed(
+    paymentIntentId: string,
+    reservationId: string | null
+  ): Promise<void> {
+    if (reservationId) {
+      this.releasedReservations.push(reservationId);
+    }
     if (this.orders.has(paymentIntentId)) {
       this.orders.set(paymentIntentId, "failed");
     }
@@ -31,6 +39,11 @@ class MemoryWebhookStore implements WebhookStore, WebhookTransaction {
       return Promise.reject(new Error("Order pendiente"));
     }
     this.orders.set(paymentIntentId, "refunded");
+    return Promise.resolve();
+  }
+
+  releaseCheckoutSession(_checkoutSessionId: string): Promise<void> {
+    this.releasedSessions += 1;
     return Promise.resolve();
   }
 
@@ -50,6 +63,7 @@ class MemoryWebhookStore implements WebhookStore, WebhookTransaction {
 
 function checkoutCompletedEvent(eventId: string): Stripe.Event {
   // SAFETY: The processor only reads the fields supplied by this fixture.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- minimal Stripe fixture
   return {
     data: {
       object: {
@@ -60,7 +74,7 @@ function checkoutCompletedEvent(eventId: string): Stripe.Event {
     },
     id: eventId,
     type: "checkout.session.completed",
-  } as Stripe.Event;
+  } as unknown as Stripe.Event;
 }
 
 function refundedEvent(eventId: string): Stripe.Event {
@@ -76,6 +90,30 @@ function refundedEvent(eventId: string): Stripe.Event {
     id: eventId,
     type: "charge.refunded",
   } as Stripe.Event;
+}
+
+function checkoutExpiredEvent(eventId: string): Stripe.Event {
+  // SAFETY: The processor only reads the fields supplied by this fixture.
+  return {
+    data: { object: { id: "cs_expired" } },
+    id: eventId,
+    type: "checkout.session.expired",
+  } as Stripe.Event;
+}
+
+function paymentFailedEvent(eventId: string): Stripe.Event {
+  // SAFETY: The processor only reads the fields supplied by this fixture.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- minimal Stripe fixture
+  return {
+    data: {
+      object: {
+        id: "pi_failed",
+        metadata: { reservationId: "reservation_1" },
+      },
+    },
+    id: eventId,
+    type: "payment_intent.payment_failed",
+  } as unknown as Stripe.Event;
 }
 
 describe("processStripeEvent", () => {
@@ -99,5 +137,21 @@ describe("processStripeEvent", () => {
     await processStripeEvent(refund, store);
 
     expect(store.orders.get("pi_test")).toBe("refunded");
+  });
+
+  test("releases reservations for expired Checkout Sessions", async () => {
+    const store = new MemoryWebhookStore();
+
+    await processStripeEvent(checkoutExpiredEvent("evt_expired"), store);
+
+    expect(store.releasedSessions).toBe(1);
+  });
+
+  test("passes the reservation through a failed Payment Intent", async () => {
+    const store = new MemoryWebhookStore();
+
+    await processStripeEvent(paymentFailedEvent("evt_failed"), store);
+
+    expect(store.releasedReservations).toEqual(["reservation_1"]);
   });
 });

@@ -2,6 +2,7 @@ import { createDb } from "@patche/db";
 import { product, variant } from "@patche/db/schema/catalog";
 import { stockMovement } from "@patche/db/schema/inventory";
 import {
+  checkoutReservation,
   downloadGrant,
   order,
   orderItem,
@@ -19,6 +20,13 @@ import type {
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+
+import {
+  activateInventoryReservation,
+  releaseInventoryReservation,
+  releaseInventoryReservationBySession,
+  reserveInventory,
+} from "@/lib/inventory-reservations.server";
 
 const checkoutMetadataSchema = z.array(
   z.object({
@@ -79,7 +87,72 @@ function requireCheckoutSessionData(session: Stripe.Checkout.Session) {
     throw new Error("Checkout Session con moneda inválida");
   }
 
-  return { customerId, items: readCheckoutItems(session), paymentIntentId };
+  return {
+    customerId,
+    items: readCheckoutItems(session),
+    paymentIntentId,
+    reservationId: session.metadata?.reservationId ?? null,
+  };
+}
+
+async function requireActiveReservation(
+  db: Database,
+  reservationId: string | null,
+  sessionId: string,
+  customerId: string,
+  physicalItems: CheckoutItem[]
+): Promise<string | null> {
+  if (physicalItems.length === 0) {
+    return null;
+  }
+  if (!reservationId) {
+    throw new Error("Checkout físico sin reserva de inventario");
+  }
+
+  const reservation = await db
+    .select({
+      customerId: checkoutReservation.customerId,
+      sessionId: checkoutReservation.stripeCheckoutSessionId,
+      status: checkoutReservation.status,
+    })
+    .from(checkoutReservation)
+    .where(eq(checkoutReservation.id, reservationId))
+    .get();
+  if (
+    reservation?.status !== "active" ||
+    reservation.customerId !== customerId ||
+    reservation.sessionId !== sessionId
+  ) {
+    throw new Error("Reserva de inventario inválida");
+  }
+
+  const reserved = await db
+    .select({
+      quantity: stockMovement.quantity,
+      variantId: stockMovement.variantId,
+    })
+    .from(stockMovement)
+    .where(
+      and(
+        eq(stockMovement.reservationId, reservationId),
+        eq(stockMovement.reason, "reserved")
+      )
+    );
+  const reservedByVariant = new Map(
+    reserved.map(
+      (movement) => [movement.variantId, -movement.quantity] as const
+    )
+  );
+  const matches =
+    reservedByVariant.size === physicalItems.length &&
+    physicalItems.every(
+      (item) => reservedByVariant.get(item.variantId) === item.quantity
+    );
+  if (!matches) {
+    throw new Error("La reserva no coincide con el Checkout");
+  }
+
+  return reservationId;
 }
 
 async function loadOrderVariants(db: Database, items: CheckoutItem[]) {
@@ -169,7 +242,8 @@ function queueOrderRecord(
   session: Stripe.Checkout.Session,
   customerId: string,
   paymentIntentId: string,
-  onlyDigital: boolean
+  onlyDigital: boolean,
+  reservationId: string | null
 ) {
   const paymentStatus =
     session.payment_status === "paid" ? "succeeded" : "pending";
@@ -185,6 +259,7 @@ function queueOrderRecord(
       id: orderId,
       paymentMethodType: session.payment_method_types?.[0] ?? null,
       paymentStatus,
+      reservationId,
       shippingAddress: getShippingAddress(session),
       shippingAmount: session.total_details?.amount_shipping ?? 0,
       shippingName:
@@ -231,15 +306,8 @@ function queueOrderEffects(
     itemValues.map((item) => [item.variantId, item.id] as const)
   );
   const digitalGrants: (typeof downloadGrant.$inferInsert)[] = [];
-  const physicalMovements: (typeof stockMovement.$inferInsert)[] = [];
   for (const item of itemValues) {
     if (item.kind === "physical") {
-      physicalMovements.push({
-        orderId,
-        quantity: -item.quantity,
-        reason: "sold",
-        variantId: item.variantId,
-      });
       continue;
     }
 
@@ -255,9 +323,6 @@ function queueOrderEffects(
   }
 
   queries.push(db.insert(orderItem).values(itemValues));
-  if (physicalMovements.length > 0) {
-    queries.push(db.insert(stockMovement).values(physicalMovements));
-  }
   if (digitalGrants.length > 0) {
     queries.push(db.insert(downloadGrant).values(digitalGrants));
   }
@@ -278,19 +343,30 @@ async function createOrderFromSession(
     return;
   }
 
-  const { customerId, items, paymentIntentId } =
+  const { customerId, items, paymentIntentId, reservationId } =
     requireCheckoutSessionData(session);
   const [{ variants, variantsById }, purchasedItems] = await Promise.all([
     loadOrderVariants(db, items),
     loadPurchasedLineItems(stripe, session.id, items),
   ]);
+  const physicalItems = items.filter(
+    (item) => variantsById.get(item.variantId)?.kind === "physical"
+  );
+  const activeReservationId = await requireActiveReservation(
+    db,
+    reservationId,
+    session.id,
+    customerId,
+    physicalItems
+  );
   const orderId = queueOrderRecord(
     db,
     queries,
     session,
     customerId,
     paymentIntentId,
-    variants.every((entry) => entry.kind === "digital")
+    variants.every((entry) => entry.kind === "digital"),
+    activeReservationId
   );
   queueOrderEffects(
     db,
@@ -312,13 +388,31 @@ function createWebhookTransaction(
     async createOrder(session) {
       await createOrderFromSession(db, queries, session, stripe);
     },
-    async markPaymentFailed(paymentIntentId) {
+    async markPaymentFailed(paymentIntentId, reservationId) {
       const matchingOrder = await db
         .select({ id: order.id })
         .from(order)
         .where(eq(order.stripePaymentIntentId, paymentIntentId))
         .get();
       if (!matchingOrder) {
+        if (reservationId) {
+          const reservation = await db
+            .select({ sessionId: checkoutReservation.stripeCheckoutSessionId })
+            .from(checkoutReservation)
+            .where(eq(checkoutReservation.id, reservationId))
+            .get();
+          if (reservation?.sessionId) {
+            try {
+              await stripe.checkout.sessions.expire(reservation.sessionId);
+            } catch {
+              // A still-active Session must retain its reservation. The
+              // expiration cleanup will release it after Stripe's deadline.
+              return;
+            }
+          }
+          await releaseInventoryReservation(reservationId);
+          return;
+        }
         throw new Error("Order pendiente para Payment Intent fallido");
       }
 
@@ -329,6 +423,7 @@ function createWebhookTransaction(
           .where(
             and(
               eq(order.id, matchingOrder.id),
+              ne(order.paymentStatus, "refund_pending"),
               ne(order.paymentStatus, "refunded")
             )
           )
@@ -371,6 +466,9 @@ function createWebhookTransaction(
             )
           )
       );
+    },
+    async releaseCheckoutSession(checkoutSessionId) {
+      await releaseInventoryReservationBySession(checkoutSessionId);
     },
   };
 }
@@ -433,8 +531,12 @@ export async function startCustomerCheckout(
       origin: env.BETTER_AUTH_URL,
     },
     {
+      activateInventoryReservation,
       createSession: (params, options) =>
         stripe.checkout.sessions.create(params, options),
+      async expireSession(sessionId) {
+        await stripe.checkout.sessions.expire(sessionId);
+      },
       async getShippingRateAmount() {
         const setting = await db
           .select({ value: storeSetting.value })
@@ -471,6 +573,8 @@ export async function startCustomerCheckout(
           )
           .groupBy(variant.id);
       },
+      releaseInventoryReservation,
+      reserveInventory,
     }
   );
 }

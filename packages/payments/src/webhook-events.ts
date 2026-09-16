@@ -2,8 +2,12 @@ import type Stripe from "stripe";
 
 export interface WebhookTransaction {
   createOrder: (session: Stripe.Checkout.Session) => Promise<void>;
-  markPaymentFailed: (paymentIntentId: string) => Promise<void>;
+  markPaymentFailed: (
+    paymentIntentId: string,
+    reservationId: string | null
+  ) => Promise<void>;
   markRefunded: (paymentIntentId: string) => Promise<void>;
+  releaseCheckoutSession: (checkoutSessionId: string) => Promise<void>;
 }
 
 export interface WebhookStore {
@@ -48,10 +52,14 @@ export async function processStripeEvent(
         break;
       }
       case "payment_intent.payment_failed": {
-        await tx.markPaymentFailed(event.data.object.id);
+        await tx.markPaymentFailed(
+          event.data.object.id,
+          event.data.object.metadata?.reservationId ?? null
+        );
         break;
       }
       case "checkout.session.expired": {
+        await tx.releaseCheckoutSession(event.data.object.id);
         break;
       }
       default: {
