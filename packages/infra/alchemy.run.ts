@@ -8,7 +8,10 @@ import * as Effect from "effect/Effect";
 config({ path: "./.env" });
 config({ path: "../../apps/web/.env" });
 
-const productionMediaHostname = "media.patche.mx";
+const productionHostname = "patche.mx";
+const productionOrigin = `https://${productionHostname}`;
+const productionMediaHostname = `media.${productionHostname}`;
+const localOrigin = "http://localhost:3001";
 
 function getR2PublicBaseUrl(publicDomain: string | undefined): string {
   if (!publicDomain) {
@@ -17,19 +20,18 @@ function getR2PublicBaseUrl(publicDomain: string | undefined): string {
   return `https://${publicDomain}`;
 }
 
-function createResources(stage: string, isLocal: boolean) {
+function getAllowedOrigins(isProduction: boolean, isLocal: boolean): string[] {
+  if (isProduction) {
+    return [productionOrigin];
+  }
+  if (isLocal) {
+    return [productionOrigin, localOrigin];
+  }
+  return [productionOrigin, "*", localOrigin];
+}
+
+function createApp(stage: string, isLocal: boolean) {
   const isProduction = stage === "production";
-  const stageHostname = stage.replaceAll("_", "-").toLowerCase();
-  const webHostname = isProduction ? "patche.mx" : `${stageHostname}.patche.mx`;
-
-  const allowedOrigins = isProduction
-    ? ["https://patche.mx"]
-    : [
-        "https://patche.mx",
-        ...(isLocal ? [] : [`https://${webHostname}`]),
-        "http://localhost:3001",
-      ];
-
   const db = Cloudflare.D1.Database("database", {
     migrations: "../../packages/db/src/migrations",
   });
@@ -58,19 +60,19 @@ function createResources(stage: string, isLocal: boolean) {
       {
         allowedHeaders: ["content-type"],
         allowedMethods: ["PUT"],
-        allowedOrigins,
+        allowedOrigins: getAllowedOrigins(isProduction, isLocal),
       },
     ],
   });
 
-  const web = Cloudflare.Website.Vite("web", {
+  return Cloudflare.Website.Vite("web", {
     compatibility: {
       flags: ["nodejs_compat"],
     },
     dev: {
       port: 3001,
     },
-    domain: isLocal ? undefined : webHostname,
+    domain: isProduction ? productionHostname : undefined,
     env: {
       BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
       BETTER_AUTH_URL: Cloudflare.Worker.URL,
@@ -90,13 +92,9 @@ function createResources(stage: string, isLocal: boolean) {
     },
     rootDir: "../../apps/web",
   });
-
-  return { web };
 }
 
-export type WebEnv = Cloudflare.InferEnv<
-  ReturnType<typeof createResources>["web"]
-> & {
+export type WebEnv = Cloudflare.InferEnv<ReturnType<typeof createApp>> & {
   ALCHEMY_STAGE: string;
 };
 
@@ -109,7 +107,7 @@ export default Alchemy.Stack(
   Effect.gen(function* stack() {
     const stage = yield* Alchemy.Stage;
     const providerMode = yield* Alchemy.ProviderMode.defaultProviderMode;
-    const { web } = createResources(stage, providerMode === "local");
+    const web = createApp(stage, providerMode === "local");
     const webWorker = yield* web;
 
     return {
