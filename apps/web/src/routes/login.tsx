@@ -21,13 +21,6 @@ function RouteComponent() {
 
   return (
     <main className="auth-shell relative flex min-h-svh items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-70"
-        aria-hidden="true"
-      >
-        <div className="absolute -top-32 -right-24 size-96 rounded-full bg-[color-mix(in_oklch,var(--primary)_16%,transparent)] blur-3xl" />
-        <div className="absolute -bottom-40 -left-24 size-[28rem] rounded-full bg-[color-mix(in_oklch,var(--accent)_30%,transparent)] blur-3xl" />
-      </div>
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
         <div className="mb-7 text-center">
           <img
