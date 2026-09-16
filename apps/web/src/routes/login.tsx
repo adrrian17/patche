@@ -20,7 +20,7 @@ function RouteComponent() {
     : null;
 
   return (
-    <main className="auth-shell relative flex min-h-svh items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
+    <main className="relative flex min-h-svh items-center justify-center overflow-hidden bg-white px-4 py-10 text-slate-900 sm:px-6">
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
         <div className="mb-7 text-center">
           <img
@@ -28,12 +28,12 @@ function RouteComponent() {
             className="mx-auto h-20 w-auto object-contain"
             src="/logo.png"
           />
-          <p className="mt-3 font-mono text-[0.65rem] tracking-[0.28em] text-[color:var(--auth-muted)] uppercase">
+          <p className="mt-3 font-mono text-[0.65rem] tracking-[0.28em] text-slate-500 uppercase">
             Papelería para tus ideas
           </p>
         </div>
-        <div className="w-full rounded-[2rem] border border-[color:var(--auth-border)] bg-[color:var(--auth-card)]/95 p-2 shadow-[0_24px_80px_color-mix(in_oklch,var(--auth-foreground)_10%,transparent)] backdrop-blur sm:p-3">
-          <div className="rounded-[1.5rem] border border-[color:var(--auth-border)]/70 bg-[color:var(--auth-card)] px-2 py-2 sm:px-3">
+        <div className="w-full rounded-[2rem] border border-slate-200 bg-white p-2 shadow-[0_24px_80px_rgb(15_23_42_/_0.1)] sm:p-3">
+          <div className="rounded-[1.5rem] border border-slate-200/70 bg-white px-2 py-2 sm:px-3">
             {errorMessage ? (
               <p
                 aria-live="assertive"
@@ -50,7 +50,7 @@ function RouteComponent() {
             )}
           </div>
         </div>
-        <p className="mt-6 text-center text-xs text-[color:var(--auth-muted)]">
+        <p className="mt-6 text-center text-xs text-slate-500">
           Acceso seguro con enlaces de un solo uso.
         </p>
       </div>
