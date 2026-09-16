@@ -1,29 +1,26 @@
 {
-  "name": "@patche/auth",
+  "name": "@patche/email",
   "type": "module",
   "exports": {
     ".": {
       "default": "./src/index.ts"
     },
     "./*": {
-      "default": "./src/*.ts"
+      "default": "./src/*.tsx"
     }
   },
   "scripts": {
     "check-types": "tsgo --noEmit"
   },
   "dependencies": {
-    "@patche/db": "workspace:*",
-    "@patche/email": "workspace:*",
-    "@patche/env": "workspace:*",
-    "better-auth": "catalog:",
-    "dotenv": "catalog:",
     "react": "catalog:",
-    "zod": "catalog:"
+    "react-dom": "catalog:",
+    "react-email": "^6.9.5"
   },
   "devDependencies": {
     "@patche/config": "workspace:*",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "typescript": "catalog:"
   }
 }
