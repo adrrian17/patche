@@ -67,7 +67,7 @@ function createApp(stage: string, isLocal: boolean, zoneId?: string) {
 
   if (!isLocal && zoneId) {
     Cloudflare.Email.SendingSubdomain("authEmailDomain", {
-      name: "mail.patche.mx",
+      name: "patche.mx",
       zoneId,
     });
   }
