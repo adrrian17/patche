@@ -11,7 +11,10 @@ function Header() {
   const isAdmin = useRouterState({
     select: (state) => state.location.pathname.startsWith("/admin"),
   });
-  if (isAdmin) {
+  const isAuthPage = useRouterState({
+    select: (state) => state.location.pathname === "/login",
+  });
+  if (isAdmin || isAuthPage) {
     return null;
   }
   return (
