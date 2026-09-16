@@ -12,7 +12,10 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { retryPendingStorageDeletions } from "@/lib/storage.server";
+import {
+  createDigitalPutUrl,
+  retryPendingStorageDeletions,
+} from "@/lib/storage.server";
 import { adminMiddleware } from "@/middleware/admin";
 
 export const createDigitalUploadUrl = createServerFn({ method: "POST" })
@@ -64,11 +67,12 @@ export const createDigitalUploadUrl = createServerFn({ method: "POST" })
       temporaryKey,
       variantId: data.variantId,
     });
+    const url = await createDigitalPutUrl(temporaryKey, data.contentType);
     return {
       contentType: data.contentType,
       fileName: data.fileName,
       intentId,
       size: data.size,
-      url: `/api/admin/digital-uploads/${encodeURIComponent(intentId)}`,
+      url,
     };
   });

@@ -1,10 +1,23 @@
 import { createDb } from "@patche/db";
 import { digitalUploadIntent } from "@patche/db/schema/storage";
 import { env } from "@patche/env/server";
+import {
+  createPresignedUrl,
+  DIGITAL_UPLOAD_EXPIRES_SECONDS,
+} from "@patche/storage";
 import { and, eq, isNotNull } from "drizzle-orm";
 
 const storageDeleteAttempts = 3;
 const localMediaProxyPath = "/api/media";
+
+function getPresignConfig() {
+  return {
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    accountId: env.CF_ACCOUNT_ID,
+    bucket: env.DIGITAL_BUCKET_NAME,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+  };
+}
 
 export function getMediaBucket(): R2Bucket {
   return env.MEDIA_BUCKET;
@@ -74,4 +87,16 @@ export function getMediaPublicBaseUrl(): string {
 
 export function isLocalMediaProxyEnabled(): boolean {
   return env.MEDIA_PUBLIC_PROXY;
+}
+
+export async function createDigitalPutUrl(
+  key: string,
+  contentType: string
+): Promise<string> {
+  return await createPresignedUrl(getPresignConfig(), {
+    contentType,
+    expiresSeconds: DIGITAL_UPLOAD_EXPIRES_SECONDS,
+    key,
+    method: "PUT",
+  });
 }

@@ -11,12 +11,23 @@ config({ path: "../../apps/web/.env" });
 const productionHostname = "patche.mx";
 const productionOrigin = `https://${productionHostname}`;
 const productionMediaHostname = `media.${productionHostname}`;
+const localOrigin = "http://localhost:3001";
 
 function getR2PublicBaseUrl(publicDomain: string | undefined): string {
   if (!publicDomain) {
     throw new Error("R2 did not provide a public domain for the media bucket");
   }
   return `https://${publicDomain}`;
+}
+
+function getAllowedOrigins(isProduction: boolean, isLocal: boolean): string[] {
+  if (isProduction) {
+    return [productionOrigin];
+  }
+  if (isLocal) {
+    return [productionOrigin, localOrigin];
+  }
+  return [productionOrigin, "*", localOrigin];
 }
 
 function createApp(stage: string, isLocal: boolean, zoneId?: string) {
@@ -45,6 +56,13 @@ function createApp(stage: string, isLocal: boolean, zoneId?: string) {
   })();
 
   const digitalBucket = Cloudflare.R2.Bucket("digital", {
+    cors: [
+      {
+        allowedHeaders: ["content-type"],
+        allowedMethods: ["PUT"],
+        allowedOrigins: getAllowedOrigins(isProduction, isLocal),
+      },
+    ],
     lifecycleRules: [
       {
         deleteObjectsTransition: {
@@ -79,11 +97,17 @@ function createApp(stage: string, isLocal: boolean, zoneId?: string) {
       AUTH_EMAIL: authEmail,
       BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
       BETTER_AUTH_URL: isProduction ? productionOrigin : Cloudflare.Worker.URL,
+      CF_ACCOUNT_ID: Config.string("CF_ACCOUNT_ID"),
       DB: db,
       DIGITAL_BUCKET: digitalBucket,
+      DIGITAL_BUCKET_NAME: digitalBucket.pipe(
+        Effect.map((bucket) => bucket.bucketName)
+      ),
       MEDIA_BUCKET: mediaBucket,
       MEDIA_PUBLIC_BASE_URL: mediaPublicBaseUrl,
       MEDIA_PUBLIC_PROXY: isLocal,
+      R2_ACCESS_KEY_ID: Config.redacted("R2_ACCESS_KEY_ID"),
+      R2_SECRET_ACCESS_KEY: Config.redacted("R2_SECRET_ACCESS_KEY"),
       STRIPE_SECRET_KEY: Config.redacted("STRIPE_SECRET_KEY"),
       STRIPE_WEBHOOK_SECRET: Config.redacted("STRIPE_WEBHOOK_SECRET"),
     },
