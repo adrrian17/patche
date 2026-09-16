@@ -1,8 +1,8 @@
 import { createDb } from "@patche/db";
 import { variant } from "@patche/db/schema/catalog";
-import { DIGITAL_FILE_MAX_BYTES, isDigitalObjectKey } from "@patche/storage";
+import { digitalUploadIntent } from "@patche/db/schema/storage";
 import { createServerFn } from "@tanstack/react-start";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -11,79 +11,170 @@ import {
 } from "@/lib/storage.server";
 import { adminMiddleware } from "@/middleware/admin";
 
+type Database = ReturnType<typeof createDb>;
+type BatchQuery = Parameters<Database["batch"]>[0][number];
+
+async function deleteReplacedObject(
+  db: Database,
+  intentId: string,
+  replacedKey: string | null
+): Promise<void> {
+  if (!replacedKey) {
+    return;
+  }
+  await deleteStorageObjectWithRetry(getDigitalBucket(), replacedKey);
+  await db
+    .update(digitalUploadIntent)
+    .set({ replacedKey: null })
+    .where(
+      and(
+        eq(digitalUploadIntent.id, intentId),
+        eq(digitalUploadIntent.replacedKey, replacedKey)
+      )
+    );
+}
+
 export const confirmDigitalUpload = createServerFn({ method: "POST" })
   .middleware([adminMiddleware])
-  .validator(
-    z.object({
-      contentType: z.string().trim().min(1).max(200),
-      fileName: z.string().trim().min(1).max(255),
-      key: z.string().min(1).max(512),
-      size: z.number().int().positive().max(DIGITAL_FILE_MAX_BYTES),
-      variantId: z.string().min(1).max(32),
-    })
-  )
-  .handler(async ({ data }) => {
-    if (!isDigitalObjectKey(data.variantId, data.key)) {
-      throw new Error("Digital File con clave inválida");
+  .validator(z.object({ intentId: z.string().min(1).max(32) }))
+  .handler(async ({ context, data }) => {
+    const db = createDb();
+    const intent = await db
+      .select()
+      .from(digitalUploadIntent)
+      .where(
+        and(
+          eq(digitalUploadIntent.id, data.intentId),
+          eq(digitalUploadIntent.createdBy, context.session.user.id)
+        )
+      )
+      .get();
+    if (!intent) {
+      throw new Error("Upload Intent no encontrado");
+    }
+    if (intent.status === "confirmed") {
+      await deleteReplacedObject(db, intent.id, intent.replacedKey);
+      return {
+        digitalFileKey: intent.finalKey,
+        digitalFileName: intent.fileName,
+        digitalFileSize: intent.expectedSize,
+      };
+    }
+    if (intent.status !== "uploaded") {
+      throw new Error("Upload Intent no está listo para confirmar");
     }
 
-    const db = createDb();
+    const claimed = await db
+      .update(digitalUploadIntent)
+      .set({ status: "confirming" })
+      .where(
+        and(
+          eq(digitalUploadIntent.id, intent.id),
+          eq(digitalUploadIntent.status, "uploaded")
+        )
+      )
+      .returning({ id: digitalUploadIntent.id })
+      .get();
+    if (!claimed) {
+      throw new Error("Upload Intent ya está siendo confirmado");
+    }
+
+    const bucket = getDigitalBucket();
+    const temporaryObject = await bucket.get(intent.temporaryKey);
+    const objectMatches =
+      temporaryObject?.size === intent.expectedSize &&
+      temporaryObject.httpMetadata?.contentType === intent.contentType;
+    if (!objectMatches) {
+      if (temporaryObject) {
+        await deleteStorageObjectWithRetry(bucket, intent.temporaryKey);
+      }
+      await db
+        .update(digitalUploadIntent)
+        .set({ status: "expired" })
+        .where(eq(digitalUploadIntent.id, intent.id));
+      throw new Error("Digital File no coincide con la intención de carga");
+    }
+
     const matchingVariant = await db
       .select({
         digitalFileKey: variant.digitalFileKey,
         kind: variant.kind,
       })
       .from(variant)
-      .where(eq(variant.id, data.variantId))
+      .where(eq(variant.id, intent.variantId))
       .get();
-    if (!matchingVariant) {
-      throw new Error("Variant no encontrada");
-    }
-    if (matchingVariant.kind !== "digital") {
-      throw new Error("Solo una Variant digital admite Digital File");
-    }
-
-    const object = await getDigitalBucket().head(data.key);
-    if (!object) {
-      throw new Error("Digital File no encontrado en R2");
-    }
-    if (object.size !== data.size) {
-      throw new Error("El tamaño del Digital File no coincide");
-    }
-    if (
-      object.httpMetadata?.contentType &&
-      object.httpMetadata.contentType !== data.contentType
-    ) {
-      throw new Error("El tipo del Digital File no coincide");
+    if (!matchingVariant || matchingVariant.kind !== "digital") {
+      await db
+        .update(digitalUploadIntent)
+        .set({ status: "uploaded" })
+        .where(eq(digitalUploadIntent.id, intent.id));
+      throw new Error("Variant digital no disponible");
     }
 
-    const updated = await db
-      .update(variant)
-      .set({
-        digitalFileKey: data.key,
-        digitalFileName: data.fileName,
-        digitalFileSize: object.size,
-      })
-      .where(eq(variant.id, data.variantId))
-      .returning({ id: variant.id })
-      .get();
-    if (!updated) {
-      throw new Error("No se pudo confirmar el Digital File");
+    try {
+      await bucket.put(intent.finalKey, temporaryObject.body, {
+        httpMetadata: { contentType: intent.contentType },
+      });
+      const queries: BatchQuery[] = [
+        db
+          .update(variant)
+          .set({
+            digitalFileKey: intent.finalKey,
+            digitalFileName: intent.fileName,
+            digitalFileSize: intent.expectedSize,
+          })
+          .where(eq(variant.id, intent.variantId)),
+        db
+          .update(digitalUploadIntent)
+          .set({
+            confirmedAt: new Date(),
+            replacedKey:
+              matchingVariant.digitalFileKey === intent.finalKey
+                ? null
+                : matchingVariant.digitalFileKey,
+            status: "confirmed",
+          })
+          .where(
+            and(
+              eq(digitalUploadIntent.id, intent.id),
+              eq(digitalUploadIntent.status, "confirming")
+            )
+          ),
+      ];
+      // SAFETY: queries always contains the Variant and Intent updates above.
+      await db.batch(queries as [BatchQuery, ...BatchQuery[]]);
+    } catch (error) {
+      await Promise.allSettled([
+        deleteStorageObjectWithRetry(bucket, intent.finalKey),
+        db
+          .update(digitalUploadIntent)
+          .set({ status: "uploaded" })
+          .where(
+            and(
+              eq(digitalUploadIntent.id, intent.id),
+              eq(digitalUploadIntent.status, "confirming")
+            )
+          ),
+      ]);
+      throw error;
     }
 
-    if (
-      matchingVariant.digitalFileKey &&
-      matchingVariant.digitalFileKey !== data.key
-    ) {
-      await deleteStorageObjectWithRetry(
-        getDigitalBucket(),
-        matchingVariant.digitalFileKey
-      );
+    try {
+      await deleteStorageObjectWithRetry(bucket, intent.temporaryKey);
+    } catch {
+      // The R2 lifecycle rule removes abandoned objects under uploads/.
     }
+    await deleteReplacedObject(
+      db,
+      intent.id,
+      matchingVariant.digitalFileKey === intent.finalKey
+        ? null
+        : matchingVariant.digitalFileKey
+    );
 
     return {
-      digitalFileKey: data.key,
-      digitalFileName: data.fileName,
-      digitalFileSize: object.size,
+      digitalFileKey: intent.finalKey,
+      digitalFileName: intent.fileName,
+      digitalFileSize: intent.expectedSize,
     };
   });

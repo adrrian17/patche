@@ -681,11 +681,7 @@ function VariantCard({
       requireDigitalUpload(response);
       await confirmDigitalUpload({
         data: {
-          contentType: upload.contentType,
-          fileName: upload.fileName,
-          key: upload.key,
-          size: upload.size,
-          variantId: item.id,
+          intentId: upload.intentId,
         },
       });
       await queryClient.invalidateQueries({

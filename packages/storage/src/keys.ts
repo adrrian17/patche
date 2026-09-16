@@ -6,6 +6,10 @@ export function digitalObjectKey(variantId: string, objectId: string): string {
   return `variants/${variantId}/${objectId}`;
 }
 
+export function digitalUploadTemporaryKey(intentId: string): string {
+  return `uploads/${intentId}`;
+}
+
 export function isDigitalObjectKey(variantId: string, key: string): boolean {
   const prefix = `variants/${variantId}/`;
   const objectId = key.slice(prefix.length);
