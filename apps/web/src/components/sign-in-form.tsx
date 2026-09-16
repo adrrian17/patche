@@ -56,7 +56,7 @@ function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () => void }) {
   }
 
   return (
-    <div className="mx-auto mt-10 w-full max-w-md p-6">
+    <div className="mx-auto mt-2 w-full max-w-md p-4">
       <h1 className="mb-2 text-center text-3xl font-bold">Iniciar sesión</h1>
       <p className="text-muted-foreground mb-6 text-center text-sm">
         Te enviaremos un enlace para entrar sin contraseña.
