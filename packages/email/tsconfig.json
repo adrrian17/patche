@@ -5,9 +5,11 @@
     "declarationMap": true,
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "sourceMap": true,
     "outDir": "dist",
-    "composite": true,
-    "strictNullChecks": true
-  }
+    "sourceMap": true,
+    "strictNullChecks": true,
+    "types": ["bun"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
 }

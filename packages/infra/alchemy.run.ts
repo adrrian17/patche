@@ -30,7 +30,7 @@ function getAllowedOrigins(isProduction: boolean, isLocal: boolean): string[] {
   return [productionOrigin, "*", localOrigin];
 }
 
-function createApp(stage: string, isLocal: boolean) {
+function createApp(stage: string, isLocal: boolean, zoneId?: string) {
   const isProduction = stage === "production";
   const db = Cloudflare.D1.Database("database", {
     migrations: "../../packages/db/src/migrations",
@@ -65,6 +65,17 @@ function createApp(stage: string, isLocal: boolean) {
     ],
   });
 
+  if (!isLocal && zoneId) {
+    Cloudflare.Email.SendingSubdomain("authEmailDomain", {
+      name: "patche.mx",
+      zoneId,
+    });
+  }
+
+  const authEmail = Cloudflare.Email.SendEmail("authEmail", {
+    allowedSenderAddresses: ["noreply@patche.mx"],
+  });
+
   return Cloudflare.Website.Vite("web", {
     compatibility: {
       flags: ["nodejs_compat"],
@@ -74,8 +85,9 @@ function createApp(stage: string, isLocal: boolean) {
     },
     domain: isProduction ? productionHostname : undefined,
     env: {
+      AUTH_EMAIL: authEmail,
       BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
-      BETTER_AUTH_URL: Cloudflare.Worker.URL,
+      BETTER_AUTH_URL: isProduction ? productionOrigin : Cloudflare.Worker.URL,
       CF_ACCOUNT_ID: Config.string("CF_ACCOUNT_ID"),
       DB: db,
       DIGITAL_BUCKET: digitalBucket,
@@ -107,7 +119,9 @@ export default Alchemy.Stack(
   Effect.gen(function* stack() {
     const stage = yield* Alchemy.Stage;
     const providerMode = yield* Alchemy.ProviderMode.defaultProviderMode;
-    const web = createApp(stage, providerMode === "local");
+    const isLocal = providerMode === "local";
+    const zoneId = isLocal ? undefined : yield* Config.string("CF_ZONE_ID");
+    const web = createApp(stage, isLocal, zoneId);
     const webWorker = yield* web;
 
     return {
