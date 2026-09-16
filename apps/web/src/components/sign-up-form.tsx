@@ -147,7 +147,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
 
       <div className="mt-4 text-center">
         <Button
-          className="text-indigo-600 hover:text-indigo-800"
+          className="text-teal-700 hover:text-teal-800"
           onClick={onSwitchToSignIn}
           variant="link"
         >
