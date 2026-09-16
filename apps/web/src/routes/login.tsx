@@ -47,9 +47,6 @@ function RouteComponent() {
             )}
           </div>
         </div>
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Acceso seguro con enlaces de un solo uso.
-        </p>
       </div>
     </main>
   );
