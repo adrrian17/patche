@@ -10,7 +10,8 @@
     }
   },
   "scripts": {
-    "check-types": "tsgo --noEmit"
+    "check-types": "tsgo --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
     "react": "catalog:",
