@@ -87,7 +87,7 @@ function createApp(stage: string, isLocal: boolean, zoneId?: string) {
     env: {
       AUTH_EMAIL: authEmail,
       BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
-      BETTER_AUTH_URL: Cloudflare.Worker.URL,
+      BETTER_AUTH_URL: isProduction ? productionOrigin : Cloudflare.Worker.URL,
       CF_ACCOUNT_ID: Config.string("CF_ACCOUNT_ID"),
       DB: db,
       DIGITAL_BUCKET: digitalBucket,
