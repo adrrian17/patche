@@ -164,13 +164,17 @@ export const confirmDigitalUpload = createServerFn({ method: "POST" })
     } catch {
       // The R2 lifecycle rule removes abandoned objects under uploads/.
     }
-    await deleteReplacedObject(
-      db,
-      intent.id,
-      matchingVariant.digitalFileKey === intent.finalKey
-        ? null
-        : matchingVariant.digitalFileKey
-    );
+    try {
+      await deleteReplacedObject(
+        db,
+        intent.id,
+        matchingVariant.digitalFileKey === intent.finalKey
+          ? null
+          : matchingVariant.digitalFileKey
+      );
+    } catch {
+      // Keep replacedKey for retryPendingStorageDeletions after a later upload.
+    }
 
     return {
       digitalFileKey: intent.finalKey,
