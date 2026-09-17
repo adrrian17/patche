@@ -36,14 +36,14 @@ function AdminLayout() {
   }, []);
 
   useEffect(() => {
-    if (!currentSession.isError && currentSession.data?.user.role === "admin") {
+    if (currentSession.isError || currentSession.data?.user.role === "admin") {
       return;
     }
     clearAdminQueries(queryClient);
     navigate({ to: "/login" });
   }, [currentSession.data, currentSession.isError, navigate, queryClient]);
 
-  if (currentSession.isError || currentSession.data?.user.role !== "admin") {
+  if (currentSession.data?.user.role !== "admin") {
     return null;
   }
 
