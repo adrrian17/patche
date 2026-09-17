@@ -8,6 +8,19 @@ import { z } from "zod";
 import { getStripeClient } from "@/lib/payments.server";
 import { adminMiddleware } from "@/middleware/admin";
 
+function isDefinitiveStripeRejection(error: Error): boolean {
+  if (!("statusCode" in error)) {
+    return false;
+  }
+
+  // oxlint-disable-next-line anti-slop/no-runtime-typeof
+  if (typeof error.statusCode !== "number") {
+    return false;
+  }
+
+  return error.statusCode >= 400 && error.statusCode < 500;
+}
+
 export const refundOrder = createServerFn({ method: "POST" })
   .middleware([adminMiddleware])
   .validator(z.object({ orderId: z.string().min(1).max(32) }))
@@ -64,25 +77,27 @@ export const refundOrder = createServerFn({ method: "POST" })
         { idempotencyKey: `refund:${data.orderId}` }
       );
     } catch (error) {
-      await env.DB.batch([
-        env.DB.prepare(`
-          UPDATE download_grant
-          SET revoked_at = NULL
-          WHERE revoked_at = ?
-            AND order_item_id IN (
-              SELECT item.id
-              FROM order_item AS item
-              INNER JOIN "order" AS purchase ON purchase.id = item.order_id
-              WHERE purchase.id = ?
-                AND purchase.payment_status = 'refund_pending'
-            )
-        `).bind(revokedAt, data.orderId),
-        env.DB.prepare(`
-          UPDATE "order"
-          SET payment_status = 'succeeded', updated_at = ?
-          WHERE id = ? AND payment_status = 'refund_pending'
-        `).bind(Date.now(), data.orderId),
-      ]);
+      if (error instanceof Error && isDefinitiveStripeRejection(error)) {
+        await env.DB.batch([
+          env.DB.prepare(`
+            UPDATE download_grant
+            SET revoked_at = NULL
+            WHERE revoked_at = ?
+              AND order_item_id IN (
+                SELECT item.id
+                FROM order_item AS item
+                INNER JOIN "order" AS purchase ON purchase.id = item.order_id
+                WHERE purchase.id = ?
+                  AND purchase.payment_status = 'refund_pending'
+              )
+          `).bind(revokedAt, data.orderId),
+          env.DB.prepare(`
+            UPDATE "order"
+            SET payment_status = 'succeeded', updated_at = ?
+            WHERE id = ? AND payment_status = 'refund_pending'
+          `).bind(Date.now(), data.orderId),
+        ]);
+      }
       throw error;
     }
 
