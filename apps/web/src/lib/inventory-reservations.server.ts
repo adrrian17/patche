@@ -88,6 +88,38 @@ export async function activateInventoryReservation(
   }
 }
 
+export async function reactivateInventoryReservation(
+  reservationId: string,
+  checkoutSessionId: string
+): Promise<void> {
+  const result = await env.DB.batch([
+    env.DB.prepare(`
+      INSERT INTO stock_movement (
+        id, variant_id, quantity, reason, note, reservation_id
+      )
+      SELECT
+        lower(hex(randomblob(16))), movement.variant_id,
+        movement.quantity, 'reserved', 'Reserva reactivada', movement.reservation_id
+      FROM stock_movement AS movement
+      INNER JOIN checkout_reservation AS reservation
+        ON reservation.id = movement.reservation_id
+      WHERE movement.reason = 'reserved'
+        AND reservation.id = ?
+        AND reservation.status = 'released'
+    `).bind(reservationId),
+    env.DB.prepare(`
+      UPDATE checkout_reservation
+      SET status = 'active', updated_at = ?
+      WHERE id = ?
+        AND stripe_checkout_session_id = ?
+        AND status = 'released'
+    `).bind(Date.now(), reservationId, checkoutSessionId),
+  ]);
+  if (result[1].meta.changes !== 1) {
+    throw new Error("No se pudo reactivar la reserva de inventario");
+  }
+}
+
 async function runReservationRelease(
   statements: [D1PreparedStatement, D1PreparedStatement]
 ): Promise<void> {

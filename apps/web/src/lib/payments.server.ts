@@ -23,6 +23,7 @@ import { z } from "zod";
 
 import {
   activateInventoryReservation,
+  reactivateInventoryReservation,
   releaseInventoryReservation,
   releaseInventoryReservationBySession,
   reserveInventory,
@@ -119,9 +120,8 @@ async function requireActiveReservation(
     .where(eq(checkoutReservation.id, reservationId))
     .get();
   if (
-    reservation?.status !== "active" ||
-    reservation.customerId !== customerId ||
-    reservation.sessionId !== sessionId
+    reservation?.customerId !== customerId ||
+    reservation?.sessionId !== sessionId
   ) {
     throw new Error("Reserva de inventario inválida");
   }
@@ -150,6 +150,12 @@ async function requireActiveReservation(
     );
   if (!matches) {
     throw new Error("La reserva no coincide con el Checkout");
+  }
+
+  if (reservation.status === "released") {
+    await reactivateInventoryReservation(reservationId, sessionId);
+  } else if (reservation.status !== "active") {
+    throw new Error("Reserva de inventario inválida");
   }
 
   return reservationId;
