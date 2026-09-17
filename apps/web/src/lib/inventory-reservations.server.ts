@@ -65,8 +65,14 @@ export async function reserveInventory(
 
   try {
     await env.DB.batch(statements);
-  } catch {
-    throw new Error("Stock insuficiente para completar el Checkout");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("insufficient_stock")) {
+      throw new Error("Stock insuficiente para completar el Checkout", {
+        cause: error,
+      });
+    }
+    throw error;
   }
 
   return { expiresAt, id: reservationId };
