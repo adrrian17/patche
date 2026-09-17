@@ -51,6 +51,7 @@ END;--> statement-breakpoint
 CREATE TRIGGER `order_consume_reservation`
 AFTER INSERT ON `order`
 WHEN NEW.`reservation_id` IS NOT NULL
+  AND NEW.`payment_status` = 'succeeded'
 BEGIN
   UPDATE `stock_movement`
   SET `reason` = 'sold', `order_id` = NEW.`id`
