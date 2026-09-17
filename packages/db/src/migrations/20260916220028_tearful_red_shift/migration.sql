@@ -48,6 +48,23 @@ WHEN NEW.`reservation_id` IS NOT NULL
 BEGIN
   SELECT raise(ABORT, 'invalid_reservation');
 END;--> statement-breakpoint
+CREATE TRIGGER `order_consume_reservation_after_payment`
+AFTER UPDATE OF `payment_status` ON `order`
+WHEN NEW.`reservation_id` IS NOT NULL
+  AND OLD.`payment_status` <> 'succeeded'
+  AND NEW.`payment_status` = 'succeeded'
+BEGIN
+  UPDATE `stock_movement`
+  SET `reason` = 'sold', `order_id` = NEW.`id`
+  WHERE `reservation_id` = NEW.`reservation_id`
+    AND `reason` = 'reserved';
+
+  UPDATE `checkout_reservation`
+  SET `status` = 'consumed',
+      `updated_at` = cast(unixepoch('subsecond') * 1000 as integer)
+  WHERE `id` = NEW.`reservation_id`
+    AND `status` = 'active';
+END;--> statement-breakpoint
 CREATE TRIGGER `order_consume_reservation`
 AFTER INSERT ON `order`
 WHEN NEW.`reservation_id` IS NOT NULL
