@@ -28,11 +28,13 @@ Online stationery store (notebooks, calendars, planners) selling physical and di
 
 ### Inventory
 
-**Stock**: The current quantity on hand of a Physical Variant, always derived as the sum of its Stock Movements. Stock zero means the Variant cannot be bought. _Avoid_: Inventory count, quantity, availability
+**Stock**: The quantity currently available for a Physical Variant, always derived as the sum of its Stock Movements. Active Checkout Reservations reduce Stock until they are completed or released. Stock zero means the Variant cannot be bought. _Avoid_: Inventory count, quantity, availability
 
 **Low Stock Threshold**: The per-Variant Stock level at or below which the Admin is warned to restock. _Avoid_: Reorder point, minimum stock
 
 **Stock Movement**: A single dated change to a Physical Variant's Stock with a reason (received, sold, adjusted, returned). Movements are never edited or deleted. _Avoid_: Adjustment (as the general term), transaction, log entry
+
+**Checkout Reservation**: A temporary claim on the Stock needed by one physical Checkout. It reduces available Stock before the Stripe session is created and is released if the session fails or expires. _Avoid_: Hold, lock, cart reservation
 
 ### Orders
 

@@ -4,7 +4,7 @@ Patche is an online stationery store for notebooks, calendars, planners, and rel
 
 ## Project status
 
-The repository contains the application foundation, authentication, database, shared UI, and Cloudflare infrastructure. Stripe checkout and payment processing are planned but are not yet present in the application dependencies.
+The repository contains the storefront and admin application, authentication, catalog and inventory management, Stripe checkout and webhook processing, digital file storage, shared UI, and Cloudflare infrastructure.
 
 ## Stack
 
@@ -15,7 +15,7 @@ The repository contains the application foundation, authentication, database, sh
 - Better Auth
 - Drizzle ORM and Cloudflare D1
 - Alchemy and Cloudflare
-- Stripe for the planned payment system
+- Stripe Checkout and verified webhooks for payments
 - Ultracite with Oxlint and Oxfmt
 
 ## Getting started
@@ -39,13 +39,22 @@ Generate a migration from the repository root:
 bun run db:generate
 ```
 
-Review generated SQL before deployment. Runtime access uses the Cloudflare `DB` binding declared in `packages/infra/alchemy.run.ts`. A local `DATABASE_URL` is only for database tooling.
+Review generated SQL before deployment. Runtime access uses the Cloudflare `DB` binding declared in `packages/infra/alchemy.run.ts`.
+
+To inspect the local database, start the application once so Alchemy creates its local D1 state, then open Drizzle Studio:
+
+```bash
+bun run dev
+bun run db:studio:local
+```
+
+Set `LOCAL_D1_PATH` only when Studio should use a specific SQLite file instead of the latest local Alchemy database.
 
 Alchemy applies committed D1 migrations during deployment.
 
 ## Payments
 
-Stripe will provide checkout and payment processing. The implementation must calculate order totals on the server and treat verified Stripe webhooks as the source of truth for payment completion.
+Stripe Checkout handles payments. Patche calculates order totals on the server and treats verified Stripe webhooks as the source of truth for payment completion. A physical Checkout reserves Stock before the Stripe session is created. Failed and expired sessions release their reservations.
 
 Payment implementation rules are documented in [docs/agent-guidelines/payments.md](docs/agent-guidelines/payments.md).
 
@@ -111,8 +120,11 @@ patche/
 │   ├── auth/         # Better Auth configuration
 │   ├── config/       # Shared TypeScript configuration
 │   ├── db/           # Drizzle schema and D1 migrations
+│   ├── email/        # React Email templates
 │   ├── env/          # Typed environment variables
 │   ├── infra/        # Alchemy and Cloudflare resources
+│   ├── payments/     # Stripe checkout and webhook logic
+│   ├── storage/      # R2 keys and signed URLs
 │   └── ui/           # Shared components and styles
 └── docs/
     └── agent-guidelines/
@@ -127,6 +139,7 @@ patche/
 - `bun run check`: check linting and formatting
 - `bun run fix`: apply lint and formatting fixes
 - `bun run db:generate`: generate Drizzle migrations
+- `bun run db:studio:local`: inspect the local Alchemy D1 database
 - `bun run deploy`: deploy the infrastructure
 - `bun run destroy`: destroy the selected infrastructure stage
 
