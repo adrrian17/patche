@@ -30,6 +30,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
+    "test:integration": "bun run --cwd apps/web test:integration",
     "dev:web": "turbo run dev -F web --",
     "db:generate": "turbo run db:generate -F @patche/db --",
     "db:studio:local": "turbo run db:studio:local -F @patche/db --",

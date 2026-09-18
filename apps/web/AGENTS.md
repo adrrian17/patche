@@ -23,6 +23,7 @@ Run these from the repository root.
 bun run dev:web
 bun run build
 bun run check-types
+bun run test:integration
 ```
 
 ## Conventions

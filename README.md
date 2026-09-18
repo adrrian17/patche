@@ -105,6 +105,7 @@ Do not destroy a stage until its name and resources have been inspected.
 ```bash
 bun run check
 bun run check-types
+bun run test:integration
 bun run build
 ```
 
@@ -136,6 +137,7 @@ patche/
 - `bun run dev:web`: start only the web application
 - `bun run build`: build the workspace
 - `bun run check-types`: type-check the workspace
+- `bun run test:integration`: test the Stripe webhook against local Cloudflare D1
 - `bun run check`: check linting and formatting
 - `bun run fix`: apply lint and formatting fixes
 - `bun run db:generate`: generate Drizzle migrations

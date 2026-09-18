@@ -6,7 +6,8 @@
     "build": "vite build",
     "check-types": "tsgo --noEmit",
     "serve": "vite preview",
-    "dev:bare": "vite dev"
+    "dev:bare": "vite dev",
+    "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -44,6 +45,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.1.13",
     "@patche/config": "workspace:*",
     "@tanstack/react-router-devtools": "^1.167.0",
     "@testing-library/dom": "^10.4.1",
@@ -54,6 +56,7 @@
     "jsdom": "^30.0.0",
     "typescript": "catalog:",
     "vite": "^8.1.5",
+    "vitest": "^4.1.0",
     "web-vitals": "^6.0.1"
   }
 }

@@ -21,6 +21,7 @@ Patche is an online stationery store for notebooks, calendars, planners, and rel
 - Type-check the workspace with `bun run check-types`.
 - Check changed code with `bun run check`; apply automated fixes with `bun run fix`.
 - Run the test suite with `bun test`.
+- Run the Cloudflare and D1 integration suite with `bun run test:integration`.
 - Read `CONTEXT.md` before changing domain terms or business rules.
 
 ## Task-specific guidance
