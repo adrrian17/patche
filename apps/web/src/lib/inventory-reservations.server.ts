@@ -3,6 +3,7 @@ import type { CheckoutItem } from "@patche/payments";
 import { nanoid } from "nanoid";
 
 const reservationNote = "Reserva de Checkout";
+const reactivatedReservationDurationMs = 36 * 60 * 1000;
 
 export interface InventoryReservation {
   expiresAt: Date;
@@ -19,13 +20,16 @@ export async function releaseExpiredInventoryReservations(
       )
       SELECT
         lower(hex(randomblob(16))), movement.variant_id,
-        -movement.quantity, 'released', 'Reserva vencida', movement.reservation_id
+        -SUM(movement.quantity), 'released', 'Reserva vencida',
+        movement.reservation_id
       FROM stock_movement AS movement
       INNER JOIN checkout_reservation AS reservation
         ON reservation.id = movement.reservation_id
-      WHERE movement.reason = 'reserved'
+      WHERE movement.reason IN ('reserved', 'released')
         AND reservation.status IN ('pending', 'active')
         AND reservation.expires_at <= ?
+      GROUP BY movement.reservation_id, movement.variant_id
+      HAVING SUM(movement.quantity) < 0
     `).bind(now.getTime()),
     env.DB.prepare(`
       UPDATE checkout_reservation
@@ -98,6 +102,7 @@ export async function reactivateInventoryReservation(
   reservationId: string,
   checkoutSessionId: string
 ): Promise<void> {
+  const now = Date.now();
   const result = await env.DB.batch([
     env.DB.prepare(`
       INSERT INTO stock_movement (
@@ -115,11 +120,16 @@ export async function reactivateInventoryReservation(
     `).bind(reservationId),
     env.DB.prepare(`
       UPDATE checkout_reservation
-      SET status = 'active', updated_at = ?
+      SET status = 'active', expires_at = ?, updated_at = ?
       WHERE id = ?
         AND stripe_checkout_session_id = ?
         AND status = 'released'
-    `).bind(Date.now(), reservationId, checkoutSessionId),
+    `).bind(
+      now + reactivatedReservationDurationMs,
+      now,
+      reservationId,
+      checkoutSessionId
+    ),
   ]);
   if (result[1].meta.changes !== 1) {
     throw new Error("No se pudo reactivar la reserva de inventario");
@@ -142,13 +152,15 @@ export async function releaseInventoryReservation(
       )
       SELECT
         lower(hex(randomblob(16))), movement.variant_id,
-        -movement.quantity, 'released', ?, movement.reservation_id
+        -SUM(movement.quantity), 'released', ?, movement.reservation_id
       FROM stock_movement AS movement
       INNER JOIN checkout_reservation AS reservation
         ON reservation.id = movement.reservation_id
-      WHERE movement.reason = 'reserved'
+      WHERE movement.reason IN ('reserved', 'released')
         AND reservation.status IN ('pending', 'active')
         AND reservation.id = ?
+      GROUP BY movement.reservation_id, movement.variant_id
+      HAVING SUM(movement.quantity) < 0
     `).bind("Reserva cancelada", reservationId),
     env.DB.prepare(`
       UPDATE checkout_reservation
@@ -168,14 +180,16 @@ export async function releaseInventoryReservationBySession(
       )
       SELECT
         lower(hex(randomblob(16))), movement.variant_id,
-        -movement.quantity, 'released', 'Checkout vencido',
+        -SUM(movement.quantity), 'released', 'Checkout vencido',
         movement.reservation_id
       FROM stock_movement AS movement
       INNER JOIN checkout_reservation AS reservation
         ON reservation.id = movement.reservation_id
-      WHERE movement.reason = 'reserved'
+      WHERE movement.reason IN ('reserved', 'released')
         AND reservation.status IN ('pending', 'active')
         AND reservation.stripe_checkout_session_id = ?
+      GROUP BY movement.reservation_id, movement.variant_id
+      HAVING SUM(movement.quantity) < 0
     `).bind(checkoutSessionId),
     env.DB.prepare(`
       UPDATE checkout_reservation
