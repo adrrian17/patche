@@ -86,7 +86,26 @@ export const confirmDigitalUpload = createServerFn({ method: "POST" })
     }
 
     const bucket = getDigitalBucket();
-    const temporaryObject = await bucket.get(intent.temporaryKey);
+    const temporaryObject = await (async () => {
+      try {
+        return await bucket.get(intent.temporaryKey);
+      } catch (error) {
+        try {
+          await db
+            .update(digitalUploadIntent)
+            .set({ status: "uploaded" })
+            .where(
+              and(
+                eq(digitalUploadIntent.id, intent.id),
+                eq(digitalUploadIntent.status, "confirming")
+              )
+            );
+        } catch {
+          // Preserve the original Storage lookup error for retry behavior.
+        }
+        throw error;
+      }
+    })();
     const objectMatches =
       temporaryObject?.size === intent.expectedSize &&
       temporaryObject.httpMetadata?.contentType === intent.contentType;
