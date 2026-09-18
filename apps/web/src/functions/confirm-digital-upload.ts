@@ -2,7 +2,7 @@ import { createDb } from "@patche/db";
 import { variant } from "@patche/db/schema/catalog";
 import { digitalUploadIntent } from "@patche/db/schema/storage";
 import { createServerFn } from "@tanstack/react-start";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, or } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -60,7 +60,7 @@ export const confirmDigitalUpload = createServerFn({ method: "POST" })
         digitalFileSize: intent.expectedSize,
       };
     }
-    if (intent.status !== "uploaded") {
+    if (intent.status !== "pending" && intent.status !== "uploaded") {
       throw new Error("Upload Intent no está listo para confirmar");
     }
 
@@ -70,7 +70,13 @@ export const confirmDigitalUpload = createServerFn({ method: "POST" })
       .where(
         and(
           eq(digitalUploadIntent.id, intent.id),
-          eq(digitalUploadIntent.status, "uploaded")
+          or(
+            eq(digitalUploadIntent.status, "uploaded"),
+            and(
+              eq(digitalUploadIntent.status, "pending"),
+              gt(digitalUploadIntent.expiresAt, new Date())
+            )
+          )
         )
       )
       .returning({ id: digitalUploadIntent.id })
