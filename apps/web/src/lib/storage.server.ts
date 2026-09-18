@@ -1,9 +1,11 @@
+import { createDb } from "@patche/db";
+import { digitalUploadIntent } from "@patche/db/schema/storage";
 import { env } from "@patche/env/server";
 import {
   createPresignedUrl,
-  DIGITAL_DOWNLOAD_EXPIRES_SECONDS,
   DIGITAL_UPLOAD_EXPIRES_SECONDS,
 } from "@patche/storage";
+import { and, eq, isNotNull } from "drizzle-orm";
 
 const storageDeleteAttempts = 3;
 const localMediaProxyPath = "/api/media";
@@ -35,7 +37,46 @@ export async function deleteStorageObjectWithRetry(
   } catch {
     if (attempts > 1) {
       await deleteStorageObjectWithRetry(bucket, key, attempts - 1);
+      return;
     }
+    throw new Error(`No se pudo eliminar el objeto de Storage: ${key}`);
+  }
+}
+
+export async function retryPendingStorageDeletions(): Promise<void> {
+  const db = createDb();
+  const pending = await db
+    .select({
+      id: digitalUploadIntent.id,
+      key: digitalUploadIntent.replacedKey,
+    })
+    .from(digitalUploadIntent)
+    .where(isNotNull(digitalUploadIntent.replacedKey))
+    .limit(10);
+  const deletions = await Promise.allSettled(
+    pending.map(async (item) => {
+      if (!item.key) {
+        return;
+      }
+      await deleteStorageObjectWithRetry(getDigitalBucket(), item.key);
+      await db
+        .update(digitalUploadIntent)
+        .set({ replacedKey: null })
+        .where(
+          and(
+            eq(digitalUploadIntent.id, item.id),
+            eq(digitalUploadIntent.replacedKey, item.key)
+          )
+        );
+    })
+  );
+  const failures = deletions.filter(
+    (result) => result.status === "rejected"
+  ).length;
+  if (failures > 0) {
+    throw new Error(
+      `No se pudieron completar ${failures} eliminaciones de Storage`
+    );
   }
 }
 
@@ -57,13 +98,5 @@ export async function createDigitalPutUrl(
     expiresSeconds: DIGITAL_UPLOAD_EXPIRES_SECONDS,
     key,
     method: "PUT",
-  });
-}
-
-export async function createDigitalGetUrl(key: string): Promise<string> {
-  return await createPresignedUrl(getPresignConfig(), {
-    expiresSeconds: DIGITAL_DOWNLOAD_EXPIRES_SECONDS,
-    key,
-    method: "GET",
   });
 }

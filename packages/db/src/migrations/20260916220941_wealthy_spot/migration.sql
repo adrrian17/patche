@@ -1,0 +1,1 @@
+ALTER TABLE `digital_upload_intent` ADD `replaced_key` text;

@@ -6,6 +6,31 @@ import { startCheckout } from "./checkout";
 import type { CheckoutDependencies } from "./checkout";
 import { stockFromMovements } from "./stock";
 
+const inventoryDependencies = {
+  activateInventoryReservation() {
+    return Promise.resolve();
+  },
+  expireSession() {
+    return Promise.resolve();
+  },
+  releaseInventoryReservation() {
+    return Promise.resolve();
+  },
+  reserveInventory(
+    _customerId: string,
+    _items: { quantity: number; variantId: string }[],
+    expiresAt: Date
+  ) {
+    return Promise.resolve({ expiresAt, id: "reservation_1" });
+  },
+} satisfies Pick<
+  CheckoutDependencies,
+  | "activateInventoryReservation"
+  | "expireSession"
+  | "releaseInventoryReservation"
+  | "reserveInventory"
+>;
+
 describe("startCheckout", () => {
   test("derived Stock is the sum of Stock Movements", () => {
     expect(stockFromMovements([10, -3, 1, -8])).toBe(0);
@@ -15,6 +40,7 @@ describe("startCheckout", () => {
   test("blocks checkout when a Physical Variant has no Stock", async () => {
     let sessionsCreated = 0;
     const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
       createSession() {
         sessionsCreated += 1;
         return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
@@ -52,6 +78,7 @@ describe("startCheckout", () => {
     let capturedParams: Stripe.Checkout.SessionCreateParams | undefined;
     let capturedOptions: Stripe.RequestOptions | undefined;
     const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
       createSession(params, options) {
         capturedParams = params;
         capturedOptions = options;
@@ -104,13 +131,19 @@ describe("startCheckout", () => {
     expect(
       JSON.parse(String(capturedParams?.metadata?.items ?? "null"))
     ).toEqual([{ qty: 2, variantId: "variant_1" }]);
-    expect(capturedOptions?.idempotencyKey).toStartWith("checkout:customer_1:");
+    expect(capturedOptions?.idempotencyKey).toBe("checkout:reservation_1");
+    expect(capturedParams?.metadata?.reservationId).toBe("reservation_1");
+    expect(capturedParams?.payment_intent_data?.metadata?.reservationId).toBe(
+      "reservation_1"
+    );
+    expect(capturedParams?.expires_at).toBeNumber();
   });
 
   test("does not request shipping for a digital-only cart", async () => {
     let capturedParams: Stripe.Checkout.SessionCreateParams | undefined;
     let shippingRateReads = 0;
     const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
       createSession(params) {
         capturedParams = params;
         return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
@@ -152,6 +185,7 @@ describe("startCheckout", () => {
       `${index}`.padEnd(index === 0 ? 24 : 25, "a")
     );
     const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
       createSession(params) {
         capturedParams = params;
         return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
@@ -190,6 +224,7 @@ describe("startCheckout", () => {
       `${index}`.padEnd(25, "a")
     );
     const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
       createSession() {
         sessionsCreated += 1;
         return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
@@ -213,5 +248,145 @@ describe("startCheckout", () => {
       )
     ).rejects.toThrow("El carrito excede el límite permitido");
     expect(sessionsCreated).toBe(0);
+  });
+
+  test("expires Stripe and releases Stock when reservation activation fails", async () => {
+    const expiredSessions: string[] = [];
+    const releasedReservations: string[] = [];
+    const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
+      activateInventoryReservation() {
+        return Promise.reject(new Error("D1 unavailable"));
+      },
+      createSession() {
+        return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
+      },
+      expireSession(sessionId) {
+        expiredSessions.push(sessionId);
+        return Promise.resolve();
+      },
+      getShippingRateAmount() {
+        return Promise.resolve(1000);
+      },
+      getVariants() {
+        return Promise.resolve([
+          {
+            id: "variant_1",
+            kind: "physical",
+            priceAmount: 25_000,
+            stock: 2,
+            stripePriceId: "price_1",
+          },
+        ]);
+      },
+      releaseInventoryReservation(reservationId) {
+        releasedReservations.push(reservationId);
+        return Promise.resolve();
+      },
+    };
+
+    await expect(
+      startCheckout(
+        {
+          customerId: "customer_1",
+          items: [{ quantity: 1, variantId: "variant_1" }],
+          origin: "https://patche.mx",
+        },
+        dependencies
+      )
+    ).rejects.toThrow("D1 unavailable");
+    expect(expiredSessions).toEqual(["cs_test"]);
+    expect(releasedReservations).toEqual(["reservation_1"]);
+  });
+
+  test("recovers an ambiguously created Stripe Session with the same key", async () => {
+    const idempotencyKeys: (string | undefined)[] = [];
+    let attempts = 0;
+    const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
+      createSession(_params, options) {
+        attempts += 1;
+        idempotencyKeys.push(options.idempotencyKey);
+        if (attempts === 1) {
+          return Promise.reject(new Error("response lost"));
+        }
+        return Promise.resolve({ id: "cs_recovered", url: null });
+      },
+      getShippingRateAmount() {
+        return Promise.resolve(1000);
+      },
+      getVariants() {
+        return Promise.resolve([
+          {
+            id: "variant_1",
+            kind: "physical",
+            priceAmount: 25_000,
+            stock: 2,
+            stripePriceId: "price_1",
+          },
+        ]);
+      },
+    };
+
+    await expect(
+      startCheckout(
+        {
+          customerId: "customer_1",
+          items: [{ quantity: 1, variantId: "variant_1" }],
+          origin: "https://patche.mx",
+        },
+        dependencies
+      )
+    ).resolves.toEqual({ id: "cs_recovered", url: null });
+    expect(idempotencyKeys).toEqual([
+      "checkout:reservation_1",
+      "checkout:reservation_1",
+    ]);
+  });
+
+  test("keeps Stock reserved when Stripe expiration cannot be confirmed", async () => {
+    const releasedReservations: string[] = [];
+    const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
+      activateInventoryReservation() {
+        return Promise.reject(new Error("D1 unavailable"));
+      },
+      createSession() {
+        return Promise.resolve({ id: "cs_active", url: null });
+      },
+      expireSession() {
+        return Promise.reject(new Error("Stripe unavailable"));
+      },
+      getShippingRateAmount() {
+        return Promise.resolve(1000);
+      },
+      getVariants() {
+        return Promise.resolve([
+          {
+            id: "variant_1",
+            kind: "physical",
+            priceAmount: 25_000,
+            stock: 2,
+            stripePriceId: "price_1",
+          },
+        ]);
+      },
+      releaseInventoryReservation(reservationId) {
+        releasedReservations.push(reservationId);
+        return Promise.resolve();
+      },
+    };
+
+    await expect(
+      startCheckout(
+        {
+          customerId: "customer_1",
+          items: [{ quantity: 1, variantId: "variant_1" }],
+          origin: "https://patche.mx",
+        },
+        dependencies
+      )
+    ).rejects.toThrow("D1 unavailable");
+    expect(releasedReservations).toEqual([]);
   });
 });

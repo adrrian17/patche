@@ -1,12 +1,21 @@
 import { createDb } from "@patche/db";
 import { variant } from "@patche/db/schema/catalog";
-import { DIGITAL_FILE_MAX_BYTES, digitalObjectKey } from "@patche/storage";
+import { digitalUploadIntent } from "@patche/db/schema/storage";
+import {
+  DIGITAL_FILE_MAX_BYTES,
+  DIGITAL_UPLOAD_EXPIRES_SECONDS,
+  digitalObjectKey,
+  digitalUploadTemporaryKey,
+} from "@patche/storage";
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { createDigitalPutUrl } from "@/lib/storage.server";
+import {
+  createDigitalPutUrl,
+  retryPendingStorageDeletions,
+} from "@/lib/storage.server";
 import { adminMiddleware } from "@/middleware/admin";
 
 export const createDigitalUploadUrl = createServerFn({ method: "POST" })
@@ -19,7 +28,12 @@ export const createDigitalUploadUrl = createServerFn({ method: "POST" })
       variantId: z.string().min(1).max(32),
     })
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    try {
+      await retryPendingStorageDeletions();
+    } catch {
+      // Cleanup is retryable and must not prevent a new upload intent.
+    }
     const db = createDb();
     const matchingVariant = await db
       .select({
@@ -39,12 +53,25 @@ export const createDigitalUploadUrl = createServerFn({ method: "POST" })
       throw new Error("Variant archivada");
     }
 
-    const key = digitalObjectKey(data.variantId, nanoid());
-    const url = await createDigitalPutUrl(key, data.contentType);
+    const intentId = nanoid();
+    const temporaryKey = digitalUploadTemporaryKey(intentId);
+    const finalKey = digitalObjectKey(data.variantId, nanoid());
+    await db.insert(digitalUploadIntent).values({
+      contentType: data.contentType,
+      createdBy: context.session.user.id,
+      expectedSize: data.size,
+      expiresAt: new Date(Date.now() + DIGITAL_UPLOAD_EXPIRES_SECONDS * 1000),
+      fileName: data.fileName,
+      finalKey,
+      id: intentId,
+      temporaryKey,
+      variantId: data.variantId,
+    });
+    const url = await createDigitalPutUrl(temporaryKey, data.contentType);
     return {
       contentType: data.contentType,
       fileName: data.fileName,
-      key,
+      intentId,
       size: data.size,
       url,
     };

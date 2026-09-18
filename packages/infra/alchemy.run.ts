@@ -63,6 +63,15 @@ function createApp(stage: string, isLocal: boolean, zoneId?: string) {
         allowedOrigins: getAllowedOrigins(isProduction, isLocal),
       },
     ],
+    lifecycleRules: [
+      {
+        deleteObjectsTransition: {
+          condition: { maxAge: 86_400, type: "Age" },
+        },
+        id: "delete-abandoned-digital-uploads",
+        prefix: "uploads/",
+      },
+    ],
   });
 
   if (!isLocal && zoneId) {

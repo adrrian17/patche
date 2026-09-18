@@ -1,10 +1,5 @@
 import { AwsClient } from "aws4fetch";
 
-export const DIGITAL_UPLOAD_EXPIRES_SECONDS = 3600;
-export const DIGITAL_DOWNLOAD_EXPIRES_SECONDS = 900;
-export const DIGITAL_FILE_MAX_BYTES = 500 * 1024 * 1024;
-export const MEDIA_FILE_MAX_BYTES = 10 * 1024 * 1024;
-
 export interface PresignConfig {
   accessKeyId: string;
   accountId: string;

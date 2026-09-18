@@ -1,9 +1,6 @@
 import { createDb } from "@patche/db";
 import { product, variant } from "@patche/db/schema/catalog";
-import {
-  stockMovement,
-  stockMovementReasons,
-} from "@patche/db/schema/inventory";
+import { stockMovement } from "@patche/db/schema/inventory";
 import { createServerFn } from "@tanstack/react-start";
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -59,7 +56,7 @@ export const createStockMovement = createServerFn({ method: "POST" })
     z.object({
       note: z.string().trim().max(500).default(""),
       quantity: z.number().int().min(-1_000_000).max(1_000_000),
-      reason: z.enum(stockMovementReasons).refine((value) => value !== "sold"),
+      reason: z.enum(["received", "adjusted", "returned"]),
       variantId: idSchema,
     })
   )

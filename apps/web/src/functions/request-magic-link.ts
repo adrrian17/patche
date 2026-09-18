@@ -6,11 +6,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
-const requestSchema = z.object({
-  email: z.email(),
-  mode: z.enum(["register", "sign-in"]),
-  name: z.string().trim().min(2).max(120).optional(),
-});
+const requestSchema = z.discriminatedUnion("mode", [
+  z.object({
+    email: z.email(),
+    mode: z.literal("register"),
+    name: z.string().trim().min(2).max(120),
+  }),
+  z.object({
+    email: z.email(),
+    mode: z.literal("sign-in"),
+  }),
+]);
 
 interface MagicLinkRequestBody {
   callbackURL: string;
@@ -68,7 +74,7 @@ export const requestMagicLink = createServerFn({ method: "POST" })
       newUserCallbackURL: "/auth/continue",
     };
 
-    if (data.mode === "register" && !existingUser && data.name) {
+    if (data.mode === "register" && !existingUser) {
       body.name = data.name;
     }
 

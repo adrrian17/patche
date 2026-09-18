@@ -17,6 +17,7 @@ export const paymentStatuses = [
   "succeeded",
   "failed",
   "canceled",
+  "refund_pending",
   "refunded",
 ] as const;
 export const fulfillmentStatuses = [
@@ -24,6 +25,47 @@ export const fulfillmentStatuses = [
   "shipped",
   "delivered",
 ] as const;
+
+export const checkoutReservationStatuses = [
+  "pending",
+  "active",
+  "consumed",
+  "released",
+] as const;
+
+export const checkoutReservation = sqliteTable(
+  "checkout_reservation",
+  {
+    id: text("id").notNull().$defaultFn(nanoid),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => user.id),
+    stripeCheckoutSessionId: text("stripe_checkout_session_id").unique(),
+    status: text("status", { enum: checkoutReservationStatuses })
+      .default("pending")
+      .notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.id] }),
+    index("checkout_reservation_customer_id_idx").on(table.customerId),
+    index("checkout_reservation_status_expires_at_idx").on(
+      table.status,
+      table.expiresAt
+    ),
+    check(
+      "checkout_reservation_status_check",
+      sql`${table.status} in ('pending', 'active', 'consumed', 'released')`
+    ),
+  ]
+);
 
 export interface ShippingAddress {
   city: string | null;
@@ -44,6 +86,9 @@ export const order = sqliteTable(
     stripeCheckoutSessionId: text("stripe_checkout_session_id")
       .notNull()
       .unique(),
+    reservationId: text("reservation_id")
+      .unique()
+      .references(() => checkoutReservation.id),
     stripePaymentIntentId: text("stripe_payment_intent_id"),
     stripeCustomerId: text("stripe_customer_id"),
     paymentStatus: text("payment_status", { enum: paymentStatuses })
@@ -88,7 +133,7 @@ export const order = sqliteTable(
     ),
     check(
       "order_payment_status_check",
-      sql`${table.paymentStatus} in ('pending', 'succeeded', 'failed', 'canceled', 'refunded')`
+      sql`${table.paymentStatus} in ('pending', 'succeeded', 'failed', 'canceled', 'refund_pending', 'refunded')`
     ),
     check("order_shipping_amount_check", sql`${table.shippingAmount} >= 0`),
     check("order_subtotal_amount_check", sql`${table.subtotalAmount} >= 0`),
