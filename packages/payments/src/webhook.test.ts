@@ -34,15 +34,26 @@ describe("verifyWebhookEvent", () => {
     expect(event.id).toBe("evt_test");
   });
 
-  test("rejects a payload with an invalid Stripe signature", async () => {
+  test.each([
+    {
+      body: payload,
+      name: "signed with another secret",
+      secret: "whsec_other",
+    },
+    {
+      body: payload.replace("cs_test", "cs_tampered"),
+      name: "with a tampered body",
+      secret: webhookSecret,
+    },
+  ])("rejects a payload $name", async ({ body, secret }) => {
     const stripe = createStripeClient("sk_test_placeholder");
+    const signature = await Stripe.webhooks.generateTestHeaderStringAsync({
+      payload,
+      secret,
+    });
 
     await expect(
-      verifyWebhookEvent(stripe, {
-        body: payload,
-        secret: webhookSecret,
-        signature: "invalid",
-      })
-    ).rejects.toThrow();
+      verifyWebhookEvent(stripe, { body, secret: webhookSecret, signature })
+    ).rejects.toBeInstanceOf(Stripe.errors.StripeSignatureVerificationError);
   });
 });
