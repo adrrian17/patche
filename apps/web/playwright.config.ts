@@ -12,6 +12,8 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
+  // The HTML report is what CI uploads alongside traces when a test fails.
+  reporter: [["list"], ["html", { open: "never" }]],
   retries: process.env.CI ? 1 : 0,
   testDir: "./e2e",
   use: {
