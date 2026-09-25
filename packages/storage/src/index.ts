@@ -1,7 +1,6 @@
 export {
   digitalObjectKey,
   digitalUploadTemporaryKey,
-  isDigitalObjectKey,
   mediaObjectKey,
   mediaPublicUrl,
 } from "./keys";
