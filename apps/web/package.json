@@ -8,6 +8,7 @@
     "dev": "wrangler d1 migrations apply patche --local --config ../../wrangler.jsonc --persist-to .wrangler/state && APP_ENV=development vite dev",
     "check-types": "tsgo --noEmit",
     "serve": "vite preview",
+    "test:e2e": "APP_ENV=e2e varlock run -- playwright test",
     "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.1.13",
     "@patche/config": "workspace:*",
+    "@playwright/test": "^1.63.0",
     "@tanstack/react-router-devtools": "^1.167.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
