@@ -6,6 +6,8 @@ Patche is an online stationery store for notebooks, calendars, planners, and rel
 
 The repository contains the storefront and admin application, authentication, catalog and inventory management, Stripe checkout and webhook processing, digital file storage, shared UI, and Cloudflare infrastructure.
 
+GitHub Actions runs linting, formatting, build, type checks, package tests, and browser E2E tests on pushes to `main` and pull requests.
+
 ## Stack
 
 - Bun and Turborepo
@@ -56,6 +58,22 @@ Stripe Checkout handles payments. Patche calculates order totals on the server a
 
 Payment implementation rules are documented in [docs/agent-guidelines/payments.md](docs/agent-guidelines/payments.md).
 
+## End-to-end tests
+
+Run the Playwright suite against a fresh local D1 database and the local Workers runtime:
+
+```bash
+bun run test:e2e
+```
+
+Install Chromium first if Playwright has not been set up locally:
+
+```bash
+bunx playwright install chromium
+```
+
+The suite covers storefront smoke checks and magic-link authentication. On failure, Playwright saves an HTML report, screenshots, and traces under `apps/web/playwright-report` and `apps/web/test-results`.
+
 ## UI development
 
 Reusable primitives and shared styles belong in `packages/ui`. Storefront-specific blocks belong in `apps/web`.
@@ -84,7 +102,9 @@ The Worker and its bindings are configured in the root `wrangler.jsonc`. Local d
 
 Varlock reads shared configuration from the root `.env.schema`; `apps/web/.env.schema` imports it. Secrets use the 1Password plugin. Configure the 1Password service-account token as a secret build variable named `OP_SERVICE_ACCOUNT_TOKEN`, and set `APP_ENV=production` plus `CF_ACCOUNT_ID` as build variables in Cloudflare. Replace the example `op://` references in the root schema with references in your vault. `APP_ENV` defaults to `production`; `bun run dev` sets `development`, and other local commands such as `bun run build` need `APP_ENV=development` to use development configuration.
 
-In Cloudflare Workers Builds, use the repository root as the install directory, build with `bun run --cwd apps/web build`, and deploy with `bun run --cwd apps/web deploy` (which runs `varlock-wrangler deploy`). Before the first deploy, create or select the D1 database and R2 buckets, then set the D1 ID and bucket names in `wrangler.jsonc`. The Worker uses its assigned `workers.dev` URL, with no custom route. Set `WORKER_PUBLIC_URL` in Cloudflare Builds to `https://patche-web.<subdomain>.workers.dev`; it is required in production. The Worker also proxies media requests.
+In Cloudflare Workers Builds, use the repository root as the install directory, set the build command to `bun run --cwd apps/web build`, and the deploy command to `bun run --cwd apps/web deploy`. The deploy script applies pending migrations to the remote D1 database and runs `varlock-wrangler deploy`. Configure `OP_SERVICE_ACCOUNT_TOKEN` as a secret build variable, and set `APP_ENV=production` and `CF_ACCOUNT_ID` as build variables. Before the first deploy, create or select the D1 database and R2 buckets, then set the D1 ID and bucket names in `wrangler.jsonc`. The Worker uses its assigned `workers.dev` URL, with no custom route. Set `WORKER_PUBLIC_URL` in Cloudflare Builds to `https://patche-web.<subdomain>.workers.dev`; it is required in production. The Worker also proxies media requests.
+
+For preview builds, use `bun run --cwd apps/web build` as the build command and leave the deploy command unset unless a separate preview Worker and isolated preview bindings have been configured. Do not use the production deploy script for previews: it applies migrations to the production D1 database.
 
 If you reuse a D1 database that Alchemy already migrated, baseline Wrangler's migration history before the first deploy. Alchemy records applied files in `__alchemy_migrations`, and Wrangler tracks its own history in `d1_migrations`, so the deploy script would otherwise re-run the committed migrations and fail on tables that already exist. List the migrations that Wrangler considers pending, then mark the ones that Alchemy already applied (compare them with `__alchemy_migrations`) as applied, using the exact names that the list command prints:
 
@@ -133,6 +153,7 @@ patche/
 - `bun run build`: build the workspace
 - `bun run check-types`: type-check the workspace
 - `bun run test:integration`: test the Stripe webhook against local Cloudflare D1
+- `bun run test:e2e`: run Playwright browser tests against local Cloudflare Workers and D1
 - `bun run check`: check linting and formatting
 - `bun run fix`: apply lint and formatting fixes
 - `bun run db:generate`: generate Drizzle migrations
