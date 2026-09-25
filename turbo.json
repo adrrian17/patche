@@ -6,7 +6,7 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**"],
-      "env": ["APP_ENV", "WORKER_PUBLIC_URL", "CLOUDFLARE_ACCOUNT_ID"],
+      "env": ["APP_ENV", "WORKER_PUBLIC_URL", "CF_ACCOUNT_ID"],
       "passThroughEnv": [
         "OP_SERVICE_ACCOUNT_TOKEN",
         "BETTER_AUTH_SECRET",
