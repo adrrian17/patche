@@ -6,7 +6,23 @@ Patche is an online stationery store (notebooks, calendars, planners, office goo
 
 _These are recommendations to keep your build orderly, not requirements. Skip anything that does not fit: if you already know how to build a feature, use `/develop` and skip `/architect`. You decide when a feature is `done`._
 
-The decisions for this slice were settled in a grilling session and live in the plan at `~/Documents/Notes/Dev/Plans/2026-09-24-claude-e2e-test-suite.md`. Read it before building any feature below.
+The decisions for this slice were settled in a grilling session and are recorded below. Read them before building any feature.
+
+### Slice decisions
+
+1. **Coverage:** auth, admin catalog, purchase, and post sale run in E2E. Stock reservation release and Download Grants stay in the Miniflare integration suite.
+2. **Tool:** Playwright in `apps/web/e2e/`, Chromium only.
+3. **Stripe:** real test mode in a dedicated E2E sandbox, with no cleanup (names get a per run suffix). The purchase happy path pays in hosted Checkout (`4242…`); other scenarios use synthetic events where the handler allows it.
+4. **Webhook delivery:** no Stripe CLI. After paying, the test fetches the real event with `stripe.events.list({ type })`, filters by session or payment intent, signs it with `STRIPE_WEBHOOK_SECRET`, and POSTs it to `/api/stripe/webhook`. The same helper signs synthetic events. `checkout.session.completed` calls `sessions.listLineItems`, so it needs a real session; `charge.refunded` only touches D1.
+5. **Login:** real magic link. A helper requests the link on `/login`, reads the newest Miniflare email under `apps/web/.wrangler/tmp/email/`, and opens the URL. The Admin role is set with `wrangler d1 execute --local`. A Playwright setup project logs in once per role and saves `storageState`. Better Auth `testUtils` was ruled out because it has no HTTP routes and would need a privileged test route inside the Worker; revisit if tests need many roles or users.
+6. **Server under test:** `vite dev` (keeps `/dev/checkout`) with an isolated D1 persist dir, wiped each run. Move to build plus `wrangler dev` once a real storefront and cart exist.
+7. **Secrets:** `APP_ENV=e2e` in `.env.schema` reads an E2E 1Password item locally; CI injects values from GitHub Secrets.
+8. **Catalog fixtures:** the admin catalog test drives the UI. Other tests create fixtures by calling the catalog server functions with the admin session (`page.request`), falling back to a UI helper `createActiveProduct()` if that isn't clean. Each test creates its own Variant so tests can run in parallel.
+9. **Digital Variant:** out of E2E, because presigned PUT needs real R2. Download Grants are covered in integration.
+10. **Runner:** `workers: 2` in CI, retries 1 in CI and 0 locally, traces and screenshots kept on failure.
+11. **CI:** a separate E2E job on every PR that uploads the Playwright report and traces when a test fails.
+
+Open questions: whether catalog server functions can be called cleanly from `page.request` (settle in feature 3); whether a refund restocks Physical Stock (check `CONTEXT.md` before feature 5). Changes to the hosted Checkout page may break purchase tests, an accepted risk.
 
 ## At a glance
 
