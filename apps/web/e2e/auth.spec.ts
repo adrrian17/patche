@@ -23,8 +23,15 @@ test("signs out and loses access to the dashboard", async ({ page }) => {
     name: "Cliente Saliente",
   });
 
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
-  await page.waitForURL("**/login");
+  // A click before hydration does nothing, so retry until the redirect lands.
+  await expect(async () => {
+    if (!page.url().endsWith("/login")) {
+      await page
+        .getByRole("button", { name: "Cerrar sesión" })
+        .click({ timeout: 2000 });
+    }
+    await expect(page).toHaveURL(/\/login$/u, { timeout: 2000 });
+  }).toPass();
 
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login$/u);
