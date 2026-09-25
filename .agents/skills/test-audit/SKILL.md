@@ -10,7 +10,7 @@ write time. Audit mode runs focused sweeps of tests that re-assert source,
 duplicate stronger proof, couple behavior to implementation, or keep test-only
 production seams alive. Continue broad audits as separate coherent follow-up
 PRs; optimize for confidence, not deletion count. Campaign mode prunes one
-whole subsystem's test surface (every test file a plugin or core area owns);
+whole subsystem's test surface (every test file a package or app area owns);
 before starting one, read [CAMPAIGN.md](CAMPAIGN.md).
 
 ## Authoring gate
@@ -92,9 +92,9 @@ speculative inventory. Hunt for the [junk patterns](#junk-patterns).
 
 ## Retention bar
 
-Keep a test when it independently enforces a public API, plugin SDK, protocol,
-config, migration, storage, security, platform, default, prompt-byte, generated
-cross-language, package, release, or architecture contract. Also keep:
+Keep a test when it independently enforces a public API, Stripe or webhook
+protocol, config, migration, storage, security, platform, default, package, or
+architecture contract. Also keep:
 
 - call ordering when order is observable behavior;
 - regressions with a credible failure mode;

@@ -1,6 +1,6 @@
 # Test-pruning campaign
 
-Campaign mode prunes one subsystem's whole test surface in one PR: a plugin
+Campaign mode prunes one subsystem's whole test surface in one PR: a package
 such as `packages/payments`, or one app area. The value bar, retention bar,
 candidate evidence, and validation in [SKILL.md](SKILL.md) apply to every
 lane. This file adds the order of work and the lessons of a full campaign.
@@ -10,18 +10,15 @@ Each step ends on its completion criterion; do not start the next step early.
 
 Record the subsystem's test and support line counts and every test file's
 pass/fail state at a pinned `main` SHA. Keep baseline failures in their own
-list: in the Telegram campaign, all three were real delivery bugs, not stale
-tests.
+list: they are often real product bugs, not stale tests.
 
 Done when every in-scope test file has a recorded baseline result.
 
 ## 2. Lanes and inventory
 
 Split the surface into **lanes** along production owner boundaries, not file
-prefixes. For Telegram these were accounts, commands, context, dispatch,
-inbound, outbound, persistence, transport, shared, harness, and live/QA
-scenarios. Include the subsystem's cases at shared core boundaries and its QA
-and live-proof harness tests.
+prefixes. Include the subsystem's cases at shared core boundaries and its
+integration tests.
 
 Done when every test file and QA scenario the subsystem owns belongs to exactly
 one lane.
@@ -42,17 +39,14 @@ unless its rows need different marks; then mark each row.
   table case, a stronger boundary suite, or the shared owner in another package;
 - `D`: delete, naming the proof that remains, or why no contract exists.
 
-Judge a test by its assertions, not its name. One Telegram test named for
-retiring a progress window asserted the window was _not_ cleared.
+Judge a test by its assertions, not its name.
 
 Done when every declaration in the lane has a mark and an evidence line.
 
 ## 4. Layer plan per lane
 
 Treat the per-test ledger as input, not as the edit list. A second read-only
-pass, starting from the ledger, looks for the redundant **layer**. In Telegram,
-several dispatch suites replayed the same shared compositor through one mocked
-preview, around stronger real-stream and HTTP-fixture suites. Name the
+pass, starting from the ledger, looks for the redundant **layer**. Name the
 **keeper** suite for each contract. Prefer the real transport boundary with a
 fake network over a mocked collaborator. Correct any ledger errors this pass
 finds.
@@ -65,9 +59,9 @@ assertions to carry into keepers, and the test-only production seams unlocked.
 Edit lane by lane. Serialize changes to shared harnesses and support files
 through one owner. With each lane, remove the test-only production seams it
 unlocks: injection parameters, getters, reset exports, and indirection layers.
-Register moved suites in CI routing and test inventories. Update shrink-only
-line-cap baselines. Put durable test-ownership rules in the subsystem's
-`AGENTS.md`, drawn from mistakes this campaign actually found.
+Register moved suites in `.github/workflows/ci.yml`. Put durable
+test-ownership rules in the subsystem's `AGENTS.md`, drawn from mistakes this
+campaign actually found.
 
 Done when every lane plan is applied and each lane's keepers pass.
 
@@ -76,8 +70,7 @@ Done when every lane plan is applied and each lane's keepers pass.
 Before claiming completion, have independent reviewers compare deleted
 coverage against the keepers, one reviewer per boundary group. They look for
 contracts that lost their only proof. They also look for new assertions that
-cannot fail, such as a rejection row the production code never reaches. The
-Telegram review found nine real gaps and one unreachable assertion.
+cannot fail, such as a rejection row the production code never reaches.
 
 For each restored contract, make one deliberate **mutation** of the production
 owner and confirm the keeper goes red. Then restore the source byte for byte.

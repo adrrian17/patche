@@ -23,6 +23,7 @@ Patche is an online stationery store for notebooks, calendars, planners, and rel
 - Run the test suite with `bun test`.
 - Run the Cloudflare and D1 integration suite with `bun run test:integration`.
 - Read `CONTEXT.md` before changing domain terms or business rules.
+- Read the testing approach in [docs/agent-guidelines/testing.md](docs/agent-guidelines/testing.md) before writing any code, because it decides when tests come first.
 
 ## Task-specific guidance
 
