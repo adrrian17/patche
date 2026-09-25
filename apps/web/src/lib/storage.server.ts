@@ -82,11 +82,13 @@ export async function retryPendingStorageDeletions(): Promise<void> {
 
 export function getMediaPublicBaseUrl(): string {
   const baseUrl = env.MEDIA_PUBLIC_BASE_URL.replace(/\/$/u, "");
-  return env.MEDIA_PUBLIC_PROXY ? `${baseUrl}${localMediaProxyPath}` : baseUrl;
+  return env.MEDIA_PUBLIC_PROXY === "true"
+    ? `${baseUrl}${localMediaProxyPath}`
+    : baseUrl;
 }
 
 export function isLocalMediaProxyEnabled(): boolean {
-  return env.MEDIA_PUBLIC_PROXY;
+  return env.MEDIA_PUBLIC_PROXY === "true";
 }
 
 export async function createDigitalPutUrl(

@@ -5,7 +5,7 @@ import { defineConfig } from "drizzle-kit";
 
 const localD1Directory = path.resolve(
   import.meta.dirname,
-  "../infra/.alchemy/local/d1/cloudflare-runtime-D1DatabaseObject"
+  "../../apps/web/.wrangler/state/v3/d1/miniflare-D1DatabaseObject"
 );
 
 function getLastActivity(databasePath: string): number {
@@ -20,15 +20,9 @@ function getLastActivity(databasePath: string): number {
 }
 
 function findLocalD1Database(): string {
-  const configuredPath = process.env.LOCAL_D1_PATH;
-
-  if (configuredPath) {
-    return path.resolve(configuredPath);
-  }
-
   if (!existsSync(localD1Directory)) {
     throw new Error(
-      "No se encontró la D1 local de Alchemy. Ejecuta `bun run dev` primero."
+      "No se encontró la D1 local de Wrangler. Ejecuta `bun run dev` primero."
     );
   }
 
@@ -49,7 +43,7 @@ function findLocalD1Database(): string {
 
   if (!latestDatabase) {
     throw new Error(
-      "Alchemy todavía no ha creado una D1 local. Ejecuta `bun run dev` primero."
+      "Wrangler todavía no ha creado una D1 local. Ejecuta `bun run dev` primero."
     );
   }
 

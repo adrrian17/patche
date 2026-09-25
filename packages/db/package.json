@@ -11,15 +11,12 @@
   },
   "scripts": {
     "check-types": "tsgo --noEmit",
-    "dev": "drizzle-kit studio --config drizzle-local.config.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:deploy": "drizzle-kit migrate",
-    "db:studio:local": "drizzle-kit studio --config drizzle-local.config.ts"
+    "db:studio": "drizzle-kit studio --config drizzle-local.config.ts"
   },
   "dependencies": {
     "@libsql/client": "catalog:",
     "@patche/env": "workspace:*",
-    "dotenv": "catalog:",
     "drizzle-orm": "1.0.0-rc.5-ab785fc",
     "libsql": "catalog:",
     "nanoid": "^5.1.6",

@@ -43,8 +43,11 @@ lerna-debug.log*
 .turbo
 .nx
 
-# Better-T-Stack
+# Local infrastructure state
 .alchemy
+.wrangler
+
+# Deployment
 .vercel
 
 # Testing

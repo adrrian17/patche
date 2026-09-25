@@ -8,7 +8,7 @@ Patche is an online stationery store for notebooks, calendars, planners, and rel
 - TanStack Start and TanStack Router
 - Turborepo with Bun workspaces
 - Drizzle ORM on Cloudflare D1
-- Alchemy with Cloudflare Workers and R2
+- Wrangler with Cloudflare Workers and R2
 
 ## Build approach
 
@@ -41,6 +41,6 @@ Read only the guides relevant to the files you are changing:
 
 - [apps/web/AGENTS.md](apps/web/AGENTS.md) (TanStack Start storefront, admin, routes, and server functions)
 - [packages/db/AGENTS.md](packages/db/AGENTS.md) (Drizzle schema, migrations, and local D1 tooling)
-- [packages/infra/AGENTS.md](packages/infra/AGENTS.md) (Alchemy resources and Cloudflare deployment)
+- [docs/agent-guidelines/infrastructure.md](docs/agent-guidelines/infrastructure.md) (Wrangler configuration and Cloudflare deployment)
 - [packages/payments/AGENTS.md](packages/payments/AGENTS.md) (Stripe checkout and webhook domain logic)
 - [packages/ui/AGENTS.md](packages/ui/AGENTS.md) (shared UI components, styles, and shadcn configuration)

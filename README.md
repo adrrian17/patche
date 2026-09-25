@@ -14,7 +14,7 @@ The repository contains the storefront and admin application, authentication, ca
 - Tailwind CSS and shared shadcn/ui primitives
 - Better Auth
 - Drizzle ORM and Cloudflare D1
-- Alchemy and Cloudflare
+- Wrangler and Cloudflare Workers
 - Stripe Checkout and verified webhooks for payments
 - Ultracite with Oxlint and Oxfmt
 
@@ -39,18 +39,16 @@ Generate a migration from the repository root:
 bun run db:generate
 ```
 
-Review generated SQL before deployment. Runtime access uses the Cloudflare `DB` binding declared in `packages/infra/alchemy.run.ts`.
+Review generated SQL before deployment. Runtime access uses the `DB` binding in the root `wrangler.jsonc`.
 
-To inspect the local database, start the application once so Alchemy creates its local D1 state, then open Drizzle Studio:
+To inspect the local database, start the application once so Wrangler creates its local D1 state, then open Drizzle Studio:
 
 ```bash
 bun run dev
-bun run db:studio:local
+bun run db:studio
 ```
 
-Set `LOCAL_D1_PATH` only when Studio should use a specific SQLite file instead of the latest local Alchemy database.
-
-Alchemy applies committed D1 migrations during deployment.
+Wrangler uses the committed migrations in `packages/db/src/migrations`.
 
 ## Payments
 
@@ -82,23 +80,11 @@ Run the shadcn/ui CLI from `apps/web` when adding a block used only by the store
 
 ## Deployment
 
-Alchemy provisions the web application and D1 database on Cloudflare.
+The Worker and its bindings are configured in the root `wrangler.jsonc`. Local development uses the Cloudflare Vite plugin and Wrangler. Production deploys through Cloudflare Workers Builds connected to GitHub.
 
-Configure the provider from `packages/infra`:
+Varlock reads shared configuration from the root `.env.schema`; `apps/web/.env.schema` imports it. Secrets use the 1Password plugin. Configure the 1Password service-account token as a secret build variable named `OP_SERVICE_ACCOUNT_TOKEN`, and set `APP_ENV=production` plus `CF_ACCOUNT_ID` as build variables in Cloudflare. Replace the example `op://` references in the root schema with references in your vault.
 
-```bash
-cd packages/infra
-bunx alchemy login --configure
-```
-
-Development deployments use a personal `dev_<username>` stage. Production must use an explicit stage and requires reviewing the planned resource and migration changes:
-
-```bash
-cd packages/infra
-bunx alchemy deploy --stage production
-```
-
-Do not destroy a stage until its name and resources have been inspected.
+In Cloudflare Workers Builds, use the repository root as the install directory, build with `bun run --cwd apps/web build`, and deploy with `bun run --cwd apps/web deploy` (which runs `varlock-wrangler deploy`). Before the first deploy, create or select the D1 database and R2 buckets, then set the D1 ID and bucket names in `wrangler.jsonc`. The Worker uses its assigned `workers.dev` URL, with no custom route. Set `WORKER_PUBLIC_URL` in Cloudflare Builds to `https://patche-web.<subdomain>.workers.dev`; it is required in production. The Worker also proxies media requests.
 
 ## Quality checks
 
@@ -123,7 +109,6 @@ patche/
 │   ├── db/           # Drizzle schema and D1 migrations
 │   ├── email/        # React Email templates
 │   ├── env/          # Typed environment variables
-│   ├── infra/        # Alchemy and Cloudflare resources
 │   ├── payments/     # Stripe checkout and webhook logic
 │   ├── storage/      # R2 keys and signed URLs
 │   └── ui/           # Shared components and styles
@@ -141,8 +126,7 @@ patche/
 - `bun run check`: check linting and formatting
 - `bun run fix`: apply lint and formatting fixes
 - `bun run db:generate`: generate Drizzle migrations
-- `bun run db:studio:local`: inspect the local Alchemy D1 database
+- `bun run db:studio`: inspect the local Wrangler D1 database
 - `bun run deploy`: deploy the infrastructure
-- `bun run destroy`: destroy the selected infrastructure stage
 
 Contributor and coding instructions start in [AGENTS.md](AGENTS.md).

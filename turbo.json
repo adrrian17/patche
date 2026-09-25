@@ -17,19 +17,11 @@
       "cache": false,
       "persistent": true
     },
-    "db:generate": {
-      "cache": false,
-      "interactive": true
-    },
-    "db:studio:local": {
+    "db:studio": {
       "cache": false,
       "persistent": true
     },
     "deploy": {
-      "cache": false,
-      "interactive": true
-    },
-    "destroy": {
       "cache": false,
       "interactive": true
     }

@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "deploy": "wrangler d1 migrations apply patche --remote --config ../../wrangler.jsonc && varlock-wrangler deploy --config dist/server/wrangler.json",
+    "dev": "wrangler d1 migrations apply patche --local --config ../../wrangler.jsonc --persist-to .wrangler/state && vite dev",
     "check-types": "tsgo --noEmit",
     "serve": "vite preview",
-    "dev:bare": "vite dev",
     "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
@@ -28,7 +29,6 @@
     "better-auth": "catalog:",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
-    "dotenv": "catalog:",
     "drizzle-orm": "1.0.0-rc.5-ab785fc",
     "evlog": "^2.27.1",
     "libsql": "catalog:",

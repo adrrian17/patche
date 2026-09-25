@@ -17,7 +17,6 @@
     "@patche/email": "workspace:*",
     "@patche/env": "workspace:*",
     "better-auth": "catalog:",
-    "dotenv": "catalog:",
     "react": "catalog:",
     "zod": "catalog:"
   },
