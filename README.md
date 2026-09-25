@@ -106,16 +106,6 @@ In Cloudflare Workers Builds, use the repository root as the install directory, 
 
 For preview builds, use `bun run --cwd apps/web build` as the build command and leave the deploy command unset unless a separate preview Worker and isolated preview bindings have been configured. Do not use the production deploy script for previews: it applies migrations to the production D1 database.
 
-If you reuse a D1 database that Alchemy already migrated, baseline Wrangler's migration history before the first deploy. Alchemy records applied files in `__alchemy_migrations`, and Wrangler tracks its own history in `d1_migrations`, so the deploy script would otherwise re-run the committed migrations and fail on tables that already exist. List the migrations that Wrangler considers pending, then mark the ones that Alchemy already applied (compare them with `__alchemy_migrations`) as applied, using the exact names that the list command prints:
-
-```bash
-bunx wrangler d1 migrations list patche --remote
-bunx wrangler d1 execute patche --remote --command "SELECT * FROM __alchemy_migrations"
-bunx wrangler d1 execute patche --remote --command "INSERT INTO d1_migrations (name) VALUES ('<name>'), ('<name>')"
-```
-
-Run `wrangler d1 migrations list patche --remote` again afterwards and confirm that it reports no pending migrations. A new, empty database needs no baselining.
-
 ## Quality checks
 
 ```bash
