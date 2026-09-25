@@ -14,6 +14,10 @@ export default defineConfig({
   plugins: [
     varlockCloudflareVitePlugin({
       configPath: "../../wrangler.jsonc",
+      // Playwright points local D1/R2 at an isolated directory it wipes each run.
+      persistState: process.env.E2E_PERSIST_DIR
+        ? { path: process.env.E2E_PERSIST_DIR }
+        : undefined,
       viteEnvironment: { name: "ssr" },
     }),
     tailwindcss(),
