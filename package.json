@@ -33,7 +33,7 @@
     "dev:web": "turbo run dev -F web --",
     "db:generate": "bun run --cwd packages/db db:generate",
     "db:studio": "turbo run db:studio -F @patche/db --",
-    "deploy": "bun run --cwd apps/web build && bun run --cwd apps/web deploy",
+    "deploy": "APP_ENV=production bun run --cwd apps/web build && APP_ENV=production bun run --cwd apps/web deploy",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install"
