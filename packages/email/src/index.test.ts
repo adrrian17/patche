@@ -14,7 +14,7 @@ describe("renderMagicLinkEmail", () => {
     expect(result.html).toContain(
       "http://localhost:3001/api/auth/magic-link/verify?token=test"
     );
-    expect(result.html).toContain("https://patche.mx/logo.png");
+    expect(result.html).toContain("http://localhost:3001/logo.png");
     expect(result.text).toContain("Tu enlace para entrar a Patche");
     expect(result.text).toContain("Este enlace caduca en 10 minutos");
     expect(result.text).toContain(

@@ -4,20 +4,13 @@ import type { Stripe } from "./index";
 import { processStripeEvent } from "./webhook-events";
 import type { WebhookStore, WebhookTransaction } from "./webhook-events";
 
-class MemoryWebhookStore implements WebhookStore, WebhookTransaction {
-  readonly orders = new Map<string, "succeeded" | "failed" | "refunded">();
-  readonly processedEvents = new Set<string>();
-  checkoutEffects = 0;
-  releasedReservations: string[] = [];
-  releasedSessions = 0;
+// Records the transaction calls the processor routes each event to. Idempotency
+// and persistence are owned by the D1 store (apps/web payments.integration.ts).
+class RecordingWebhookStore implements WebhookStore, WebhookTransaction {
+  readonly calls: unknown[][] = [];
 
   createOrder(session: Stripe.Checkout.Session): Promise<void> {
-    this.checkoutEffects += 1;
-    const paymentIntentId = String(session.payment_intent);
-    this.orders.set(
-      paymentIntentId,
-      session.payment_status === "paid" ? "succeeded" : "failed"
-    );
+    this.calls.push(["createOrder", session.id]);
     return Promise.resolve();
   }
 
@@ -25,133 +18,96 @@ class MemoryWebhookStore implements WebhookStore, WebhookTransaction {
     paymentIntentId: string,
     reservationId: string | null
   ): Promise<void> {
-    if (reservationId) {
-      this.releasedReservations.push(reservationId);
-    }
-    if (this.orders.has(paymentIntentId)) {
-      this.orders.set(paymentIntentId, "failed");
-    }
+    this.calls.push(["markPaymentFailed", paymentIntentId, reservationId]);
     return Promise.resolve();
   }
 
   markRefunded(paymentIntentId: string): Promise<void> {
-    if (!this.orders.has(paymentIntentId)) {
-      return Promise.reject(new Error("Order pendiente"));
-    }
-    this.orders.set(paymentIntentId, "refunded");
+    this.calls.push(["markRefunded", paymentIntentId]);
     return Promise.resolve();
   }
 
-  releaseCheckoutSession(_checkoutSessionId: string): Promise<void> {
-    this.releasedSessions += 1;
+  releaseCheckoutSession(checkoutSessionId: string): Promise<void> {
+    this.calls.push(["releaseCheckoutSession", checkoutSessionId]);
     return Promise.resolve();
   }
 
   async runOnce(
-    eventId: string,
+    _eventId: string,
     _eventType: string,
     effect: (transaction: WebhookTransaction) => Promise<void>
   ): Promise<boolean> {
-    if (this.processedEvents.has(eventId)) {
-      return false;
-    }
     await effect(this);
-    this.processedEvents.add(eventId);
     return true;
   }
 }
 
-function checkoutCompletedEvent(eventId: string): Stripe.Event {
-  // SAFETY: The processor only reads the fields supplied by this fixture.
+function stripeEvent(
+  type: string,
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- partial Stripe object fixture
+  object: unknown
+): Stripe.Event {
+  // SAFETY: The processor only reads the fields supplied by these fixtures.
   // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- minimal Stripe fixture
-  return {
-    data: {
-      object: {
-        id: "cs_test",
-        payment_intent: "pi_test",
-        payment_status: "paid",
-      },
-    },
-    id: eventId,
-    type: "checkout.session.completed",
-  } as unknown as Stripe.Event;
-}
-
-function refundedEvent(eventId: string): Stripe.Event {
-  // SAFETY: The processor only reads the fields supplied by this fixture.
-  return {
-    data: {
-      object: {
-        id: "ch_test",
-        payment_intent: "pi_test",
-        refunded: true,
-      },
-    },
-    id: eventId,
-    type: "charge.refunded",
-  } as Stripe.Event;
-}
-
-function checkoutExpiredEvent(eventId: string): Stripe.Event {
-  // SAFETY: The processor only reads the fields supplied by this fixture.
-  return {
-    data: { object: { id: "cs_expired" } },
-    id: eventId,
-    type: "checkout.session.expired",
-  } as Stripe.Event;
-}
-
-function paymentFailedEvent(eventId: string): Stripe.Event {
-  // SAFETY: The processor only reads the fields supplied by this fixture.
-  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- minimal Stripe fixture
-  return {
-    data: {
-      object: {
-        id: "pi_failed",
-        metadata: { reservationId: "reservation_1" },
-      },
-    },
-    id: eventId,
-    type: "payment_intent.payment_failed",
-  } as unknown as Stripe.Event;
+  return { data: { object }, id: "evt_test", type } as unknown as Stripe.Event;
 }
 
 describe("processStripeEvent", () => {
-  test("does not repeat effects for a duplicate event", async () => {
-    const store = new MemoryWebhookStore();
-    const event = checkoutCompletedEvent("evt_checkout");
+  test.each<{ event: Stripe.Event; expected: unknown[][]; name: string }>([
+    {
+      event: stripeEvent("charge.refunded", {
+        payment_intent: "pi_test",
+        refunded: true,
+      }),
+      expected: [["markRefunded", "pi_test"]],
+      name: "a refunded Charge by Payment Intent id",
+    },
+    {
+      event: stripeEvent("charge.refunded", {
+        payment_intent: { id: "pi_expanded" },
+        refunded: true,
+      }),
+      expected: [["markRefunded", "pi_expanded"]],
+      name: "a refunded Charge with an expanded Payment Intent",
+    },
+    {
+      event: stripeEvent("charge.refunded", {
+        payment_intent: "pi_test",
+        refunded: false,
+      }),
+      expected: [],
+      name: "a partially refunded Charge to nothing",
+    },
+    {
+      event: stripeEvent("checkout.session.expired", { id: "cs_expired" }),
+      expected: [["releaseCheckoutSession", "cs_expired"]],
+      name: "an expired Checkout Session to its reservation release",
+    },
+    {
+      event: stripeEvent("payment_intent.payment_failed", {
+        id: "pi_failed",
+        metadata: { reservationId: "reservation_1" },
+      }),
+      expected: [["markPaymentFailed", "pi_failed", "reservation_1"]],
+      name: "a failed Payment Intent with its reservation",
+    },
+  ])("routes $name", async ({ event, expected }) => {
+    const store = new RecordingWebhookStore();
 
     expect(await processStripeEvent(event, store)).toBe("processed");
-    expect(await processStripeEvent(event, store)).toBe("duplicate");
-    expect(store.checkoutEffects).toBe(1);
+    expect(store.calls).toEqual(expected);
   });
 
-  test("a refunded Charge delivered first does not leave the Order succeeded", async () => {
-    const store = new MemoryWebhookStore();
-    const refund = refundedEvent("evt_refund");
+  test("rejects a refunded Charge without a Payment Intent", async () => {
+    const store = new RecordingWebhookStore();
+    const event = stripeEvent("charge.refunded", {
+      payment_intent: null,
+      refunded: true,
+    });
 
-    await expect(processStripeEvent(refund, store)).rejects.toThrow(
-      "Order pendiente"
+    await expect(processStripeEvent(event, store)).rejects.toThrow(
+      "El reembolso no incluye Payment Intent"
     );
-    await processStripeEvent(checkoutCompletedEvent("evt_checkout"), store);
-    await processStripeEvent(refund, store);
-
-    expect(store.orders.get("pi_test")).toBe("refunded");
-  });
-
-  test("releases reservations for expired Checkout Sessions", async () => {
-    const store = new MemoryWebhookStore();
-
-    await processStripeEvent(checkoutExpiredEvent("evt_expired"), store);
-
-    expect(store.releasedSessions).toBe(1);
-  });
-
-  test("passes the reservation through a failed Payment Intent", async () => {
-    const store = new MemoryWebhookStore();
-
-    await processStripeEvent(paymentFailedEvent("evt_failed"), store);
-
-    expect(store.releasedReservations).toEqual(["reservation_1"]);
+    expect(store.calls).toEqual([]);
   });
 });

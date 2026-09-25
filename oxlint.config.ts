@@ -11,7 +11,8 @@ const jsPlugins = selectJsPlugins(["github", "sonarjs", "react-doctor"]);
 export default defineConfig({
   extends: [core, react, tanstack, tanstackJsPlugins, antiSlop, jsPlugins],
   ignorePatterns: [
-    ...core.ignorePatterns,
+    // oxlint-disable-next-line typescript/no-non-null-assertion
+    ...core.ignorePatterns!,
     "packages/ui/**",
     "packages/db/src/migrations/**",
     ".agents/skills/**",
@@ -54,12 +55,6 @@ export default defineConfig({
       files: ["apps/web/src/components/**/*.{ts,tsx}"],
       rules: {
         "func-style": "off",
-      },
-    },
-    {
-      files: ["packages/infra/alchemy.run.ts"],
-      rules: {
-        "sonarjs/no-wildcard-import": "off",
       },
     },
     {

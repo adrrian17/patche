@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "patche-web",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "patche",
+      "database_id": "15eb6489-1f10-480c-9e32-6dea43e7e006",
+      "migrations_dir": "packages/db/src/migrations",
+      "migrations_pattern": "packages/db/src/migrations/*/migration.sql",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "patche-media",
+    },
+    {
+      "binding": "DIGITAL_BUCKET",
+      "bucket_name": "patche-digital",
+    },
+  ],
+  "send_email": [
+    {
+      "name": "AUTH_EMAIL",
+      "allowed_sender_addresses": ["noreply@adrianayala.mx"],
+    },
+  ],
+}

@@ -1,5 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { varlockCloudflareVitePlugin } from "@varlock/cloudflare-integration";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -10,7 +11,15 @@ export default defineConfig({
       external: ["cloudflare:workers"],
     },
   },
-  plugins: [tailwindcss(), tanstackStart(), viteReact()],
+  plugins: [
+    varlockCloudflareVitePlugin({
+      configPath: "../../wrangler.jsonc",
+      viteEnvironment: { name: "ssr" },
+    }),
+    tailwindcss(),
+    tanstackStart(),
+    viteReact(),
+  ],
   resolve: {
     tsconfigPaths: true,
   },

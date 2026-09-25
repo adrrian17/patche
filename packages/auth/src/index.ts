@@ -31,7 +31,7 @@ export function createAuth() {
           });
 
           await env.AUTH_EMAIL.send({
-            from: "noreply@patche.mx",
+            from: "noreply@adrianayala.mx",
             html,
             subject: "Tu enlace para entrar a Patche",
             text,

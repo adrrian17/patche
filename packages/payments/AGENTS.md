@@ -2,7 +2,7 @@
 
 ## Overview
 
-This workspace contains Stripe checkout and webhook domain logic. Its functions keep Stripe access at the edge and receive database behavior through explicit dependencies so tests can cover payment state changes.
+This workspace contains Stripe checkout and webhook domain logic. Its functions keep Stripe access at the edge and receive database behavior through explicit dependencies from `apps/web`.
 
 ## Key files
 
@@ -10,7 +10,6 @@ This workspace contains Stripe checkout and webhook domain logic. Its functions 
 | --- | --- |
 | `src/checkout.ts` | Checkout validation, totals, shipping, metadata, and session creation |
 | `src/webhook-events.ts` | Idempotent Stripe event processing and payment transitions |
-| `src/stock.ts` | Stock calculation from movements |
 | `src/index.ts` | Public exports, Stripe client creation, and webhook verification |
 
 ## Commands
@@ -28,7 +27,7 @@ bun run check-types
 - Calculate prices, shipping, and final totals on the server.
 - Verify webhooks from the raw request body and `Stripe-Signature` header.
 - Make webhook processing idempotent and tolerate events arriving out of order.
-- Inject persistence behavior into payment functions so domain tests stay isolated.
+- Prove payment state changes against D1 in `apps/web/src/lib/payments.integration.ts`, not through test-only seams.
 
 ## Gotchas
 

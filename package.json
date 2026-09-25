@@ -7,7 +7,6 @@
       "packages/*"
     ],
     "catalog": {
-      "dotenv": "^17.4.2",
       "zod": "^4.4.3",
       "typescript": "^7.0.2",
       "@types/node": "^26.2.0",
@@ -32,24 +31,25 @@
     "check-types": "turbo run check-types",
     "test:integration": "bun run --cwd apps/web test:integration",
     "dev:web": "turbo run dev -F web --",
-    "db:generate": "turbo run db:generate -F @patche/db --",
-    "db:studio:local": "turbo run db:studio:local -F @patche/db --",
-    "deploy": "turbo run deploy -F @patche/infra --",
-    "destroy": "turbo run destroy -F @patche/infra --",
+    "db:generate": "bun run --cwd packages/db db:generate",
+    "db:studio": "turbo run db:studio -F @patche/db --",
+    "deploy": "APP_ENV=production bun run --cwd apps/web build && APP_ENV=production bun run --cwd apps/web deploy",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install"
   },
   "dependencies": {
     "@patche/env": "workspace:*",
-    "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.58.0",
     "@cloudflare/workers-types": "^5.20260728.1",
     "@patche/config": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "@varlock/1password-plugin": "^2.0.4",
+    "@varlock/cloudflare-integration": "^1.6.0",
     "eslint-plugin-github": "6.1.2",
     "eslint-plugin-sonarjs": "^4.2.0",
     "lefthook": "^2.1.12",
@@ -59,7 +59,9 @@
     "oxlint-plugin-react-doctor": "^0.9.13",
     "turbo": "^2.10.12",
     "typescript": "catalog:",
-    "ultracite": "7.11.0"
+    "ultracite": "7.11.0",
+    "varlock": "^1.20.0",
+    "wrangler": "^4.137.0"
   },
   "overrides": {
     "@effect/platform-node-shared": "4.0.0-rc.112",

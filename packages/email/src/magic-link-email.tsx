@@ -42,7 +42,7 @@ export function MagicLinkEmail({
           <Img
             alt="Patche"
             height="64"
-            src="https://patche.mx/logo.png"
+            src={`${new URL(url).origin}/logo.png`}
             style={styles.logo}
             width="192"
           />

@@ -5,7 +5,16 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "env": ["APP_ENV", "WORKER_PUBLIC_URL", "CF_ACCOUNT_ID"],
+      "passThroughEnv": [
+        "OP_SERVICE_ACCOUNT_TOKEN",
+        "BETTER_AUTH_SECRET",
+        "R2_ACCESS_KEY_ID",
+        "R2_SECRET_ACCESS_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -17,19 +26,11 @@
       "cache": false,
       "persistent": true
     },
-    "db:generate": {
-      "cache": false,
-      "interactive": true
-    },
-    "db:studio:local": {
+    "db:studio": {
       "cache": false,
       "persistent": true
     },
     "deploy": {
-      "cache": false,
-      "interactive": true
-    },
-    "destroy": {
       "cache": false,
       "interactive": true
     }
