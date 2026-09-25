@@ -17,7 +17,7 @@ The decisions for this slice were settled in a grilling session and live in the 
 | C   | Admin orders and refunds      | Existing   | existing    |
 | D   | Checkout and Stripe webhooks  | Existing   | in-progress |
 | 1   | E2E harness                   | Foundation | done        |
-| 2   | Auth E2E and CI job           | Slice 1    | in-progress |
+| 2   | Auth E2E and CI job           | Slice 1    | done        |
 | 3   | Admin catalog E2E             | Slice 2    | planned     |
 | 4   | Purchase E2E                  | Slice 3    | planned     |
 | 5   | Post sale E2E                 | Slice 4    | planned     |
@@ -51,7 +51,7 @@ Playwright in `apps/web/e2e/`, running against `vite dev` with `APP_ENV=e2e` and
 
 ## Slice 1: Auth E2E and CI job
 
-### 2. Auth E2E and CI job · in-progress
+### 2. Auth E2E and CI job
 
 The thin thread through every layer: real magic link login, protected routes, and a CI job that runs the suite on each PR. **Done when:** register, sign out, and Customer blocked from `/admin` pass locally and in CI, and CI uploads the Playwright report and traces when a test fails.
 
