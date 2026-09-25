@@ -5,7 +5,7 @@
   "scripts": {
     "build": "vite build",
     "deploy": "wrangler d1 migrations apply patche --remote --config ../../wrangler.jsonc && APP_ENV=production varlock-wrangler deploy --config dist/server/wrangler.json",
-    "dev": "wrangler d1 migrations apply patche --local --config ../../wrangler.jsonc --persist-to .wrangler/state && vite dev",
+    "dev": "wrangler d1 migrations apply patche --local --config ../../wrangler.jsonc --persist-to .wrangler/state && APP_ENV=development vite dev",
     "check-types": "tsgo --noEmit",
     "serve": "vite preview",
     "test:integration": "vitest run --config vitest.config.ts"

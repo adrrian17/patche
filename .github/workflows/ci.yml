@@ -38,6 +38,7 @@ jobs:
         run: bun run build
         # Placeholders so Varlock validates without 1Password; CI never deploys this build.
         env:
+          APP_ENV: development
           BETTER_AUTH_SECRET: ci-placeholder-better-auth-secret-000000
           R2_ACCESS_KEY_ID: ci-placeholder-r2-access-key-id
           R2_SECRET_ACCESS_KEY: ci-placeholder-r2-secret-access-key
