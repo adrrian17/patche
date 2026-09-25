@@ -32,7 +32,15 @@
     },
     "test:e2e": {
       "cache": false,
-      "passThroughEnv": ["CI", "OP_SERVICE_ACCOUNT_TOKEN"]
+      "passThroughEnv": [
+        "CI",
+        "OP_SERVICE_ACCOUNT_TOKEN",
+        "BETTER_AUTH_SECRET",
+        "R2_ACCESS_KEY_ID",
+        "R2_SECRET_ACCESS_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ]
     },
     "deploy": {
       "cache": false,
