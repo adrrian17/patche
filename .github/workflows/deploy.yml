@@ -43,7 +43,12 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Deploy
-        run: bunx varlock run -- turbo run deploy -F @patche/infra -- --stage "$STAGE" --yes
+        run: |
+          args=(--stage "$STAGE" --yes)
+          if [[ "$STAGE" == "production" ]]; then
+            args+=(--adopt)
+          fi
+          bunx varlock run -- turbo run deploy -F @patche/infra -- "${args[@]}"
         env:
           APP_ENV: ${{ github.event_name == 'pull_request' && 'development' || 'production' }}
           GITHUB_SHA: ${{ github.sha }}

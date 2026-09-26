@@ -7,11 +7,16 @@ import * as Layer from "effect/Layer";
 
 // Secrets come from Varlock (`varlock run -- ...`), which fills process.env from 1Password.
 
+const isProductionStage = process.env.STAGE === "production";
+
 const Database = Cloudflare.D1.Database("Database", {
   migrations: "../../packages/db/src/migrations",
+  name: isProductionStage ? "patche" : undefined,
 });
 
-const MediaBucket = Cloudflare.R2.Bucket("MediaBucket");
+const MediaBucket = Cloudflare.R2.Bucket("MediaBucket", {
+  name: isProductionStage ? "patche-media" : undefined,
+});
 
 const DigitalBucket = Cloudflare.R2.Bucket("DigitalBucket", {
   cors: [
@@ -31,6 +36,7 @@ const DigitalBucket = Cloudflare.R2.Bucket("DigitalBucket", {
       prefix: "uploads/",
     },
   ],
+  name: isProductionStage ? "patche-digital" : undefined,
 });
 
 const AuthEmail = Cloudflare.Email.SendEmail("AuthEmail", {

@@ -33,7 +33,7 @@
     "test:integration": "bun run --cwd apps/web test:integration",
     "db:generate": "bun run --cwd packages/db db:generate",
     "db:studio": "turbo run db:studio -F @patche/db --",
-    "deploy": "varlock run -- turbo run deploy -F @patche/infra -- --stage production",
+    "deploy": "STAGE=production varlock run -- turbo run deploy -F @patche/infra -- --stage production",
     "destroy": "varlock run -- turbo run destroy -F @patche/infra --",
     "check": "ultracite check",
     "fix": "ultracite fix",
