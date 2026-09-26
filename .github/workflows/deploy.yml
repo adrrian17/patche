@@ -55,13 +55,15 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          PULL_REQUEST: ${{ github.event.number }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
 
   cleanup:
     if: >-
       github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     name: Destroy preview
     runs-on: ubuntu-latest
+    env:
+      PULL_REQUEST: ${{ github.event.pull_request.number }}
 
     steps:
       - name: Check out repository
@@ -109,7 +111,6 @@ jobs:
           APP_ENV: development
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          PULL_REQUEST: ${{ github.event.number }}
         working-directory: packages/infra
 
       - name: Destroy preview
@@ -119,4 +120,3 @@ jobs:
           APP_ENV: development
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          PULL_REQUEST: ${{ github.event.number }}
