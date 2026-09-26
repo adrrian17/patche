@@ -1,6 +1,7 @@
 import { createDb } from "@patche/db";
 import {
   product,
+  productMedia,
   productStatuses,
   variant,
   variantKinds,
@@ -338,5 +339,55 @@ export const archiveVariant = createServerFn({ method: "POST" })
         .set({ archivedAt: null })
         .where(eq(variant.id, data.id));
       throw error;
+    }
+  });
+
+export const reorderProductMedia = createServerFn({ method: "POST" })
+  .middleware([adminMiddleware])
+  .validator(
+    z.object({
+      ids: z.array(idSchema).min(1).max(100),
+      productId: idSchema,
+    })
+  )
+  .handler(async ({ data }) => {
+    const db = createDb();
+    const current = await db
+      .select({ id: productMedia.id })
+      .from(productMedia)
+      .where(eq(productMedia.productId, data.productId));
+    const currentIds = new Set(current.map(({ id }) => id));
+    const requestedIds = new Set(data.ids);
+    if (
+      requestedIds.size !== data.ids.length ||
+      requestedIds.size !== currentIds.size ||
+      !data.ids.every((id) => currentIds.has(id))
+    ) {
+      throw new Error("El orden no coincide con la Media del Product");
+    }
+    const [first, ...rest] = data.ids.map((id, sort) =>
+      db.update(productMedia).set({ sort }).where(eq(productMedia.id, id))
+    );
+    if (first) {
+      await db.batch([first, ...rest]);
+    }
+  });
+
+export const updateProductMediaAlt = createServerFn({ method: "POST" })
+  .middleware([adminMiddleware])
+  .validator(
+    z.object({
+      alt: z.string().trim().max(500),
+      id: idSchema,
+    })
+  )
+  .handler(async ({ data }) => {
+    const updated = await createDb()
+      .update(productMedia)
+      .set({ alt: data.alt })
+      .where(eq(productMedia.id, data.id))
+      .returning({ id: productMedia.id });
+    if (!updated.length) {
+      throw new Error("Media no encontrada");
     }
   });

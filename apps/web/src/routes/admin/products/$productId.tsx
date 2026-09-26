@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@patche/ui/components/select";
-import { Separator } from "@patche/ui/components/separator";
 import { Textarea } from "@patche/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,14 +30,13 @@ import {
   ArchiveIcon,
   ArrowLeftIcon,
   FileTextIcon,
-  ImageIcon,
-  ImagePlusIcon,
   PlusIcon,
   SaveIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { MediaManager } from "@/components/admin/product-media";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { getAdminProduct } from "@/functions/admin-products";
 import {
@@ -104,18 +102,16 @@ function ProductDetailPage() {
         }
       />
       <ProductBasics categories={categories.data ?? []} data={product.data} />
-      <MediaManager data={product.data} />
+      <MediaManager
+        media={product.data.media}
+        productId={product.data.product.id}
+      />
       <VariantManager data={product.data} />
     </>
   );
 }
 
 type ProductData = Awaited<ReturnType<typeof getAdminProduct>>;
-
-interface MediaFormValues {
-  alt: string;
-  file: File | null;
-}
 
 interface NewVariantValues {
   kind: "digital" | "physical";
@@ -125,7 +121,6 @@ interface NewVariantValues {
   sku: string;
 }
 
-const mediaFormDefaults: MediaFormValues = { alt: "", file: null };
 const newVariantDefaults: NewVariantValues = {
   kind: "physical",
   lowStockThreshold: 5,
@@ -320,133 +315,6 @@ function ProductBasics({
           Guardar ficha
         </Button>
       </CardFooter>
-    </Card>
-  );
-}
-
-function MediaManager({ data }: { data: ProductData }) {
-  const queryClient = useQueryClient();
-  const form = useForm({
-    defaultValues: mediaFormDefaults,
-    onSubmit: async ({ value }) => {
-      if (!value.file) {
-        toast.error("Selecciona una imagen");
-        return;
-      }
-      const body = new FormData();
-      body.set("alt", value.alt);
-      body.set("file", value.file);
-      body.set("productId", data.product.id);
-      try {
-        const response = await fetch("/api/admin/media", {
-          body,
-          method: "POST",
-        });
-        await requireMediaUpload(response);
-        form.reset();
-        await queryClient.invalidateQueries({
-          queryKey: ["admin", "products", data.product.id],
-        });
-        toast.success("Imagen añadida");
-      } catch (error) {
-        toast.error(
-          errorMessage(
-            error instanceof Error ? error : null,
-            "No se pudo subir la imagen"
-          )
-        );
-      }
-    },
-  });
-  return (
-    <Card className="rounded-xl shadow-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <ImageIcon aria-hidden="true" className="text-primary size-4" />
-          Imágenes
-        </CardTitle>
-        <CardDescription>
-          AVIF, GIF, JPEG, PNG o WebP. Se publican desde R2.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        {data.media.length ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {data.media.map((item) => (
-              <figure
-                className="bg-muted overflow-hidden rounded-xl border shadow-sm"
-                key={item.id}
-              >
-                <img
-                  alt={item.alt}
-                  className="aspect-square w-full object-cover"
-                  src={item.url}
-                />
-                <figcaption className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs">
-                  <ImageIcon
-                    aria-hidden="true"
-                    className="size-3.5 shrink-0 text-sky-500"
-                  />
-                  <span className="truncate">
-                    {item.alt || "Sin texto alternativo"}
-                  </span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Este producto todavía no tiene imágenes.
-          </p>
-        )}
-        <Separator />
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <FieldGroup className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <form.Field name="file">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor="media-file">Archivo</FieldLabel>
-                  <Input
-                    accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
-                    id="media-file"
-                    onChange={(event) =>
-                      field.handleChange(event.target.files?.[0] ?? null)
-                    }
-                    type="file"
-                  />
-                </Field>
-              )}
-            </form.Field>
-            <form.Field name="alt">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>
-                    Texto alternativo
-                  </FieldLabel>
-                  <Input
-                    id={field.name}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
-            <form.Subscribe selector={(state) => state.isSubmitting}>
-              {(isSubmitting) => (
-                <Button disabled={isSubmitting} type="submit">
-                  <ImagePlusIcon data-icon="inline-start" />
-                  {isSubmitting ? "Subiendo…" : "Subir"}
-                </Button>
-              )}
-            </form.Subscribe>
-          </FieldGroup>
-        </form>
-      </CardContent>
     </Card>
   );
 }
@@ -844,12 +712,6 @@ function VariantCard({
       </CardFooter>
     </Card>
   );
-}
-
-async function requireMediaUpload(response: Response): Promise<void> {
-  if (!response.ok) {
-    throw new Error(await response.text());
-  }
 }
 
 function requireDigitalUpload(response: Response): void {
