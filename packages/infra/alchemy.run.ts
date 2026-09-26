@@ -52,7 +52,7 @@ export const Web = Cloudflare.Website.Vite("Web", {
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: Cloudflare.Worker.URL,
     // Only presigned R2 URLs need it; local dev serves R2 through the Worker.
-    CF_ACCOUNT_ID: Config.String("CF_ACCOUNT_ID").pipe(Config.withDefault("")),
+    CF_ACCOUNT_ID: Config.String("CLOUDFLARE_ACCOUNT_ID"),
     DB: Database,
     DIGITAL_BUCKET: DigitalBucket,
     DIGITAL_BUCKET_NAME: DigitalBucket.pipe(
