@@ -380,13 +380,13 @@ function MediaUploadDialog({ productId }: { productId: string }) {
   );
 }
 
-function MediaViewer({
+export function MediaViewer({
   index,
   media,
   onIndexChange,
 }: {
   index: number | null;
-  media: ProductMedia[];
+  media: { alt: string; url: string }[];
   onIndexChange: (index: number | null) => void;
 }) {
   const item = index === null ? undefined : media[index];

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { seedProduct } from "./support/seed-product";
+import { seedProduct, signedInEmail } from "./support/seed-product";
 
 test.use({ storageState: "e2e/.auth/admin.json" });
 
@@ -30,10 +30,7 @@ function mediaAltsInOrder(page: Page) {
 test("uploads several images at once and reorders them", async ({
   page,
 }, testInfo) => {
-  const session = await page.request.get("/api/auth/get-session");
-  // SAFETY: the admin storageState always carries a signed-in Better Auth session.
-  const { user } = (await session.json()) as { user: { email: string } };
-  const productId = seedProduct("Libreta de medios", user.email);
+  const productId = seedProduct("Libreta de medios", await signedInEmail(page));
   await page.goto(`/admin/products/${productId}`);
 
   // A click before hydration does nothing, so retry until the dialog opens.

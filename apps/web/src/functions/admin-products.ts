@@ -12,9 +12,11 @@ const idSchema = z.string().min(1).max(32);
 
 export const listAdminProducts = createServerFn({ method: "GET" })
   .middleware([adminMiddleware])
-  .handler(
-    async () =>
-      await createDb()
+  .handler(async () => {
+    const db = createDb();
+    // ponytail: loads every Variant and Media row at once; paginate the list when the catalog outgrows one page.
+    const [products, variants, media] = await Promise.all([
+      db
         .select({
           createdAt: product.createdAt,
           id: product.id,
@@ -23,8 +25,51 @@ export const listAdminProducts = createServerFn({ method: "GET" })
           status: product.status,
         })
         .from(product)
-        .orderBy(desc(product.createdAt))
-  );
+        .orderBy(desc(product.createdAt)),
+      db
+        .select({
+          archivedAt: variant.archivedAt,
+          id: variant.id,
+          name: variant.name,
+          priceAmount: variant.priceAmount,
+          productId: variant.productId,
+        })
+        .from(variant)
+        .orderBy(asc(variant.name)),
+      db
+        .select({
+          alt: productMedia.alt,
+          productId: productMedia.productId,
+          r2Key: productMedia.r2Key,
+        })
+        .from(productMedia)
+        .orderBy(asc(productMedia.sort)),
+    ]);
+    const mediaBaseUrl = getMediaPublicBaseUrl();
+    const mainImages = new Map<string, { alt: string; url: string }>();
+    for (const item of media) {
+      if (!mainImages.has(item.productId)) {
+        mainImages.set(item.productId, {
+          alt: item.alt,
+          url: mediaPublicUrl(mediaBaseUrl, item.r2Key),
+        });
+      }
+    }
+    const variantsByProduct = new Map<string, typeof variants>();
+    for (const item of variants) {
+      const group = variantsByProduct.get(item.productId);
+      if (group) {
+        group.push(item);
+      } else {
+        variantsByProduct.set(item.productId, [item]);
+      }
+    }
+    return products.map((item) => ({
+      ...item,
+      mainImage: mainImages.get(item.id) ?? null,
+      variants: variantsByProduct.get(item.id) ?? [],
+    }));
+  });
 
 export const getAdminProduct = createServerFn({ method: "GET" })
   .middleware([adminMiddleware])
