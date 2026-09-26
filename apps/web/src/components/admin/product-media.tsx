@@ -23,6 +23,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
 import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
   GripVerticalIcon,
   ImageIcon,
   ImagePlusIcon,
@@ -378,6 +380,70 @@ function MediaUploadDialog({ productId }: { productId: string }) {
   );
 }
 
+function MediaViewer({
+  index,
+  media,
+  onIndexChange,
+}: {
+  index: number | null;
+  media: ProductMedia[];
+  onIndexChange: (index: number | null) => void;
+}) {
+  const item = index === null ? undefined : media[index];
+  if (index === null || !item) {
+    return null;
+  }
+  const label = item.alt || `Imagen ${index + 1}`;
+  const previous = (index - 1 + media.length) % media.length;
+  const next = (index + 1) % media.length;
+
+  return (
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onIndexChange(null);
+        }
+      }}
+      open
+    >
+      <DialogContent
+        className="sm:max-w-4xl"
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") {
+            onIndexChange(previous);
+          } else if (event.key === "ArrowRight") {
+            onIndexChange(next);
+          }
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>{label}</DialogTitle>
+          <DialogDescription>
+            {index + 1} de {media.length}
+          </DialogDescription>
+        </DialogHeader>
+        <img
+          alt={item.alt}
+          className="bg-muted max-h-[70vh] w-full rounded-lg object-contain"
+          src={item.url}
+        />
+        {media.length > 1 ? (
+          <DialogFooter className="sm:justify-between">
+            <Button onClick={() => onIndexChange(previous)} variant="outline">
+              <ChevronLeftIcon data-icon="inline-start" />
+              Anterior
+            </Button>
+            <Button onClick={() => onIndexChange(next)} variant="outline">
+              Siguiente
+              <ChevronRightIcon data-icon="inline-end" />
+            </Button>
+          </DialogFooter>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DeleteMediaDialog({
   item,
   label,
@@ -444,6 +510,7 @@ export function MediaManager({
 }) {
   const queryClient = useQueryClient();
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
 
   function move(from: number, to: number) {
     const item = media[from];
@@ -506,12 +573,20 @@ export function MediaManager({
                     move(from, index);
                   }}
                 >
-                  <img
-                    alt={item.alt}
-                    className="aspect-square w-full object-cover"
+                  <button
+                    aria-label={`Ver en grande: ${label}`}
+                    className="focus-visible:ring-ring/50 cursor-zoom-in outline-none focus-visible:ring-3 focus-visible:ring-inset"
                     draggable={false}
-                    src={item.url}
-                  />
+                    onClick={() => setViewingIndex(index)}
+                    type="button"
+                  >
+                    <img
+                      alt={item.alt}
+                      className="aspect-square w-full object-cover"
+                      draggable={false}
+                      src={item.url}
+                    />
+                  </button>
                   <DeleteMediaDialog
                     item={item}
                     label={label}
@@ -579,6 +654,11 @@ export function MediaManager({
           </p>
         )}
       </CardContent>
+      <MediaViewer
+        index={viewingIndex}
+        media={media}
+        onIndexChange={setViewingIndex}
+      />
     </Card>
   );
 }

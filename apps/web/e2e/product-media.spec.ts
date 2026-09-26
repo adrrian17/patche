@@ -103,6 +103,15 @@ test("uploads several images at once and reorders them", async ({
     .poll(() => mediaAltsInOrder(page))
     .toEqual(["Foto tres", "Portada de la libreta"]);
 
+  await page.getByRole("button", { name: "Ver en grande: Foto tres" }).click();
+  const viewer = page.getByRole("dialog", { name: "Foto tres" });
+  await expect(viewer.getByText("1 de 2")).toBeVisible();
+  await viewer.press("ArrowRight");
+  await expect(
+    page.getByRole("dialog", { name: "Portada de la libreta" })
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+
   // Every change must survive a reload, so it came from D1 and not local state.
   await page.reload();
   await expect
