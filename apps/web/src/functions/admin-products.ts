@@ -3,6 +3,7 @@ import { product, productMedia, variant } from "@patche/db/schema/catalog";
 import { mediaPublicUrl } from "@patche/storage";
 import { createServerFn } from "@tanstack/react-start";
 import { asc, desc, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 
 import { getMediaPublicBaseUrl } from "@/lib/storage.server";
@@ -14,6 +15,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
   .middleware([adminMiddleware])
   .handler(async () => {
     const db = createDb();
+    const candidateMedia = alias(productMedia, "candidate_media");
     // ponytail: loads every Variant and Media row at once; paginate the list when the catalog outgrows one page.
     const [products, variants, media] = await Promise.all([
       db
@@ -43,6 +45,17 @@ export const listAdminProducts = createServerFn({ method: "GET" })
           r2Key: productMedia.r2Key,
         })
         .from(productMedia)
+        .where(
+          eq(
+            productMedia.id,
+            db
+              .select({ id: candidateMedia.id })
+              .from(candidateMedia)
+              .where(eq(candidateMedia.productId, productMedia.productId))
+              .orderBy(asc(candidateMedia.sort), asc(candidateMedia.id))
+              .limit(1)
+          )
+        )
         .orderBy(asc(productMedia.sort)),
     ]);
     const mediaBaseUrl = getMediaPublicBaseUrl();
