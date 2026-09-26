@@ -16,7 +16,7 @@ GitHub Actions runs linting, formatting, build, type checks, package tests, and 
 - Tailwind CSS and shared shadcn/ui primitives
 - Better Auth
 - Drizzle ORM and Cloudflare D1
-- Wrangler and Cloudflare Workers
+- Alchemy and Cloudflare Workers
 - Stripe Checkout and verified webhooks for payments
 - Ultracite with Oxlint and Oxfmt
 
@@ -29,7 +29,7 @@ bun install
 bun run dev
 ```
 
-The application is available at [http://localhost:3001](http://localhost:3001).
+`bun run dev` runs `alchemy dev`, which emulates D1, R2, and email locally. The application is available at [http://localhost:3001](http://localhost:3001).
 
 ## Database
 
@@ -41,16 +41,16 @@ Generate a migration from the repository root:
 bun run db:generate
 ```
 
-Review generated SQL before deployment. Runtime access uses the `DB` binding in the root `wrangler.jsonc`.
+Review generated SQL before deployment. Runtime access uses the `DB` binding declared in `packages/infra/alchemy.run.ts`.
 
-To inspect the local database, start the application once so Wrangler creates its local D1 state, then open Drizzle Studio:
+To inspect the local database, start the application once so Alchemy creates its local D1 state, then open Drizzle Studio:
 
 ```bash
 bun run dev
 bun run db:studio
 ```
 
-Wrangler uses the committed migrations in `packages/db/src/migrations`.
+Alchemy applies the committed migrations in `packages/db/src/migrations` on every `alchemy dev` and `alchemy deploy`.
 
 ## Payments
 
@@ -98,13 +98,22 @@ Run the shadcn/ui CLI from `apps/web` when adding a block used only by the store
 
 ## Deployment
 
-The Worker and its bindings are configured in the root `wrangler.jsonc`. Local development uses the Cloudflare Vite plugin and Wrangler. Production deploys through Cloudflare Workers Builds connected to GitHub.
+`packages/infra/alchemy.run.ts` declares every Cloudflare resource: the web Worker, the D1 database, the media and digital R2 buckets, and the email binding. Alchemy creates and updates those resources, applies D1 migrations, builds the app with Vite, and uploads the Worker. The Worker is served from its `workers.dev` URL, which Alchemy also passes to the app as `BETTER_AUTH_URL` and `MEDIA_PUBLIC_BASE_URL`. The Worker proxies media requests.
 
-Varlock reads shared configuration from the root `.env.schema`; `apps/web/.env.schema` imports it. Secrets use the 1Password plugin. Configure the 1Password service-account token as a secret build variable named `OP_SERVICE_ACCOUNT_TOKEN`, and set `APP_ENV=production` plus `CF_ACCOUNT_ID` as build variables in Cloudflare. Replace the example `op://` references in the root schema with references in your vault. `APP_ENV` defaults to `production`; `bun run dev` sets `development`, and other local commands such as `bun run build` need `APP_ENV=development` to use development configuration.
+Varlock reads secrets from the root `.env.schema` through the 1Password plugin and passes them to Alchemy as environment variables. `APP_ENV` defaults to `production`; `bun run dev` sets `development`.
 
-In Cloudflare Workers Builds, use the repository root as the install directory, set the build command to `bun run --cwd apps/web build`, and the deploy command to `bun run --cwd apps/web deploy`. The deploy script applies pending migrations to the remote D1 database and runs `varlock-wrangler deploy`. Configure `OP_SERVICE_ACCOUNT_TOKEN` as a secret build variable, and set `APP_ENV=production` and `CF_ACCOUNT_ID` as build variables. Before the first deploy, create or select the D1 database and R2 buckets, then set the D1 ID and bucket names in `wrangler.jsonc`. The Worker uses its assigned `workers.dev` URL, with no custom route. Set `WORKER_PUBLIC_URL` in Cloudflare Builds to `https://patche-web.<subdomain>.workers.dev`; it is required in production. The Worker also proxies media requests.
+Deploy production from your machine:
 
-For preview builds, use `bun run --cwd apps/web build` as the build command and leave the deploy command unset unless a separate preview Worker and isolated preview bindings have been configured. Do not use the production deploy script for previews: it applies migrations to the production D1 database.
+```bash
+bunx alchemy profile edit   # once, to connect your Cloudflare account
+bun run deploy       # deploys the production stage from packages/infra
+```
+
+Deployment state lives in a Cloudflare Worker that Alchemy creates on the first deploy, so any authorized machine sees the same resources. Local development and E2E keep their state in `packages/infra/.alchemy` and need no Cloudflare credentials.
+
+GitHub Actions deploys on its own. A push to `main` deploys the `production` stage. Each pull request deploys an isolated `pr-<number>` stage, comments the Worker URL on the pull request, and destroys that stage when the pull request closes. Preview stages read the Development items in 1Password. Varlock loads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from those items. Add `OP_SERVICE_ACCOUNT_TOKEN` as a repository secret so Actions can reach 1Password. Add a `CLOUDFLARE_API_TOKEN` field to the Production and Development items in the Patche vault.
+
+Any other stage name deploys an isolated copy of the whole stack, for example `bunx varlock run -- turbo run deploy -F @patche/infra -- --stage preview`. Remove it with `bun run destroy -- --stage preview`.
 
 ## Quality checks
 
@@ -129,6 +138,7 @@ patche/
 │   ├── db/           # Drizzle schema and D1 migrations
 │   ├── email/        # React Email templates
 │   ├── env/          # Typed environment variables
+│   ├── infra/        # Alchemy stack and Cloudflare resources
 │   ├── payments/     # Stripe checkout and webhook logic
 │   ├── storage/      # R2 keys and signed URLs
 │   └── ui/           # Shared components and styles
@@ -138,8 +148,7 @@ patche/
 
 ## Commands
 
-- `bun run dev`: start the workspace in development mode
-- `bun run dev:web`: start only the web application
+- `bun run dev`: start the app with `alchemy dev` and local D1, R2, and email
 - `bun run build`: build the workspace
 - `bun run check-types`: type-check the workspace
 - `bun run test:integration`: test the Stripe webhook against local Cloudflare D1
@@ -147,7 +156,7 @@ patche/
 - `bun run check`: check linting and formatting
 - `bun run fix`: apply lint and formatting fixes
 - `bun run db:generate`: generate Drizzle migrations
-- `bun run db:studio`: inspect the local Wrangler D1 database
-- `bun run deploy`: deploy the infrastructure
+- `bun run db:studio`: inspect the local Alchemy D1 database
+- `bun run deploy`: deploy production with Alchemy
 
 Contributor and coding instructions start in [AGENTS.md](AGENTS.md).

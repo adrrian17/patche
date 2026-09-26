@@ -36,14 +36,6 @@ jobs:
 
       - name: Build workspace
         run: bun run build
-        # Placeholders so Varlock validates without 1Password; CI never deploys this build.
-        env:
-          APP_ENV: development
-          BETTER_AUTH_SECRET: ci-placeholder-better-auth-secret-000000
-          R2_ACCESS_KEY_ID: ci-placeholder-r2-access-key-id
-          R2_SECRET_ACCESS_KEY: ci-placeholder-r2-secret-access-key
-          STRIPE_SECRET_KEY: sk_test_ci_placeholder_000000000000
-          STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder_0000000000000
 
       - name: Run type checks
         run: bun run check-types
@@ -75,8 +67,11 @@ jobs:
 
       - name: Run E2E tests
         run: bun run test:e2e
-        # Auth runs on local D1 and Miniflare email, so placeholders are enough until a slice needs the E2E Stripe sandbox.
+        # Auth runs on local D1 and the Alchemy email simulator, so placeholders are enough until a slice needs the E2E Stripe sandbox.
+        # `alchemy dev` in CI insists on Cloudflare credentials but never calls the API for local resources.
         env:
+          CLOUDFLARE_ACCOUNT_ID: "00000000000000000000000000000000"
+          CLOUDFLARE_API_TOKEN: ci-placeholder
           BETTER_AUTH_SECRET: ci-placeholder-better-auth-secret-000000
           R2_ACCESS_KEY_ID: ci-placeholder-r2-access-key-id
           R2_SECRET_ACCESS_KEY: ci-placeholder-r2-secret-access-key

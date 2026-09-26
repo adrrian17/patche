@@ -20,7 +20,7 @@ This workspace contains the TanStack Start storefront and admin application. It 
 Run these from the repository root.
 
 ```bash
-bun run dev:web
+bun run dev
 bun run build
 bun run check-types
 bun run test:integration

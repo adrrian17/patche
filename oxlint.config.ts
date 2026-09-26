@@ -58,6 +58,12 @@ export default defineConfig({
       },
     },
     {
+      files: ["packages/infra/alchemy.run.ts"],
+      rules: {
+        "sonarjs/no-wildcard-import": "off",
+      },
+    },
+    {
       files: ["packages/env/src/server.ts"],
       rules: {
         "typescript/triple-slash-reference": "off",

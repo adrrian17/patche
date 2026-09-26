@@ -5,8 +5,10 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-// Miniflare writes each sent email body to .wrangler/tmp/email/<session>/email-text/<id>.txt.
-const emailRoot = ".wrangler/tmp/email";
+import { alchemyDir } from "./env";
+
+// `alchemy dev` writes each sent email body to packages/infra/.alchemy/local/email/text/<id>.txt.
+const emailRoot = path.join(alchemyDir, "local/email/text");
 const urlPattern = /https?:\/\/\S+\/api\/auth\/magic-link\/verify\S+/u;
 
 async function findMagicLinkUrl(email: string) {
@@ -16,7 +18,7 @@ async function findMagicLinkUrl(email: string) {
   const entries = await readdir(emailRoot, { recursive: true });
   const bodies = await Promise.all(
     entries
-      .filter((entry) => entry.includes("email-text") && entry.endsWith(".txt"))
+      .filter((entry) => entry.endsWith(".txt"))
       .map((entry) => readFile(path.join(emailRoot, entry), "utf-8"))
   );
   // The email body names its recipient, so parallel logins never cross.
