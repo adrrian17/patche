@@ -1,13 +1,17 @@
 import { createDb } from "@patche/db";
+import { productMedia } from "@patche/db/schema/catalog";
 import { digitalUploadIntent } from "@patche/db/schema/storage";
 import { env } from "@patche/env/server";
 import {
   createPresignedUrl,
   DIGITAL_UPLOAD_EXPIRES_SECONDS,
+  mediaObjectKey,
 } from "@patche/storage";
 import { and, eq, isNotNull } from "drizzle-orm";
 
 const storageDeleteAttempts = 3;
+// Older than any upload that could still be waiting for its D1 row.
+const orphanMediaMinAgeMs = 60 * 60 * 1000;
 const localMediaProxyPath = "/api/media";
 
 function getPresignConfig() {
@@ -101,4 +105,31 @@ export async function createDigitalPutUrl(
     key,
     method: "PUT",
   });
+}
+
+// Removes R2 objects under a Product's media prefix that no Media row points to,
+// such as an upload whose D1 insert and rollback delete both failed.
+export async function deleteOrphanMedia(
+  productId: string,
+  now = Date.now()
+): Promise<void> {
+  const bucket = getMediaBucket();
+  const [listed, rows] = await Promise.all([
+    bucket.list({ prefix: mediaObjectKey(productId, "") }),
+    createDb()
+      .select({ r2Key: productMedia.r2Key })
+      .from(productMedia)
+      .where(eq(productMedia.productId, productId)),
+  ]);
+  const knownKeys = new Set(rows.map(({ r2Key }) => r2Key));
+  const orphanKeys: string[] = [];
+  for (const { key, uploaded } of listed.objects) {
+    if (!knownKeys.has(key) && now - uploaded.getTime() > orphanMediaMinAgeMs) {
+      orphanKeys.push(key);
+    }
+  }
+  // ponytail: one list page (1000 objects) per call; paginate if a Product ever holds more.
+  if (orphanKeys.length) {
+    await bucket.delete(orphanKeys);
+  }
 }

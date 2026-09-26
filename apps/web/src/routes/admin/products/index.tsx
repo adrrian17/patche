@@ -46,23 +46,27 @@ import { Textarea } from "@patche/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { cn } from "cn";
 import {
-  ArrowRightIcon,
+  ChevronDownIcon,
+  ImageIcon,
   NotebookTabsIcon,
   PackageIcon,
+  PencilIcon,
   PlusIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { MediaViewer } from "@/components/admin/product-media";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { listAdminProducts } from "@/functions/admin-products";
 import { createProduct } from "@/functions/catalog";
 import { listCategories } from "@/functions/categories";
 import { errorMessage } from "@/lib/errors";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatMoney } from "@/lib/format";
 import { productStatusLabels } from "@/lib/labels";
 
 const productSchema = z.object({
@@ -159,59 +163,189 @@ function ProductsPage() {
 
 type ProductListItem = Awaited<ReturnType<typeof listAdminProducts>>[number];
 
+function variantSummary(variants: ProductListItem["variants"]) {
+  const active = variants.filter(({ archivedAt }) => !archivedAt);
+  const count =
+    active.length === 1 ? "1 variante" : `${active.length} variantes`;
+  if (!active.length) {
+    return count;
+  }
+  const prices = active.map(({ priceAmount }) => priceAmount);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range =
+    min === max
+      ? formatMoney(min)
+      : `${formatMoney(min)} – ${formatMoney(max)}`;
+  return `${count} · ${range}`;
+}
+
+function ProductThumbnail({ item }: { item: ProductListItem }) {
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
+  if (!item.mainImage) {
+    return (
+      <div className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-lg border">
+        <ImageIcon aria-hidden="true" className="size-4" />
+        <span className="sr-only">Sin imagen</span>
+      </div>
+    );
+  }
+  const image = {
+    alt: item.mainImage.alt || item.name,
+    url: item.mainImage.url,
+  };
+  return (
+    <>
+      <button
+        aria-label={`Ver en grande: ${image.alt}`}
+        className="focus-visible:ring-ring/50 block cursor-zoom-in rounded-lg outline-none focus-visible:ring-3"
+        onClick={() => setViewingIndex(0)}
+        type="button"
+      >
+        <img
+          alt={item.mainImage.alt}
+          className="bg-muted size-12 rounded-lg border object-cover"
+          src={item.mainImage.url}
+        />
+      </button>
+      <MediaViewer
+        index={viewingIndex}
+        media={[image]}
+        onIndexChange={setViewingIndex}
+      />
+    </>
+  );
+}
+
 function ProductsTable({ products }: { products: ProductListItem[] }) {
-  const navigate = useNavigate();
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  function toggle(id: string) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-16">
+            <span className="sr-only">Imagen</span>
+          </TableHead>
           <TableHead>Producto</TableHead>
+          <TableHead>Variantes</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Creado</TableHead>
           <TableHead>
-            <span className="sr-only">Abrir</span>
+            <span className="sr-only">Editar</span>
           </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {products.map((item) => (
-          <TableRow
-            className="cursor-pointer"
-            key={item.id}
-            onClick={() =>
-              navigate({
-                params: { productId: item.id },
-                to: "/admin/products/$productId",
-              })
-            }
-          >
-            <TableCell>
-              <span className="font-medium">{item.name}</span>
-              <span className="text-muted-foreground block font-mono text-xs">
-                /{item.slug}
-              </span>
-            </TableCell>
-            <TableCell>
-              <StatusBadge status={item.status} />
-            </TableCell>
-            <TableCell>{formatDate(item.createdAt)}</TableCell>
-            <TableCell className="text-right">
-              <Link
-                className={buttonVariants({
-                  size: "icon-sm",
-                  variant: "ghost",
-                })}
-                onClick={(event) => event.stopPropagation()}
-                params={{ productId: item.id }}
-                to="/admin/products/$productId"
-              >
-                <ArrowRightIcon />
-                <span className="sr-only">Editar {item.name}</span>
-              </Link>
-            </TableCell>
-          </TableRow>
-        ))}
+        {products.map((item) => {
+          const isExpanded = expandedIds.has(item.id);
+          const variantsId = `variants-${item.id}`;
+          return (
+            <Fragment key={item.id}>
+              <TableRow>
+                <TableCell>
+                  <ProductThumbnail item={item} />
+                </TableCell>
+                <TableCell>
+                  <Link
+                    className="font-medium hover:underline"
+                    params={{ productId: item.id }}
+                    to="/admin/products/$productId"
+                  >
+                    {item.name}
+                  </Link>
+                  <span className="text-muted-foreground block font-mono text-xs">
+                    /{item.slug}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  {item.variants.length ? (
+                    <Button
+                      aria-controls={variantsId}
+                      aria-expanded={isExpanded}
+                      onClick={() => toggle(item.id)}
+                      className="h-auto px-0 py-0 hover:bg-transparent hover:text-inherit has-data-[icon=inline-end]:pr-0 aria-expanded:bg-transparent aria-expanded:text-inherit dark:hover:bg-transparent"
+                      size="sm"
+                      variant="ghost"
+                    >
+                      {variantSummary(item.variants)}
+                      <ChevronDownIcon
+                        className={cn(
+                          "transition-transform",
+                          isExpanded && "rotate-180"
+                        )}
+                        data-icon="inline-end"
+                      />
+                    </Button>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Sin variantes
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={item.status} />
+                </TableCell>
+                <TableCell>{formatDate(item.createdAt)}</TableCell>
+                <TableCell className="text-right">
+                  <Link
+                    className={buttonVariants({
+                      size: "icon-sm",
+                      variant: "ghost",
+                    })}
+                    params={{ productId: item.id }}
+                    to="/admin/products/$productId"
+                  >
+                    <PencilIcon />
+                    <span className="sr-only">Editar {item.name}</span>
+                  </Link>
+                </TableCell>
+              </TableRow>
+              {isExpanded ? (
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableCell colSpan={2} />
+                  <TableCell colSpan={4}>
+                    <ul
+                      aria-label={`Variantes de ${item.name}`}
+                      className="flex flex-col divide-y"
+                      id={variantsId}
+                    >
+                      {item.variants.map((entry) => (
+                        <li
+                          className={cn(
+                            "flex items-center gap-3 py-2",
+                            entry.archivedAt && "text-muted-foreground"
+                          )}
+                          key={entry.id}
+                        >
+                          <span className="font-medium">{entry.name}</span>
+                          <span className="text-muted-foreground tabular-nums">
+                            {formatMoney(entry.priceAmount)}
+                          </span>
+                          {entry.archivedAt ? (
+                            <StatusBadge status="archived" />
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </Fragment>
+          );
+        })}
       </TableBody>
     </Table>
   );

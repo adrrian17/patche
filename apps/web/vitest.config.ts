@@ -46,6 +46,7 @@ export default defineConfig(async () => {
           compatibilityDate: "2026-08-15",
           compatibilityFlags: ["nodejs_compat"],
           d1Databases: ["DB"],
+          r2Buckets: ["MEDIA_BUCKET"],
         },
       }),
     ],

@@ -22,8 +22,8 @@
   }
 }
 
-.admin-shell {
-  --background: oklch(0.968 0.003 240);
+:root {
+  --background: oklch(0.984 0.002 240);
   --foreground: oklch(0.22 0.012 240);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.012 240);
@@ -48,7 +48,6 @@
   --sidebar-ring: oklch(0.6 0.11 182);
 }
 
-.admin-shell body,
 body:has(.admin-shell) {
   background-image: none;
 }
