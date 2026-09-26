@@ -25,7 +25,7 @@ import {
 import { Textarea } from "@patche/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   ArchiveIcon,
   ArrowLeftIcon,
@@ -175,11 +175,13 @@ function ProductBasics({
       }
     },
   });
+  const router = useRouter();
   async function archive() {
     try {
       await archiveProduct({ data: { id: product.id } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       toast.success("Producto archivado");
+      await router.navigate({ to: "/admin/products" });
     } catch (error) {
       toast.error(
         errorMessage(
