@@ -73,10 +73,37 @@ jobs:
 
       - name: Refuse to destroy production
         run: |
-          if [ "$STAGE" = "production" ]; then
-            echo "Refusing to destroy the production stage."
+          if [[ ! "$PULL_REQUEST" =~ ^[0-9]+$ || "$STAGE" != "pr-${PULL_REQUEST}" ]]; then
+            echo "Refusing to destroy unexpected stage '$STAGE' for PR '$PULL_REQUEST'."
             exit 1
           fi
+
+      - name: Inspect preview resources
+        id: preview-plan
+        run: |
+          plan="$(bunx varlock run -- turbo run destroy -F @patche/infra -- --stage "$STAGE" --dry-run --no-input)"
+          printf '%s\n' "$plan"
+
+          expected_resources="$(printf '%s\n' \
+            Cloudflare.D1Database \
+            Cloudflare.R2.Bucket \
+            Cloudflare.R2.Bucket \
+            Cloudflare.Worker \
+            GitHub.Comment | sort)"
+          actual_resources="$(printf '%s\n' "$plan" | \
+            sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' | \
+            sed -nE 's/^\[([^]]+)\] delete$/\1/p' | sort)"
+
+          if [[ "$actual_resources" != "$expected_resources" ]]; then
+            echo "Refusing to destroy unexpected preview resources."
+            printf 'Expected:\n%s\nActual:\n%s\n' "$expected_resources" "$actual_resources"
+            exit 1
+          fi
+        env:
+          APP_ENV: development
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          PULL_REQUEST: ${{ github.event.number }}
 
       - name: Destroy preview
         run: bunx varlock run -- turbo run destroy -F @patche/infra -- --stage "$STAGE" --yes
