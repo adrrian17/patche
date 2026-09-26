@@ -1,0 +1,19 @@
+{
+  "name": "@patche/infra",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsgo --noEmit",
+    "dev": "alchemy dev",
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy"
+  },
+  "devDependencies": {
+    "@effect/platform-bun": "4.0.0-rc.117",
+    "@effect/platform-node": "4.0.0-rc.117",
+    "@patche/config": "workspace:*",
+    "alchemy": "2.0.0-beta.79",
+    "effect": "4.0.0-rc.117",
+    "typescript": "catalog:"
+  }
+}

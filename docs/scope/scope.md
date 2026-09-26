@@ -14,8 +14,8 @@ The decisions for this slice were settled in a grilling session and are recorded
 2. **Tool:** Playwright in `apps/web/e2e/`, Chromium only.
 3. **Stripe:** real test mode in a dedicated E2E sandbox, with no cleanup (names get a per run suffix). The purchase happy path pays in hosted Checkout (`4242…`); other scenarios use synthetic events where the handler allows it.
 4. **Webhook delivery:** no Stripe CLI. After paying, the test fetches the real event with `stripe.events.list({ type })`, filters by session or payment intent, signs it with `STRIPE_WEBHOOK_SECRET`, and POSTs it to `/api/stripe/webhook`. The same helper signs synthetic events. `checkout.session.completed` calls `sessions.listLineItems`, so it needs a real session; `charge.refunded` only touches D1.
-5. **Login:** real magic link. A helper requests the link on `/login`, reads the newest Miniflare email under `apps/web/.wrangler/tmp/email/`, and opens the URL. The Admin role is set with `wrangler d1 execute --local`. A Playwright setup project logs in once per role and saves `storageState`. Better Auth `testUtils` was ruled out because it has no HTTP routes and would need a privileged test route inside the Worker; revisit if tests need many roles or users.
-6. **Server under test:** `vite dev` (keeps `/dev/checkout`) with an isolated D1 persist dir, wiped each run. Move to build plus `wrangler dev` once a real storefront and cart exist.
+5. **Login:** real magic link. A helper requests the link on `/login`, reads the newest email that `alchemy dev` writes under `.alchemy/local/email/`, and opens the URL. The Admin role is set directly in the local D1 SQLite file. A Playwright setup project logs in once per role and saves `storageState`. Better Auth `testUtils` was ruled out because it has no HTTP routes and would need a privileged test route inside the Worker; revisit if tests need many roles or users.
+6. **Server under test:** `alchemy dev --stage e2e` (keeps `/dev/checkout`), whose state is wiped each run so D1 and R2 start empty. Move to a production-like server once a real storefront and cart exist.
 7. **Secrets:** `APP_ENV=e2e` in `.env.schema` reads an E2E 1Password item locally; CI injects values from GitHub Secrets.
 8. **Catalog fixtures:** the admin catalog test drives the UI. Other tests create fixtures by calling the catalog server functions with the admin session (`page.request`), falling back to a UI helper `createActiveProduct()` if that isn't clean. Each test creates its own Variant so tests can run in parallel.
 9. **Digital Variant:** out of E2E, because presigned PUT needs real R2. Download Grants are covered in integration.
@@ -61,7 +61,7 @@ Server priced hosted Stripe Checkout with Checkout Reservations, and idempotent 
 
 ### 1. E2E harness
 
-Playwright in `apps/web/e2e/`, running against `vite dev` with `APP_ENV=e2e` and an isolated D1 that is wiped each run. Shared helpers: magic link login from the Miniflare email file, admin promotion via local D1, Stripe event fetch and signing, catalog fixtures, and `storageState` per role. **Done when:** `bun run test:e2e` boots a clean app, logs in a Customer and an Admin through the setup project, and a smoke test passes with a trace kept on failure.
+Playwright in `apps/web/e2e/`, running against `alchemy dev --stage e2e` with `APP_ENV=e2e` and an isolated D1 that is wiped each run. Shared helpers: magic link login from the local email file, admin promotion via local D1, Stripe event fetch and signing, catalog fixtures, and `storageState` per role. **Done when:** `bun run test:e2e` boots a clean app, logs in a Customer and an Admin through the setup project, and a smoke test passes with a trace kept on failure.
 
 - [x] `/develop e2e harness`
 
@@ -112,7 +112,7 @@ Cover in the Miniflare integration suite the rules that need no browser, and run
 Out of scope for the current build pass, kept so the plan stays honest.
 
 - **Digital Variant E2E**: buy and download a Digital File, which needs a real R2 test bucket and credentials
-- **Production like E2E server**: run against the build with `wrangler dev` once a real storefront and cart replace `/dev/checkout`
+- **Production like E2E server**: run against a production-like build once a real storefront and cart replace `/dev/checkout`
 - **Test only login route**: better-auth `testUtils` behind a test route, if many roles or users per test make magic link login too slow · needs a decision
 
 ## Legend

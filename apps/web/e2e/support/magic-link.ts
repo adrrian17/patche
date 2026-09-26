@@ -5,9 +5,12 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-// Miniflare writes each sent email body to .wrangler/tmp/email/<session>/email-text/<id>.txt.
-const emailRoot = ".wrangler/tmp/email";
-const urlPattern = /https?:\/\/\S+\/api\/auth\/magic-link\/verify\S+/u;
+import { alchemyDir } from "./env";
+
+// The local email simulator writes plain-text messages under local/email/text.
+const emailRoot = path.join(alchemyDir, "local/email/text");
+const urlPattern =
+  /https?:\/\/[^\s"'<>]+\/api\/auth\/magic-link\/verify[^\s"'<>]*/u;
 
 async function findMagicLinkUrl(email: string) {
   if (!existsSync(emailRoot)) {
@@ -16,7 +19,7 @@ async function findMagicLinkUrl(email: string) {
   const entries = await readdir(emailRoot, { recursive: true });
   const bodies = await Promise.all(
     entries
-      .filter((entry) => entry.includes("email-text") && entry.endsWith(".txt"))
+      .filter((entry) => entry.endsWith(".txt"))
       .map((entry) => readFile(path.join(emailRoot, entry), "utf-8"))
   );
   // The email body names its recipient, so parallel logins never cross.

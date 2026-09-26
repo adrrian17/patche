@@ -5,16 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"],
-      "env": ["APP_ENV", "WORKER_PUBLIC_URL", "CF_ACCOUNT_ID"],
-      "passThroughEnv": [
-        "OP_SERVICE_ACCOUNT_TOKEN",
-        "BETTER_AUTH_SECRET",
-        "R2_ACCESS_KEY_ID",
-        "R2_SECRET_ACCESS_KEY",
-        "STRIPE_SECRET_KEY",
-        "STRIPE_WEBHOOK_SECRET"
-      ]
+      "outputs": ["dist/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -24,7 +15,63 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "APP_ENV",
+        "BETTER_AUTH_SECRET",
+        "CF_ACCOUNT_ID",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_API_TOKEN",
+        "GITHUB_REPOSITORY",
+        "GITHUB_SHA",
+        "GITHUB_TOKEN",
+        "OP_SERVICE_ACCOUNT_TOKEN",
+        "PULL_REQUEST",
+        "R2_ACCESS_KEY_ID",
+        "R2_SECRET_ACCESS_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ]
+    },
+    "deploy": {
+      "cache": false,
+      "interactive": true,
+      "passThroughEnv": [
+        "APP_ENV",
+        "BETTER_AUTH_SECRET",
+        "CF_ACCOUNT_ID",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_API_TOKEN",
+        "GITHUB_REPOSITORY",
+        "GITHUB_SHA",
+        "GITHUB_TOKEN",
+        "OP_SERVICE_ACCOUNT_TOKEN",
+        "PULL_REQUEST",
+        "R2_ACCESS_KEY_ID",
+        "R2_SECRET_ACCESS_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ]
+    },
+    "destroy": {
+      "cache": false,
+      "interactive": true,
+      "passThroughEnv": [
+        "APP_ENV",
+        "BETTER_AUTH_SECRET",
+        "CF_ACCOUNT_ID",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_API_TOKEN",
+        "GITHUB_REPOSITORY",
+        "GITHUB_SHA",
+        "GITHUB_TOKEN",
+        "OP_SERVICE_ACCOUNT_TOKEN",
+        "PULL_REQUEST",
+        "R2_ACCESS_KEY_ID",
+        "R2_SECRET_ACCESS_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ]
     },
     "db:studio": {
       "cache": false,
@@ -34,6 +81,8 @@
       "cache": false,
       "passThroughEnv": [
         "CI",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_API_TOKEN",
         "OP_SERVICE_ACCOUNT_TOKEN",
         "BETTER_AUTH_SECRET",
         "R2_ACCESS_KEY_ID",
@@ -41,10 +90,6 @@
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET"
       ]
-    },
-    "deploy": {
-      "cache": false,
-      "interactive": true
     }
   }
 }

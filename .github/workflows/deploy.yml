@@ -1,0 +1,122 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'production' }}
+  cancel-in-progress: false
+
+env:
+  STAGE: >-
+    ${{ github.event_name == 'pull_request'
+      && format('pr-{0}', github.event.number)
+      || (github.ref == 'refs/heads/main' && 'production' || github.ref_name) }}
+
+jobs:
+  deploy:
+    if: >-
+      github.event.action != 'closed' && (github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository)
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Deploy
+        run: |
+          args=(--stage "$STAGE" --yes)
+          if [[ "$STAGE" == "production" ]]; then
+            args+=(--adopt)
+          fi
+          bunx varlock run --path ../../.env.schema -- bunx alchemy deploy "${args[@]}"
+        working-directory: packages/infra
+        env:
+          APP_ENV: ${{ github.event_name == 'pull_request' && 'development' || 'production' }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          PULL_REQUEST: ${{ github.event.number }}
+
+  cleanup:
+    if: >-
+      github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    name: Destroy preview
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.0
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Refuse to destroy production
+        run: |
+          if [[ ! "$PULL_REQUEST" =~ ^[0-9]+$ || "$STAGE" != "pr-${PULL_REQUEST}" ]]; then
+            echo "Refusing to destroy unexpected stage '$STAGE' for PR '$PULL_REQUEST'."
+            exit 1
+          fi
+
+      - name: Inspect preview resources
+        id: preview-plan
+        run: |
+          plan="$(bunx varlock run --path ../../.env.schema -- bunx alchemy destroy --stage "$STAGE" --dry-run --no-input)"
+          printf '%s\n' "$plan"
+
+          expected_resources="$(printf '%s\n' \
+            Cloudflare.D1Database \
+            Cloudflare.R2.Bucket \
+            Cloudflare.R2.Bucket \
+            Cloudflare.Worker \
+            GitHub.Comment | sort)"
+          actual_resources="$(printf '%s\n' "$plan" | \
+            sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' | \
+            sed -nE 's/^\[([^]]+)\] delete$/\1/p' | sort)"
+
+          if [[ "$actual_resources" != "$expected_resources" ]]; then
+            echo "Refusing to destroy unexpected preview resources."
+            printf 'Expected:\n%s\nActual:\n%s\n' "$expected_resources" "$actual_resources"
+            exit 1
+          fi
+        env:
+          APP_ENV: development
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          PULL_REQUEST: ${{ github.event.number }}
+        working-directory: packages/infra
+
+      - name: Destroy preview
+        run: bunx varlock run --path ../../.env.schema -- bunx alchemy destroy --stage "$STAGE" --yes
+        working-directory: packages/infra
+        env:
+          APP_ENV: development
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          PULL_REQUEST: ${{ github.event.number }}
