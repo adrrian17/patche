@@ -48,7 +48,8 @@ jobs:
           if [[ "$STAGE" == "production" ]]; then
             args+=(--adopt)
           fi
-          bunx varlock run -- turbo run deploy -F @patche/infra -- "${args[@]}"
+          bunx varlock run --path ../../.env.schema -- bunx alchemy deploy "${args[@]}"
+        working-directory: packages/infra
         env:
           APP_ENV: ${{ github.event_name == 'pull_request' && 'development' || 'production' }}
           GITHUB_SHA: ${{ github.sha }}
@@ -86,7 +87,7 @@ jobs:
       - name: Inspect preview resources
         id: preview-plan
         run: |
-          plan="$(bunx varlock run -- turbo run destroy -F @patche/infra -- --stage "$STAGE" --dry-run --no-input)"
+          plan="$(bunx varlock run --path ../../.env.schema -- bunx alchemy destroy --stage "$STAGE" --dry-run --no-input)"
           printf '%s\n' "$plan"
 
           expected_resources="$(printf '%s\n' \
@@ -109,9 +110,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           PULL_REQUEST: ${{ github.event.number }}
+        working-directory: packages/infra
 
       - name: Destroy preview
-        run: bunx varlock run -- turbo run destroy -F @patche/infra -- --stage "$STAGE" --yes
+        run: bunx varlock run --path ../../.env.schema -- bunx alchemy destroy --stage "$STAGE" --yes
+        working-directory: packages/infra
         env:
           APP_ENV: development
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
