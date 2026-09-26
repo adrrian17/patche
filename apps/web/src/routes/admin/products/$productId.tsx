@@ -23,6 +23,11 @@ import {
   SelectValue,
 } from "@patche/ui/components/select";
 import { Textarea } from "@patche/ui/components/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@patche/ui/components/tooltip";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
@@ -30,6 +35,7 @@ import {
   ArchiveIcon,
   ArrowLeftIcon,
   FileTextIcon,
+  InfoIcon,
   PlusIcon,
   SaveIcon,
 } from "lucide-react";
@@ -223,13 +229,24 @@ function ProductBasics({
               )}
             </form.Field>
             <Field>
-              <FieldLabel>Slug</FieldLabel>
+              <FieldLabel className="flex items-center gap-1.5">
+                Slug
+                <Tooltip>
+                  <TooltipTrigger
+                    aria-label="Sobre el slug"
+                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded-full outline-none focus-visible:ring-3"
+                  >
+                    <InfoIcon aria-hidden="true" className="size-3.5" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Se genera automáticamente y se conserva al cambiar el
+                    nombre.
+                  </TooltipContent>
+                </Tooltip>
+              </FieldLabel>
               <p className="text-muted-foreground font-mono text-sm">
                 /{product.slug}
               </p>
-              <FieldDescription>
-                Se genera automáticamente y se conserva al cambiar el nombre.
-              </FieldDescription>
             </Field>
             <form.Field name="categoryId">
               {(field) => (
