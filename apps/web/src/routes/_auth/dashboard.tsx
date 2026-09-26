@@ -1,10 +1,15 @@
 import { Button } from "@patche/ui/components/button";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { LogOutIcon } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_auth/dashboard")({
+  beforeLoad: ({ context }) => {
+    if (context.session.user.role === "admin") {
+      throw redirect({ to: "/admin" });
+    }
+  },
   component: RouteComponent,
 });
 

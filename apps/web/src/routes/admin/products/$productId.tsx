@@ -8,6 +8,15 @@ import {
   CardTitle,
 } from "@patche/ui/components/card";
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@patche/ui/components/dialog";
+import {
   Field,
   FieldDescription,
   FieldGroup,
@@ -22,23 +31,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@patche/ui/components/select";
-import { Separator } from "@patche/ui/components/separator";
 import { Textarea } from "@patche/ui/components/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@patche/ui/components/tooltip";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   ArchiveIcon,
   ArrowLeftIcon,
   FileTextIcon,
-  ImageIcon,
-  ImagePlusIcon,
+  InfoIcon,
+  PencilIcon,
   PlusIcon,
   SaveIcon,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { MediaManager } from "@/components/admin/product-media";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { getAdminProduct } from "@/functions/admin-products";
 import {
@@ -104,18 +119,16 @@ function ProductDetailPage() {
         }
       />
       <ProductBasics categories={categories.data ?? []} data={product.data} />
-      <MediaManager data={product.data} />
+      <MediaManager
+        media={product.data.media}
+        productId={product.data.product.id}
+      />
       <VariantManager data={product.data} />
     </>
   );
 }
 
 type ProductData = Awaited<ReturnType<typeof getAdminProduct>>;
-
-interface MediaFormValues {
-  alt: string;
-  file: File | null;
-}
 
 interface NewVariantValues {
   kind: "digital" | "physical";
@@ -125,7 +138,6 @@ interface NewVariantValues {
   sku: string;
 }
 
-const mediaFormDefaults: MediaFormValues = { alt: "", file: null };
 const newVariantDefaults: NewVariantValues = {
   kind: "physical",
   lowStockThreshold: 5,
@@ -180,11 +192,13 @@ function ProductBasics({
       }
     },
   });
+  const router = useRouter();
   async function archive() {
     try {
       await archiveProduct({ data: { id: product.id } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       toast.success("Producto archivado");
+      await router.navigate({ to: "/admin/products" });
     } catch (error) {
       toast.error(
         errorMessage(
@@ -226,13 +240,24 @@ function ProductBasics({
               )}
             </form.Field>
             <Field>
-              <FieldLabel>Slug</FieldLabel>
+              <FieldLabel className="flex items-center gap-1.5">
+                Slug
+                <Tooltip>
+                  <TooltipTrigger
+                    aria-label="Sobre el slug"
+                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded-full outline-none focus-visible:ring-3"
+                  >
+                    <InfoIcon aria-hidden="true" className="size-3.5" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Se genera automáticamente y se conserva al cambiar el
+                    nombre.
+                  </TooltipContent>
+                </Tooltip>
+              </FieldLabel>
               <p className="text-muted-foreground font-mono text-sm">
                 /{product.slug}
               </p>
-              <FieldDescription>
-                Se genera automáticamente y se conserva al cambiar el nombre.
-              </FieldDescription>
             </Field>
             <form.Field name="categoryId">
               {(field) => (
@@ -324,145 +349,74 @@ function ProductBasics({
   );
 }
 
-function MediaManager({ data }: { data: ProductData }) {
-  const queryClient = useQueryClient();
-  const form = useForm({
-    defaultValues: mediaFormDefaults,
-    onSubmit: async ({ value }) => {
-      if (!value.file) {
-        toast.error("Selecciona una imagen");
-        return;
-      }
-      const body = new FormData();
-      body.set("alt", value.alt);
-      body.set("file", value.file);
-      body.set("productId", data.product.id);
-      try {
-        const response = await fetch("/api/admin/media", {
-          body,
-          method: "POST",
-        });
-        await requireMediaUpload(response);
-        form.reset();
-        await queryClient.invalidateQueries({
-          queryKey: ["admin", "products", data.product.id],
-        });
-        toast.success("Imagen añadida");
-      } catch (error) {
-        toast.error(
-          errorMessage(
-            error instanceof Error ? error : null,
-            "No se pudo subir la imagen"
-          )
-        );
-      }
-    },
-  });
+function VariantManager({ data }: { data: ProductData }) {
   return (
-    <Card className="rounded-xl shadow-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <ImageIcon aria-hidden="true" className="text-primary size-4" />
-          Imágenes
-        </CardTitle>
-        <CardDescription>
-          AVIF, GIF, JPEG, PNG o WebP. Se publican desde R2.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        {data.media.length ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {data.media.map((item) => (
-              <figure
-                className="bg-muted overflow-hidden rounded-xl border shadow-sm"
-                key={item.id}
-              >
-                <img
-                  alt={item.alt}
-                  className="aspect-square w-full object-cover"
-                  src={item.url}
-                />
-                <figcaption className="text-muted-foreground flex items-center gap-1.5 px-2 py-1.5 text-xs">
-                  <ImageIcon
-                    aria-hidden="true"
-                    className="size-3.5 shrink-0 text-sky-500"
-                  />
-                  <span className="truncate">
-                    {item.alt || "Sin texto alternativo"}
-                  </span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        ) : (
+    <section className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Variantes</h2>
           <p className="text-muted-foreground text-sm">
-            Este producto todavía no tiene imágenes.
+            Cada precio es un Price inmutable en Stripe.
           </p>
-        )}
-        <Separator />
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <FieldGroup className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <form.Field name="file">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor="media-file">Archivo</FieldLabel>
-                  <Input
-                    accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
-                    id="media-file"
-                    onChange={(event) =>
-                      field.handleChange(event.target.files?.[0] ?? null)
-                    }
-                    type="file"
-                  />
-                </Field>
-              )}
-            </form.Field>
-            <form.Field name="alt">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>
-                    Texto alternativo
-                  </FieldLabel>
-                  <Input
-                    id={field.name}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
-            <form.Subscribe selector={(state) => state.isSubmitting}>
-              {(isSubmitting) => (
-                <Button disabled={isSubmitting} type="submit">
-                  <ImagePlusIcon data-icon="inline-start" />
-                  {isSubmitting ? "Subiendo…" : "Subir"}
-                </Button>
-              )}
-            </form.Subscribe>
-          </FieldGroup>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+        <NewVariantDialog productId={data.product.id} />
+      </div>
+      {data.variants.length ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {data.variants.map((item) => (
+            <VariantCard
+              item={item}
+              key={item.id}
+              productId={data.product.id}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          Este producto todavía no tiene variantes.
+        </p>
+      )}
+    </section>
   );
 }
 
-function VariantManager({ data }: { data: ProductData }) {
+function NewVariantDialog({ productId }: { productId: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button />}>
+        <PlusIcon data-icon="inline-start" />
+        Nueva variante
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Nueva variante</DialogTitle>
+        </DialogHeader>
+        <NewVariantForm onDone={() => setOpen(false)} productId={productId} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Lives inside DialogContent, so it mounts fresh every time the dialog opens.
+function NewVariantForm({
+  onDone,
+  productId,
+}: {
+  onDone: () => void;
+  productId: string;
+}) {
   const queryClient = useQueryClient();
   const form = useForm({
     defaultValues: newVariantDefaults,
     onSubmit: async ({ value }) => {
       try {
-        await createVariant({ data: { ...value, productId: data.product.id } });
-        form.reset();
+        await createVariant({ data: { ...value, productId } });
         await queryClient.invalidateQueries({
-          queryKey: ["admin", "products", data.product.id],
+          queryKey: ["admin", "products", productId],
         });
         toast.success("Variante creada");
+        onDone();
       } catch (error) {
         toast.error(
           errorMessage(
@@ -474,121 +428,100 @@ function VariantManager({ data }: { data: ProductData }) {
     },
   });
   return (
-    <section className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-lg font-semibold">Variantes</h2>
-        <p className="text-muted-foreground text-sm">
-          Cada precio es un Price inmutable en Stripe.
-        </p>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {data.variants.map((item) => (
-          <VariantCard item={item} key={item.id} productId={data.product.id} />
-        ))}
-      </div>
-      <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <PlusIcon aria-hidden="true" className="text-primary size-4" />
-            Nueva variante
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              form.handleSubmit();
-            }}
-          >
-            <FieldGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
-              <form.Field name="name">
-                {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="variant-name">Nombre</FieldLabel>
-                    <Input
-                      id="variant-name"
-                      value={field.state.value}
-                      onChange={(event) =>
-                        field.handleChange(event.target.value)
-                      }
-                    />
-                  </Field>
-                )}
-              </form.Field>
-              <form.Field name="sku">
-                {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="variant-sku">SKU</FieldLabel>
-                    <Input
-                      id="variant-sku"
-                      value={field.state.value}
-                      onChange={(event) =>
-                        field.handleChange(event.target.value)
-                      }
-                    />
-                  </Field>
-                )}
-              </form.Field>
-              <form.Field name="kind">
-                {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="variant-kind">Tipo</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(value) =>
-                        field.handleChange(
-                          value === "digital" ? "digital" : "physical"
-                        )
-                      }
-                    >
-                      <SelectTrigger className="w-full" id="variant-kind">
-                        <SelectValue>
-                          {(value: keyof typeof variantKindLabels) =>
-                            variantKindLabels[value]
-                          }
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectItem value="physical">Físico</SelectItem>
-                          <SelectItem value="digital">Digital</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              </form.Field>
-              <form.Field name="priceAmount">
-                {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="variant-price">
-                      Precio en centavos
-                    </FieldLabel>
-                    <Input
-                      id="variant-price"
-                      min="0"
-                      type="number"
-                      value={field.state.value}
-                      onChange={(event) =>
-                        field.handleChange(event.target.valueAsNumber)
-                      }
-                    />
-                  </Field>
-                )}
-              </form.Field>
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting} type="submit">
-                    <PlusIcon data-icon="inline-start" />
-                    {isSubmitting ? "Creando…" : "Crear variante"}
-                  </Button>
-                )}
-              </form.Subscribe>
-            </FieldGroup>
-          </form>
-        </CardContent>
-      </Card>
-    </section>
+    <form
+      className="flex flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <FieldGroup className="grid gap-4 sm:grid-cols-2">
+        <form.Field name="name">
+          {(field) => (
+            <Field className="sm:col-span-2">
+              <FieldLabel htmlFor="variant-name">Nombre</FieldLabel>
+              <Input
+                id="variant-name"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="sku">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor="variant-sku">SKU</FieldLabel>
+              <Input
+                id="variant-sku"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="kind">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor="variant-kind">Tipo</FieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(value) =>
+                  field.handleChange(
+                    value === "digital" ? "digital" : "physical"
+                  )
+                }
+              >
+                <SelectTrigger className="w-full" id="variant-kind">
+                  <SelectValue>
+                    {(value: keyof typeof variantKindLabels) =>
+                      variantKindLabels[value]
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="physical">Físico</SelectItem>
+                    <SelectItem value="digital">Digital</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="priceAmount">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor="variant-price">
+                Precio en centavos
+              </FieldLabel>
+              <Input
+                id="variant-price"
+                min="0"
+                type="number"
+                value={field.state.value}
+                onChange={(event) =>
+                  field.handleChange(event.target.valueAsNumber)
+                }
+              />
+            </Field>
+          )}
+        </form.Field>
+      </FieldGroup>
+      <DialogFooter>
+        <DialogClose render={<Button variant="outline" />}>
+          Cancelar
+        </DialogClose>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button disabled={isSubmitting} type="submit">
+              <PlusIcon data-icon="inline-start" />
+              {isSubmitting ? "Creando…" : "Crear variante"}
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
   );
 }
 
@@ -599,6 +532,117 @@ function VariantCard({
   productId,
 }: {
   item: VariantData;
+  productId: string;
+}) {
+  const queryClient = useQueryClient();
+  async function archive() {
+    try {
+      await archiveVariant({ data: { id: item.id } });
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "products", productId],
+      });
+      toast.success("Variante archivada");
+    } catch (error) {
+      toast.error(
+        errorMessage(
+          error instanceof Error ? error : null,
+          "No se pudo archivar"
+        )
+      );
+    }
+  }
+  return (
+    <Card
+      className={
+        item.archivedAt
+          ? "rounded-xl opacity-60 shadow-sm"
+          : "rounded-xl shadow-sm"
+      }
+    >
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-3">
+          <span>{item.name}</span>
+          <StatusBadge status={item.archivedAt ? "archived" : "active"} />
+        </CardTitle>
+        <CardDescription>
+          {variantKindLabels[item.kind]} · {formatMoney(item.priceAmount)} ·{" "}
+          <span className="font-mono">{item.sku}</span>
+        </CardDescription>
+      </CardHeader>
+      {item.kind === "digital" ? (
+        <CardContent>
+          {item.digitalFileName && item.digitalFileSize ? (
+            <p className="text-muted-foreground flex items-center gap-2 text-sm">
+              <FileTextIcon
+                aria-hidden="true"
+                className="size-4 shrink-0 text-red-500"
+              />
+              <span className="truncate">
+                {item.digitalFileName} · {formatFileSize(item.digitalFileSize)}
+              </span>
+            </p>
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              Sin archivo digital.
+            </p>
+          )}
+        </CardContent>
+      ) : null}
+      <CardFooter className="justify-between">
+        <Button
+          disabled={Boolean(item.archivedAt)}
+          onClick={archive}
+          size="sm"
+          variant="destructive"
+        >
+          <ArchiveIcon data-icon="inline-start" />
+          Archivar
+        </Button>
+        <EditVariantDialog item={item} productId={productId} />
+      </CardFooter>
+    </Card>
+  );
+}
+
+function EditVariantDialog({
+  item,
+  productId,
+}: {
+  item: VariantData;
+  productId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger
+        disabled={Boolean(item.archivedAt)}
+        render={<Button size="sm" />}
+      >
+        <PencilIcon data-icon="inline-start" />
+        Editar
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Editar {item.name}</DialogTitle>
+        </DialogHeader>
+        <EditVariantForm
+          item={item}
+          onDone={() => setOpen(false)}
+          productId={productId}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Lives inside DialogContent, so it starts from the saved values every time it opens.
+function EditVariantForm({
+  item,
+  onDone,
+  productId,
+}: {
+  item: VariantData;
+  onDone: () => void;
   productId: string;
 }) {
   const queryClient = useQueryClient();
@@ -637,6 +681,7 @@ function VariantCard({
           queryKey: ["admin", "products", productId],
         });
         toast.success("Variante actualizada");
+        onDone();
       } catch (error) {
         toast.error(
           errorMessage(
@@ -647,22 +692,6 @@ function VariantCard({
       }
     },
   });
-  async function archive() {
-    try {
-      await archiveVariant({ data: { id: item.id } });
-      await queryClient.invalidateQueries({
-        queryKey: ["admin", "products", productId],
-      });
-      toast.success("Variante archivada");
-    } catch (error) {
-      toast.error(
-        errorMessage(
-          error instanceof Error ? error : null,
-          "No se pudo archivar"
-        )
-      );
-    }
-  }
   async function uploadDigital(file: File) {
     try {
       const upload = await createDigitalUploadUrl({
@@ -698,158 +727,123 @@ function VariantCard({
     }
   }
   return (
-    <Card
-      className={
-        item.archivedAt
-          ? "rounded-xl opacity-60 shadow-sm"
-          : "rounded-xl shadow-sm"
-      }
+    <form
+      className="flex flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        form.handleSubmit();
+      }}
     >
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-3">
-          <span>{item.name}</span>
-          <StatusBadge status={item.archivedAt ? "archived" : "active"} />
-        </CardTitle>
-        <CardDescription>
-          {item.kind === "digital" ? "Digital" : "Físico"} ·{" "}
-          {formatMoney(item.priceAmount)}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          id={`variant-${item.id}`}
-          onSubmit={(event) => {
-            event.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <FieldGroup className="grid gap-4 sm:grid-cols-2">
-            <form.Field name="name">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={`${item.id}-name`}>Nombre</FieldLabel>
-                  <Input
-                    id={`${item.id}-name`}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
-            <form.Field name="sku">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={`${item.id}-sku`}>SKU</FieldLabel>
-                  <Input
-                    id={`${item.id}-sku`}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  />
-                </Field>
-              )}
-            </form.Field>
-            <form.Field name="priceAmount">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={`${item.id}-price`}>
-                    Precio en centavos
-                  </FieldLabel>
-                  <Input
-                    id={`${item.id}-price`}
-                    min="0"
-                    type="number"
-                    value={field.state.value}
-                    onChange={(event) =>
-                      field.handleChange(event.target.valueAsNumber)
-                    }
-                  />
-                </Field>
-              )}
-            </form.Field>
-            <form.Field name="lowStockThreshold">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={`${item.id}-stock`}>
-                    Umbral de stock
-                  </FieldLabel>
-                  <Input
-                    disabled={item.kind === "digital"}
-                    id={`${item.id}-stock`}
-                    min="0"
-                    type="number"
-                    value={field.state.value}
-                    onChange={(event) =>
-                      field.handleChange(event.target.valueAsNumber)
-                    }
-                  />
-                </Field>
-              )}
-            </form.Field>
-            {item.kind === "digital" && (
-              <Field className="sm:col-span-2">
-                <FieldLabel htmlFor={`${item.id}-file`}>
-                  Archivo digital
-                </FieldLabel>
-                <Input
-                  disabled={Boolean(item.archivedAt)}
-                  id={`${item.id}-file`}
-                  onChange={async (event) => {
-                    const file = event.target.files?.[0];
-                    if (file) {
-                      await uploadDigital(file);
-                    }
-                  }}
-                  type="file"
+      <FieldGroup className="grid gap-4 sm:grid-cols-2">
+        <form.Field name="name">
+          {(field) => (
+            <Field className="sm:col-span-2">
+              <FieldLabel htmlFor={`${item.id}-name`}>Nombre</FieldLabel>
+              <Input
+                id={`${item.id}-name`}
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="sku">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={`${item.id}-sku`}>SKU</FieldLabel>
+              <Input
+                id={`${item.id}-sku`}
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="priceAmount">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={`${item.id}-price`}>
+                Precio en centavos
+              </FieldLabel>
+              <Input
+                id={`${item.id}-price`}
+                min="0"
+                type="number"
+                value={field.state.value}
+                onChange={(event) =>
+                  field.handleChange(event.target.valueAsNumber)
+                }
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="lowStockThreshold">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={`${item.id}-stock`}>
+                Umbral de stock
+              </FieldLabel>
+              <Input
+                disabled={item.kind === "digital"}
+                id={`${item.id}-stock`}
+                min="0"
+                type="number"
+                value={field.state.value}
+                onChange={(event) =>
+                  field.handleChange(event.target.valueAsNumber)
+                }
+              />
+            </Field>
+          )}
+        </form.Field>
+        {item.kind === "digital" && (
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor={`${item.id}-file`}>Archivo digital</FieldLabel>
+            <Input
+              id={`${item.id}-file`}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  await uploadDigital(file);
+                }
+              }}
+              type="file"
+            />
+            {item.digitalFileName && item.digitalFileSize ? (
+              <FieldDescription className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                <FileTextIcon
+                  aria-hidden="true"
+                  className="size-4 shrink-0 text-red-500"
                 />
-                {item.digitalFileName && item.digitalFileSize ? (
-                  <FieldDescription className="flex items-center gap-2 rounded-lg border px-3 py-2">
-                    <FileTextIcon
-                      aria-hidden="true"
-                      className="size-4 shrink-0 text-red-500"
-                    />
-                    <span className="truncate">
-                      {item.digitalFileName} ·{" "}
-                      {formatFileSize(item.digitalFileSize)}
-                    </span>
-                  </FieldDescription>
-                ) : (
-                  <FieldDescription>
-                    Máximo 500 MB. La carga va directo a R2.
-                  </FieldDescription>
-                )}
-              </Field>
+                <span className="truncate">
+                  {item.digitalFileName} ·{" "}
+                  {formatFileSize(item.digitalFileSize)}
+                </span>
+              </FieldDescription>
+            ) : (
+              <FieldDescription>
+                Máximo 500 MB. La carga va directo a R2 y se guarda al
+                seleccionarlo.
+              </FieldDescription>
             )}
-          </FieldGroup>
-        </form>
-      </CardContent>
-      <CardFooter className="justify-between">
-        <Button
-          disabled={Boolean(item.archivedAt)}
-          onClick={archive}
-          size="sm"
-          variant="destructive"
-        >
-          <ArchiveIcon data-icon="inline-start" />
-          Archivar
-        </Button>
-        <Button
-          disabled={Boolean(item.archivedAt)}
-          form={`variant-${item.id}`}
-          size="sm"
-          type="submit"
-        >
-          <SaveIcon data-icon="inline-start" />
-          Guardar
-        </Button>
-      </CardFooter>
-    </Card>
+          </Field>
+        )}
+      </FieldGroup>
+      <DialogFooter>
+        <DialogClose render={<Button variant="outline" />}>
+          Cancelar
+        </DialogClose>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button disabled={isSubmitting} type="submit">
+              <SaveIcon data-icon="inline-start" />
+              {isSubmitting ? "Guardando…" : "Guardar"}
+            </Button>
+          )}
+        </form.Subscribe>
+      </DialogFooter>
+    </form>
   );
-}
-
-async function requireMediaUpload(response: Response): Promise<void> {
-  if (!response.ok) {
-    throw new Error(await response.text());
-  }
 }
 
 function requireDigitalUpload(response: Response): void {
