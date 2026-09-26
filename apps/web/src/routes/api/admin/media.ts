@@ -11,6 +11,7 @@ import { nanoid } from "nanoid";
 
 import { getRequestSession, isAdminUser } from "@/lib/session";
 import {
+  deleteOrphanMedia,
   deleteStorageObjectWithRetry,
   getMediaBucket,
   getMediaPublicBaseUrl,
@@ -89,6 +90,7 @@ export const Route = createFileRoute("/api/admin/media")({
           return new Response("No se pudo guardar la Media", { status: 500 });
         }
 
+        await sweepOrphanMedia(productId);
         return Response.json({
           ...media,
           url: mediaPublicUrl(getMediaPublicBaseUrl(), media.r2Key),
@@ -97,3 +99,12 @@ export const Route = createFileRoute("/api/admin/media")({
     },
   },
 });
+
+// Best effort: a failed sweep retries on the next upload or delete for this Product.
+async function sweepOrphanMedia(productId: string) {
+  try {
+    await deleteOrphanMedia(productId);
+  } catch {
+    // The upload already succeeded; leftovers wait for the next sweep.
+  }
+}

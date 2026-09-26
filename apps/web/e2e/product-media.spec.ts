@@ -94,11 +94,20 @@ test("uploads several images at once and reorders them", async ({
     .poll(() => mediaAltsInOrder(page))
     .toEqual(["Foto tres", "Foto dos", "Portada de la libreta"]);
 
-  // Order and alt text must survive a reload, so they came from D1 and not local state.
+  await page.getByRole("button", { name: "Eliminar Foto dos" }).click();
+  await page
+    .getByRole("alertdialog", { name: "¿Eliminar imagen?" })
+    .getByRole("button", { name: "Eliminar" })
+    .click();
+  await expect
+    .poll(() => mediaAltsInOrder(page))
+    .toEqual(["Foto tres", "Portada de la libreta"]);
+
+  // Every change must survive a reload, so it came from D1 and not local state.
   await page.reload();
   await expect
     .poll(() => mediaAltsInOrder(page))
-    .toEqual(["Foto tres", "Foto dos", "Portada de la libreta"]);
+    .toEqual(["Foto tres", "Portada de la libreta"]);
   await testInfo.attach("product-media", {
     body: await page.screenshot({ fullPage: true }),
     contentType: "image/png",

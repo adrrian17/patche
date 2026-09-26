@@ -27,6 +27,7 @@ import {
   ImageIcon,
   ImagePlusIcon,
   StarIcon,
+  Trash2Icon,
   UploadIcon,
   XIcon,
 } from "lucide-react";
@@ -35,6 +36,7 @@ import { toast } from "sonner";
 
 import type { getAdminProduct } from "@/functions/admin-products";
 import {
+  deleteProductMedia,
   reorderProductMedia,
   updateProductMediaAlt,
 } from "@/functions/catalog";
@@ -139,6 +141,26 @@ async function saveMediaAlt(
   } finally {
     await queryClient.invalidateQueries({ queryKey });
   }
+}
+
+async function deleteMedia(
+  queryClient: QueryClient,
+  productId: string,
+  id: string
+) {
+  const queryKey = productQueryKey(productId);
+  try {
+    await deleteProductMedia({ data: { id } });
+    toast.success("Imagen eliminada");
+  } catch (error) {
+    toast.error(
+      errorMessage(
+        error instanceof Error ? error : null,
+        "No se pudo eliminar la imagen"
+      )
+    );
+  }
+  await queryClient.invalidateQueries({ queryKey });
 }
 
 // Returns how many uploads succeeded before the first failure.
@@ -356,6 +378,63 @@ function MediaUploadDialog({ productId }: { productId: string }) {
   );
 }
 
+function DeleteMediaDialog({
+  item,
+  label,
+  productId,
+}: {
+  item: ProductMedia;
+  label: string;
+  productId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function remove() {
+    setIsDeleting(true);
+    await deleteMedia(queryClient, productId, item.id);
+    setIsDeleting(false);
+  }
+
+  return (
+    <Dialog>
+      <DialogTrigger
+        render={
+          <Button
+            aria-label={`Eliminar ${label}`}
+            className="text-destructive absolute top-2 right-2 bg-red-100 shadow-sm hover:bg-red-200 dark:bg-red-950 dark:hover:bg-red-900"
+            size="icon-xs"
+            variant="destructive"
+          />
+        }
+      >
+        <Trash2Icon />
+      </DialogTrigger>
+      <DialogContent role="alertdialog">
+        <DialogHeader>
+          <DialogTitle>¿Eliminar imagen?</DialogTitle>
+          <DialogDescription>
+            Se borra del producto y del almacenamiento. No se puede deshacer.
+          </DialogDescription>
+        </DialogHeader>
+        <img
+          alt={item.alt}
+          className="bg-muted mx-auto size-32 rounded-lg border object-cover"
+          src={item.url}
+        />
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>
+            Cancelar
+          </DialogClose>
+          <Button disabled={isDeleting} onClick={remove} variant="destructive">
+            {isDeleting ? "Eliminando…" : "Eliminar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function MediaManager({
   media,
   productId,
@@ -432,6 +511,11 @@ export function MediaManager({
                     className="aspect-square w-full object-cover"
                     draggable={false}
                     src={item.url}
+                  />
+                  <DeleteMediaDialog
+                    item={item}
+                    label={label}
+                    productId={productId}
                   />
                   {index === 0 ? (
                     <Badge className="absolute top-2 left-2">

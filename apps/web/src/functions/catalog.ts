@@ -12,6 +12,11 @@ import { z } from "zod";
 
 import { getStripeClient } from "@/lib/payments.server";
 import { uniqueSlug } from "@/lib/slug";
+import {
+  deleteOrphanMedia,
+  deleteStorageObjectWithRetry,
+  getMediaBucket,
+} from "@/lib/storage.server";
 import { adminMiddleware } from "@/middleware/admin";
 
 const idSchema = z.string().min(1).max(32);
@@ -389,5 +394,29 @@ export const updateProductMediaAlt = createServerFn({ method: "POST" })
       .returning({ id: productMedia.id });
     if (!updated.length) {
       throw new Error("Media no encontrada");
+    }
+  });
+
+export const deleteProductMedia = createServerFn({ method: "POST" })
+  .middleware([adminMiddleware])
+  .validator(z.object({ id: idSchema }))
+  .handler(async ({ data }) => {
+    const db = createDb();
+    const media = await db
+      .select({ productId: productMedia.productId, r2Key: productMedia.r2Key })
+      .from(productMedia)
+      .where(eq(productMedia.id, data.id))
+      .get();
+    if (!media) {
+      throw new Error("Media no encontrada");
+    }
+    // R2 goes first so a failure keeps the row and the admin can retry; an R2
+    // delete is idempotent, so a retry after a failed D1 delete also finishes cleanly.
+    await deleteStorageObjectWithRetry(getMediaBucket(), media.r2Key);
+    await db.delete(productMedia).where(eq(productMedia.id, data.id));
+    try {
+      await deleteOrphanMedia(media.productId);
+    } catch {
+      // The delete already succeeded; leftovers wait for the next sweep.
     }
   });
