@@ -1,6 +1,7 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as GitHub from "alchemy/GitHub";
+import * as Output from "alchemy/Output";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -102,15 +103,15 @@ export default Alchemy.Stack(
       yield* GitHub.Comment("preview-comment", {
         // Closing the PR destroys the stage and removes this comment with it.
         allowDelete: true,
-        body: [
-          "## Preview",
-          "",
-          `**URL:** ${web.url}`,
-          "",
-          `Commit \`${sha}\``,
-          "",
-          "_Este comentario se actualiza con cada push._",
-        ].join("\n"),
+        body: Output.interpolate`
+          ## Preview
+
+          **URL:** ${web.url}
+
+          Commit \`${sha}\`
+
+          _Este comentario se actualiza con cada push._
+        `,
         issueNumber,
         owner,
         repository,
