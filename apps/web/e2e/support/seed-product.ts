@@ -33,6 +33,8 @@ function withAdminDatabase<T>(
   for (const fileName of fileNames) {
     const db = new Database(path.join(d1Directory, fileName));
     try {
+      // Parallel workers and the dev server share this file, so wait for locks instead of failing.
+      db.pragma("busy_timeout = 5000");
       const hasAdmin = db
         .prepare(
           "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'user'"
