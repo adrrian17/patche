@@ -7,8 +7,8 @@ import type { Page } from "@playwright/test";
 
 import { alchemyDir } from "./env";
 
-// `alchemy dev` writes each sent email as an .eml file under local/email.
-const emailRoot = path.join(alchemyDir, "local/email");
+// The local email simulator writes plain-text messages under local/email/text.
+const emailRoot = path.join(alchemyDir, "local/email/text");
 const urlPattern =
   /https?:\/\/[^\s"'<>]+\/api\/auth\/magic-link\/verify[^\s"'<>]*/u;
 
@@ -19,7 +19,7 @@ async function findMagicLinkUrl(email: string) {
   const entries = await readdir(emailRoot, { recursive: true });
   const bodies = await Promise.all(
     entries
-      .filter((entry) => entry.endsWith(".eml"))
+      .filter((entry) => entry.endsWith(".txt"))
       .map((entry) => readFile(path.join(emailRoot, entry), "utf-8"))
   );
   // The email body names its recipient, so parallel logins never cross.
