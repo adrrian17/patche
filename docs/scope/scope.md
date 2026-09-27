@@ -35,7 +35,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 1   | E2E harness                     | Foundation | done        |
 | 2   | Auth E2E and CI job             | Slice 1    | done        |
 | 7   | Checkout without Stripe catalog | Slice 2    | in-progress |
-| 3   | Admin catalog E2E               | Slice 2    | planned     |
+| 3   | Admin catalog E2E               | Slice 2    | in-progress |
 | 4   | Purchase E2E                    | Slice 3    | planned     |
 | 5   | Post sale E2E                   | Slice 4    | planned     |
 | 6   | Payments integration coverage   | Slice 5    | planned     |
@@ -94,13 +94,15 @@ Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md) · code in 
 - [x] Review it (fresh model): `/check review checkout without stripe catalog`
 - [x] Document it: `/document checkout without stripe catalog`
 
-### 3. Admin catalog E2E
+### 3. Admin catalog E2E · in-progress
 
 Waits for feature 7: once it ships, drop the checks that Stripe mirrors the catalog.
 
 The Admin manages the catalog through the UI, and the tests check that changes persist in D1. **Done when:** create Category, Product and Physical Variant and verify them after reload; change a price and verify the saved price; archive and verify the archived state; upload Media, record a Stock Movement with the low stock warning, and change the Shipping Rate all pass.
 
-- [ ] `/develop admin catalog e2e`
+code in `apps/web/e2e/admin-catalog.spec.ts`, `apps/web/e2e/product-media.spec.ts`, `apps/web/e2e/support/promote-to-admin.ts`
+
+- [x] `/develop admin catalog e2e`
 
 ## Slice 3: Purchase E2E
 

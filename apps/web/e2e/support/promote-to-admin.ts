@@ -18,11 +18,18 @@ export function promoteToAdmin(email: string) {
     }
     const db = new Database(path.join(d1Directory, fileName));
     try {
-      const { changes } = db
-        .prepare("UPDATE user SET role = 'admin' WHERE email = ?")
-        .run(email);
-      if (changes > 0) {
-        return;
+      const hasUserTable = db
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'user'"
+        )
+        .get();
+      if (hasUserTable) {
+        const { changes } = db
+          .prepare("UPDATE user SET role = 'admin' WHERE email = ?")
+          .run(email);
+        if (changes > 0) {
+          return;
+        }
       }
     } finally {
       db.close();
