@@ -31,6 +31,10 @@ bun run dev
 
 `bun run dev` runs `alchemy dev`, which emulates D1, R2, and email locally. The application is available at [http://localhost:3001](http://localhost:3001).
 
+### Remote cache
+
+Turborepo shares build and type-check outputs through a self-hosted [turborepo-remote-cache-cloudflare](https://github.com/AdiRishi/turborepo-remote-cache-cloudflare) Worker. To use it locally, run `bunx turbo login --manual` and enter the Worker URL, the team slug, and the Worker's `TURBO_TOKEN`. CI reads the same values from the `TURBO_API` and `TURBO_TEAM` repository variables and the `TURBO_TOKEN` secret.
+
 ## Database
 
 Patche uses Cloudflare D1 with Drizzle ORM. Schema definitions live in `packages/db/src/schema`, and generated migrations live in `packages/db/src/migrations`.

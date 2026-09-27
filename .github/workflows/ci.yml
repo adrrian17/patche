@@ -16,6 +16,11 @@ jobs:
   quality:
     name: Quality and tests
     runs-on: ubuntu-latest
+    # Self-hosted Turborepo remote cache (turborepo-remote-cache-cloudflare). Fork PRs get no secrets and fall back to a cold local cache.
+    env:
+      TURBO_API: ${{ vars.TURBO_API }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
       - name: Check out repository
@@ -41,7 +46,7 @@ jobs:
         run: bun run check-types
 
       - name: Run package tests
-        run: bun test apps/web packages/email packages/payments packages/storage
+        run: bun run test
 
   e2e:
     name: E2E tests
