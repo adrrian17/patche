@@ -82,17 +82,17 @@ code in `apps/web/e2e/auth.spec.ts`, `.github/workflows/ci.yml` (job `e2e`)
 
 Stop creating Products and Prices in Stripe. Checkout sends each line's price and name inline, read from D1 at payment time, so the catalog lives only in Patche (in line with ADR 0001). Removes the Stripe calls and their rollback code from create, edit, archive and price change. **Done when:** creating, editing, archiving and repricing a Product or Variant makes no Stripe call, a Checkout charges the D1 price, existing Orders still reconcile through webhooks, and the columns `stripe_product_id` and `stripe_price_id` are gone.
 
-Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md)
+Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md) · code in `packages/payments/src/checkout.ts`, `apps/web/src/functions/catalog.ts`, `apps/web/src/lib/payments.server.ts`, `packages/db/src/schema/catalog.ts`
 
 - [x] Design it (spec): `/architect checkout without stripe catalog`
 - [ ] Build it: `/develop checkout without stripe catalog`
   - [ ] Inline `price_data` checkout and webhook reading names from line item metadata (AC-2, AC-3, AC-4, AC-5)
   - [ ] Catalog server functions without Stripe, admin copy, ADR 0005 (AC-1, AC-7, AC-8)
   - [ ] Migration dropping the Stripe catalog columns, proven by the safety check (AC-5, AC-6)
-- [ ] Verify it: `/check verify checkout without stripe catalog`
-- [ ] Test it: `/test checkout without stripe catalog`
-- [ ] Review it (fresh model): `/check review checkout without stripe catalog`
-- [ ] Document it: `/document checkout without stripe catalog`
+- [x] Verify it: `/check verify checkout without stripe catalog`
+- [x] Test it: `/test checkout without stripe catalog`
+- [x] Review it (fresh model): `/check review checkout without stripe catalog`
+- [x] Document it: `/document checkout without stripe catalog`
 
 ### 3. Admin catalog E2E
 

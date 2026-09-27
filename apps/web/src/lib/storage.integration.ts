@@ -8,10 +8,8 @@ const keptKey = "products/p1/kept";
 const otherProductKey = "products/p10/other";
 
 async function seedProduct(id: string) {
-  await env.DB.prepare(
-    "INSERT INTO product (id, name, slug, stripe_product_id) VALUES (?, ?, ?, ?)"
-  )
-    .bind(id, id, id, `prod_${id}`)
+  await env.DB.prepare("INSERT INTO product (id, name, slug) VALUES (?, ?, ?)")
+    .bind(id, id, id)
     .run();
 }
 

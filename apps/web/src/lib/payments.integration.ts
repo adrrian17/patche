@@ -60,7 +60,7 @@ function refundedEvent(): Stripe.Event {
   } as Stripe.Event;
 }
 
-function stubLineItems() {
+function stubLineItems(names?: { productName?: string; variantName?: string }) {
   const fetchMock = vi.fn((_input: RequestInfo | URL) =>
     Promise.resolve(
       Response.json(
@@ -68,9 +68,11 @@ function stubLineItems() {
           data: [
             {
               currency: "mxn",
-              description: "Cuaderno",
-              metadata: { variantId },
-              price: { nickname: "A5", unit_amount: 10_000 },
+              metadata: {
+                ...(names ?? { productName: "Cuaderno", variantName: "A5" }),
+                variantId,
+              },
+              price: { unit_amount: 10_000 },
               quantity: 1,
             },
           ],
@@ -99,14 +101,14 @@ async function seedCheckoutReservation(
     ),
     env.DB.prepare(
       `INSERT INTO product (
-        id, name, slug, description, status, stripe_product_id
-      ) VALUES (?, ?, ?, '', 'active', ?)`
-    ).bind(productId, "Cuaderno", "cuaderno", "prod_test"),
+        id, name, slug, description, status
+      ) VALUES (?, ?, ?, '', 'active')`
+    ).bind(productId, "Cuaderno", "cuaderno"),
     env.DB.prepare(
       `INSERT INTO variant (
-        id, product_id, name, sku, kind, price_amount, stripe_price_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).bind(variantId, productId, "A5", "SKU-TEST", kind, 10_000, "price_test"),
+        id, product_id, name, sku, kind, price_amount
+      ) VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(variantId, productId, "A5", "SKU-TEST", kind, 10_000),
     env.DB.prepare(
       `INSERT INTO checkout_reservation (
         id, customer_id, stripe_checkout_session_id, status, expires_at
@@ -186,6 +188,64 @@ describe("Stripe webhook inventory reservation", () => {
     });
     expect(releasedMovement).toBeNull();
   });
+
+  test("a completed Checkout keeps the purchased names and amount", async () => {
+    await seedCheckoutReservation();
+    stubLineItems();
+    await env.DB.batch([
+      env.DB.prepare("UPDATE product SET name = ? WHERE id = ?").bind(
+        "Cuaderno renombrado",
+        productId
+      ),
+      env.DB.prepare(
+        "UPDATE variant SET name = ?, price_amount = ? WHERE id = ?"
+      ).bind("A4", 20_000, variantId),
+    ]);
+
+    await processStripeEvent(checkoutCompletedEvent(), createWebhookStore());
+    const orderItem = await env.DB.prepare(
+      `SELECT product_name AS productName, variant_name AS variantName,
+        unit_amount AS unitAmount FROM order_item WHERE variant_id = ?`
+    )
+      .bind(variantId)
+      .first<{
+        productName: string;
+        unitAmount: number;
+        variantName: string;
+      }>();
+
+    expect(orderItem).toEqual({
+      productName: "Cuaderno",
+      unitAmount: 10_000,
+      variantName: "A5",
+    });
+  });
+
+  test.each([{}, { productName: "", variantName: "" }])(
+    "falls back to current catalog names for absent or empty metadata",
+    async (names) => {
+      await seedCheckoutReservation();
+      stubLineItems(names);
+
+      await processStripeEvent(checkoutCompletedEvent(), createWebhookStore());
+      const orderItem = await env.DB.prepare(
+        `SELECT product_name AS productName, variant_name AS variantName,
+        unit_amount AS unitAmount FROM order_item WHERE variant_id = ?`
+      )
+        .bind(variantId)
+        .first<{
+          productName: string;
+          unitAmount: number;
+          variantName: string;
+        }>();
+
+      expect(orderItem).toEqual({
+        productName: "Cuaderno",
+        unitAmount: 10_000,
+        variantName: "A5",
+      });
+    }
+  );
 });
 
 describe("Stripe webhook event store", () => {

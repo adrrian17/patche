@@ -57,10 +57,8 @@ export function seedProduct(name: string, adminEmail: string) {
   const id = randomId();
   withAdminDatabase(adminEmail, (db) =>
     db
-      .prepare(
-        "INSERT INTO product (id, name, slug, stripe_product_id) VALUES (?, ?, ?, ?)"
-      )
-      .run(id, name, `e2e-${id}`, `prod_e2e_${id}`)
+      .prepare("INSERT INTO product (id, name, slug) VALUES (?, ?, ?)")
+      .run(id, name, `e2e-${id}`)
   );
   return id;
 }
@@ -74,15 +72,14 @@ export function seedVariant(
   withAdminDatabase(adminEmail, (db) =>
     db
       .prepare(
-        "INSERT INTO variant (id, product_id, name, sku, kind, price_amount, stripe_price_id) VALUES (?, ?, ?, ?, 'physical', ?, ?)"
+        "INSERT INTO variant (id, product_id, name, sku, kind, price_amount) VALUES (?, ?, ?, ?, 'physical', ?)"
       )
       .run(
         id,
         variant.productId,
         variant.name,
         `E2E-${id}`,
-        variant.priceAmount,
-        `price_e2e_${id}`
+        variant.priceAmount
       )
   );
   return id;

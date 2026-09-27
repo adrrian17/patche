@@ -34,7 +34,7 @@
     "db:generate": "bun run --cwd packages/db db:generate",
     "db:studio": "turbo run db:studio -F @patche/db --",
     "deploy": "STAGE=production varlock run -- turbo run deploy -F @patche/infra -- --stage production",
-    "destroy": "varlock run -- turbo run destroy -F @patche/infra --",
+    "destroy": "varlock run -- bun run --cwd packages/infra destroy --",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install"
