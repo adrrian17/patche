@@ -11,10 +11,12 @@ export interface CheckoutItem {
 
 export interface CheckoutVariant {
   id: string;
+  imageUrl?: string | null;
   kind: "physical" | "digital";
+  name: string;
   priceAmount: number;
+  productName: string;
   stock: number;
-  stripePriceId: string;
 }
 
 export interface CheckoutSessionResult {
@@ -125,11 +127,29 @@ export async function startCheckout(
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     cancel_url: `${input.origin}/dashboard`,
     client_reference_id: input.customerId,
-    line_items: input.items.map((item) => ({
-      metadata: { variantId: item.variantId },
-      price: requireVariant(item.variantId).stripePriceId,
-      quantity: item.quantity,
-    })),
+    line_items: input.items.map((item) => {
+      const variant = requireVariant(item.variantId);
+      const productData: Stripe.Checkout.SessionCreateParams.LineItem.PriceData.ProductData =
+        {
+          name: `${variant.productName} · ${variant.name}`,
+        };
+      if (variant.imageUrl) {
+        productData.images = [variant.imageUrl];
+      }
+      return {
+        metadata: {
+          productName: variant.productName,
+          variantId: item.variantId,
+          variantName: variant.name,
+        },
+        price_data: {
+          currency: "mxn",
+          product_data: productData,
+          unit_amount: variant.priceAmount,
+        },
+        quantity: item.quantity,
+      };
+    }),
     metadata,
     mode: "payment",
     payment_method_types: ["card"],

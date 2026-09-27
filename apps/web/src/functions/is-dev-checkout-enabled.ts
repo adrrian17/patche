@@ -1,5 +1,6 @@
+import { env } from "@patche/env/server";
 import { createServerFn } from "@tanstack/react-start";
 
 export const isDevCheckoutEnabled = createServerFn({ method: "GET" }).handler(
-  () => import.meta.env.DEV
+  () => env.DEV_CHECKOUT_ENABLED === "true"
 );

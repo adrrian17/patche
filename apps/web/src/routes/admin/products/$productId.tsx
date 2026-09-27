@@ -215,7 +215,7 @@ function ProductBasics({
           Ficha
         </CardTitle>
         <CardDescription>
-          Los cambios de nombre y estado también se envían a Stripe.
+          Los cambios de nombre y estado se guardan en el catálogo.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -356,7 +356,7 @@ function VariantManager({ data }: { data: ProductData }) {
         <div>
           <h2 className="text-lg font-semibold">Variantes</h2>
           <p className="text-muted-foreground text-sm">
-            Cada precio es un Price inmutable en Stripe.
+            El precio se puede cambiar cuando lo necesites.
           </p>
         </div>
         <NewVariantDialog productId={data.product.id} />

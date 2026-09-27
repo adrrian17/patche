@@ -47,9 +47,10 @@ describe("startCheckout", () => {
           {
             id: "variant_1",
             kind: "physical",
+            name: "A5",
             priceAmount: 25_000,
+            productName: "Cuaderno",
             stock: 0,
-            stripePriceId: "price_1",
           },
         ]);
       },
@@ -68,7 +69,7 @@ describe("startCheckout", () => {
     expect(sessionsCreated).toBe(0);
   });
 
-  test("adds MX shipping only when the cart contains a Physical Variant", async () => {
+  test("sends the primary image and adds MX shipping for Physical checkout", async () => {
     let capturedParams: Stripe.Checkout.SessionCreateParams | undefined;
     let capturedOptions: Stripe.RequestOptions | undefined;
     const dependencies: CheckoutDependencies = {
@@ -85,10 +86,13 @@ describe("startCheckout", () => {
         return Promise.resolve([
           {
             id: "variant_1",
+            imageUrl:
+              "https://media.example/api/media/products/product_1/image_1",
             kind: "physical",
+            name: "A5",
             priceAmount: 25_000,
+            productName: "Cuaderno",
             stock: 3,
-            stripePriceId: "price_1",
           },
         ]);
       },
@@ -105,8 +109,21 @@ describe("startCheckout", () => {
 
     expect(capturedParams?.line_items).toEqual([
       {
-        metadata: { variantId: "variant_1" },
-        price: "price_1",
+        metadata: {
+          productName: "Cuaderno",
+          variantId: "variant_1",
+          variantName: "A5",
+        },
+        price_data: {
+          currency: "mxn",
+          product_data: {
+            images: [
+              "https://media.example/api/media/products/product_1/image_1",
+            ],
+            name: "Cuaderno · A5",
+          },
+          unit_amount: 25_000,
+        },
         quantity: 2,
       },
     ]);
@@ -133,6 +150,81 @@ describe("startCheckout", () => {
     expect(capturedParams?.expires_at).toBeNumber();
   });
 
+  test("prices each Physical and Digital line inline from the catalog values", async () => {
+    let capturedParams: Stripe.Checkout.SessionCreateParams | undefined;
+    const dependencies: CheckoutDependencies = {
+      ...inventoryDependencies,
+      createSession(params) {
+        capturedParams = params;
+        return Promise.resolve({ id: "cs_test", url: "https://checkout.test" });
+      },
+      getShippingRateAmount() {
+        return Promise.resolve(1500);
+      },
+      getVariants() {
+        return Promise.resolve([
+          {
+            id: "variant_physical",
+            kind: "physical",
+            name: "A5",
+            priceAmount: 12_345,
+            productName: "Cuaderno",
+            stock: 3,
+          },
+          {
+            id: "variant_digital",
+            kind: "digital",
+            name: "PDF",
+            priceAmount: 23_456,
+            productName: "Planner",
+            stock: 0,
+          },
+        ]);
+      },
+    };
+
+    await startCheckout(
+      {
+        customerId: "customer_1",
+        items: [
+          { quantity: 2, variantId: "variant_physical" },
+          { quantity: 1, variantId: "variant_digital" },
+        ],
+        origin: "https://patche.mx",
+      },
+      dependencies
+    );
+
+    expect(capturedParams?.line_items).toEqual([
+      {
+        metadata: {
+          productName: "Cuaderno",
+          variantId: "variant_physical",
+          variantName: "A5",
+        },
+        price_data: {
+          currency: "mxn",
+          product_data: { name: "Cuaderno · A5" },
+          unit_amount: 12_345,
+        },
+        quantity: 2,
+      },
+      {
+        metadata: {
+          productName: "Planner",
+          variantId: "variant_digital",
+          variantName: "PDF",
+        },
+        price_data: {
+          currency: "mxn",
+          product_data: { name: "Planner · PDF" },
+          unit_amount: 23_456,
+        },
+        quantity: 1,
+      },
+    ]);
+  });
+
   test("does not request shipping for a digital-only cart", async () => {
     let capturedParams: Stripe.Checkout.SessionCreateParams | undefined;
     let shippingRateReads = 0;
@@ -151,9 +243,10 @@ describe("startCheckout", () => {
           {
             id: "variant_1",
             kind: "digital",
+            name: "A5",
             priceAmount: 25_000,
+            productName: "Cuaderno",
             stock: 0,
-            stripePriceId: "price_1",
           },
         ]);
       },
@@ -192,9 +285,10 @@ describe("startCheckout", () => {
           variantIds.map((id) => ({
             id,
             kind: "digital" as const,
+            name: "A5",
             priceAmount: 100,
+            productName: "Cuaderno",
             stock: 0,
-            stripePriceId: `price_${id}`,
           }))
         );
       },
@@ -267,9 +361,10 @@ describe("startCheckout", () => {
           {
             id: "variant_1",
             kind: "physical",
+            name: "A5",
             priceAmount: 25_000,
+            productName: "Cuaderno",
             stock: 2,
-            stripePriceId: "price_1",
           },
         ]);
       },
@@ -314,9 +409,10 @@ describe("startCheckout", () => {
           {
             id: "variant_1",
             kind: "physical",
+            name: "A5",
             priceAmount: 25_000,
+            productName: "Cuaderno",
             stock: 2,
-            stripePriceId: "price_1",
           },
         ]);
       },
@@ -359,9 +455,10 @@ describe("startCheckout", () => {
           {
             id: "variant_1",
             kind: "physical",
+            name: "A5",
             priceAmount: 25_000,
+            productName: "Cuaderno",
             stock: 2,
-            stripePriceId: "price_1",
           },
         ]);
       },

@@ -35,7 +35,6 @@ export const product = sqliteTable(
     categoryId: text("category_id").references(() => category.id, {
       onDelete: "set null",
     }),
-    stripeProductId: text("stripe_product_id").notNull().unique(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -87,7 +86,6 @@ export const variant = sqliteTable(
     currency: text("currency", { enum: ["mxn"] })
       .default("mxn")
       .notNull(),
-    stripePriceId: text("stripe_price_id").notNull().unique(),
     lowStockThreshold: integer("low_stock_threshold").default(5).notNull(),
     archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
     digitalFileKey: text("digital_file_key"),
