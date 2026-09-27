@@ -85,10 +85,10 @@ Stop creating Products and Prices in Stripe. Checkout sends each line's price an
 Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md) · code in `packages/payments/src/checkout.ts`, `apps/web/src/functions/catalog.ts`, `apps/web/src/lib/payments.server.ts`, `packages/db/src/schema/catalog.ts`
 
 - [x] Design it (spec): `/architect checkout without stripe catalog`
-- [ ] Build it: `/develop checkout without stripe catalog`
-  - [ ] Inline `price_data` checkout and webhook reading names from line item metadata (AC-2, AC-3, AC-4, AC-5)
-  - [ ] Catalog server functions without Stripe, admin copy, ADR 0005 (AC-1, AC-7, AC-8)
-  - [ ] Migration dropping the Stripe catalog columns, proven by the safety check (AC-5, AC-6)
+- [x] Build it: `/develop checkout without stripe catalog`
+  - [x] Inline `price_data` checkout and webhook reading names from line item metadata (AC-2, AC-3, AC-4, AC-5)
+  - [x] Catalog server functions without Stripe, admin copy, ADR 0005 (AC-1, AC-7, AC-8)
+  - [x] Migration dropping the Stripe catalog columns, proven by the safety check (AC-5, AC-6)
 - [x] Verify it: `/check verify checkout without stripe catalog`
 - [x] Test it: `/test checkout without stripe catalog`
 - [x] Review it (fresh model): `/check review checkout without stripe catalog`
