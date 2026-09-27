@@ -26,18 +26,19 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 
 ## At a glance
 
-| #   | Feature                       | Phase      | Status      |
-| --- | ----------------------------- | ---------- | ----------- |
-| A   | Magic link auth               | Existing   | existing    |
-| B   | Admin catalog                 | Existing   | existing    |
-| C   | Admin orders and refunds      | Existing   | existing    |
-| D   | Checkout and Stripe webhooks  | Existing   | in-progress |
-| 1   | E2E harness                   | Foundation | done        |
-| 2   | Auth E2E and CI job           | Slice 1    | done        |
-| 3   | Admin catalog E2E             | Slice 2    | planned     |
-| 4   | Purchase E2E                  | Slice 3    | planned     |
-| 5   | Post sale E2E                 | Slice 4    | planned     |
-| 6   | Payments integration coverage | Slice 5    | planned     |
+| #   | Feature                         | Phase      | Status      |
+| --- | ------------------------------- | ---------- | ----------- |
+| A   | Magic link auth                 | Existing   | existing    |
+| B   | Admin catalog                   | Existing   | existing    |
+| C   | Admin orders and refunds        | Existing   | existing    |
+| D   | Checkout and Stripe webhooks    | Existing   | in-progress |
+| 1   | E2E harness                     | Foundation | done        |
+| 2   | Auth E2E and CI job             | Slice 1    | done        |
+| 7   | Checkout without Stripe catalog | Slice 2    | in-progress |
+| 3   | Admin catalog E2E               | Slice 2    | planned     |
+| 4   | Purchase E2E                    | Slice 3    | planned     |
+| 5   | Post sale E2E                   | Slice 4    | planned     |
+| 6   | Payments integration coverage   | Slice 5    | planned     |
 
 ## Already built
 
@@ -77,7 +78,25 @@ code in `apps/web/e2e/auth.spec.ts`, `.github/workflows/ci.yml` (job `e2e`)
 
 ## Slice 2: Admin catalog E2E
 
+### 7. Checkout without Stripe catalog · GA · in-progress
+
+Stop creating Products and Prices in Stripe. Checkout sends each line's price and name inline, read from D1 at payment time, so the catalog lives only in Patche (in line with ADR 0001). Removes the Stripe calls and their rollback code from create, edit, archive and price change. **Done when:** creating, editing, archiving and repricing a Product or Variant makes no Stripe call, a Checkout charges the D1 price, existing Orders still reconcile through webhooks, and the columns `stripe_product_id` and `stripe_price_id` are gone.
+
+Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md)
+
+- [x] Design it (spec): `/architect checkout without stripe catalog`
+- [ ] Build it: `/develop checkout without stripe catalog`
+  - [ ] Inline `price_data` checkout and webhook reading names from line item metadata (AC-2, AC-3, AC-4, AC-5)
+  - [ ] Catalog server functions without Stripe, admin copy, ADR 0005 (AC-1, AC-7, AC-8)
+  - [ ] Migration dropping the Stripe catalog columns, proven by the safety check (AC-5, AC-6)
+- [ ] Verify it: `/check verify checkout without stripe catalog`
+- [ ] Test it: `/test checkout without stripe catalog`
+- [ ] Review it (fresh model): `/check review checkout without stripe catalog`
+- [ ] Document it: `/document checkout without stripe catalog`
+
 ### 3. Admin catalog E2E
+
+Waits for feature 7: once it ships, drop the checks that Stripe mirrors the catalog.
 
 The Admin manages the catalog through the UI, and the tests check that Stripe mirrors it. **Done when:** create Category, Product and Physical Variant (Product and Price present in Stripe), change price (new Price active, old one off), archive, upload Media, record a Stock Movement with the low stock warning, and change the Shipping Rate all pass.
 
