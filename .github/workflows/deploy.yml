@@ -93,14 +93,14 @@ jobs:
           printf '%s\n' "$plan"
 
           expected_resources="$(printf '%s\n' \
-            Cloudflare.D1Database \
-            Cloudflare.R2.Bucket \
-            Cloudflare.R2.Bucket \
-            Cloudflare.Worker \
-            GitHub.Comment | sort)"
+            Database \
+            DigitalBucket \
+            MediaBucket \
+            preview-comment \
+            Web | sort)"
           actual_resources="$(printf '%s\n' "$plan" | \
             sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' | \
-            sed -nE 's/^\[([^]]+)\] delete$/\1/p' | sort)"
+            sed -nE 's/^.*\[([^]]+)\] delete$/\1/p' | sort)"
 
           if [[ "$actual_resources" != "$expected_resources" ]]; then
             echo "Refusing to destroy unexpected preview resources."
