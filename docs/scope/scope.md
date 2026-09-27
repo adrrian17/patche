@@ -98,7 +98,7 @@ Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md) · code in 
 
 Waits for feature 7: once it ships, drop the checks that Stripe mirrors the catalog.
 
-The Admin manages the catalog through the UI, and the tests check that Stripe mirrors it. **Done when:** create Category, Product and Physical Variant (Product and Price present in Stripe), change price (new Price active, old one off), archive, upload Media, record a Stock Movement with the low stock warning, and change the Shipping Rate all pass.
+The Admin manages the catalog through the UI, and the tests check that changes persist in D1. **Done when:** create Category, Product and Physical Variant and verify them after reload; change a price and verify the saved price; archive and verify the archived state; upload Media, record a Stock Movement with the low stock warning, and change the Shipping Rate all pass.
 
 - [ ] `/develop admin catalog e2e`
 
