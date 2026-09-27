@@ -33,7 +33,7 @@ bun run dev
 
 ### Remote cache
 
-Turborepo shares build and type-check outputs through a self-hosted [turborepo-remote-cache-cloudflare](https://github.com/AdiRishi/turborepo-remote-cache-cloudflare) Worker. To use it locally, run `bunx turbo login --manual` and enter the Worker URL, the team slug, and the Worker's `TURBO_TOKEN`. CI reads the same values from the `TURBO_API` and `TURBO_TEAM` repository variables and the `TURBO_TOKEN` secret.
+Turborepo shares build, type-check, and test outputs through a self-hosted [turborepo-remote-cache-cloudflare](https://github.com/AdiRishi/turborepo-remote-cache-cloudflare) Worker at `https://turborepo-remote-cache.adrrian17.workers.dev`. Artifacts are signed. `bun run build`, `bun run check-types`, and `bun run test` load the credentials through Varlock from the `Turborepo` item in the `Patche` 1Password vault (see `.env.turbo`), so no local `.env` is needed. CI resolves them with `OP_SERVICE_ACCOUNT_TOKEN`; fork PRs run with a local cache only. Running `bun test` or `turbo` directly skips the remote cache.
 
 ## Database
 
