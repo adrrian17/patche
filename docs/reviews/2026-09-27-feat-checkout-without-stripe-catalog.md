@@ -1,7 +1,9 @@
 # Review, feat/checkout-without-stripe-catalog, 2026-09-27
 
 **Reviewed by**: GPT-6-Astra (author on GPT / gpt-6-luna)
+
 **Scope**: 20 files, branch vs main (merge base `a79d2fa3880c5d7e07db266bbf3cfdb17483220d`, including working tree and untracked migration/ADR)
+
 **Verdict**: Changes requested
 
 ## Summary
