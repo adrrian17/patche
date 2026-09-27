@@ -27,8 +27,9 @@
   "type": "module",
   "scripts": {
     "dev": "APP_ENV=development varlock run -- turbo run dev -F @patche/infra",
-    "build": "turbo run build",
-    "check-types": "turbo run check-types",
+    "build": "varlock run --path .env.turbo -- turbo run build",
+    "check-types": "varlock run --path .env.turbo -- turbo run check-types",
+    "test": "varlock run --path .env.turbo -- turbo run test",
     "test:e2e": "turbo run test:e2e -F web",
     "test:integration": "bun run --cwd apps/web test:integration",
     "db:generate": "bun run --cwd packages/db db:generate",

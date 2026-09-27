@@ -31,6 +31,10 @@ bun run dev
 
 `bun run dev` runs `alchemy dev`, which emulates D1, R2, and email locally. The application is available at [http://localhost:3001](http://localhost:3001).
 
+### Remote cache
+
+Turborepo shares build, type-check, and test outputs through a self-hosted [turborepo-remote-cache-cloudflare](https://github.com/AdiRishi/turborepo-remote-cache-cloudflare) Worker at `https://turborepo-remote-cache.adrrian17.workers.dev`. Artifacts are signed. `bun run build`, `bun run check-types`, and `bun run test` load the credentials through Varlock from the `Turborepo` item in the `Patche` 1Password vault (see `.env.turbo`), so no local `.env` is needed. CI resolves them with `OP_SERVICE_ACCOUNT_TOKEN`; fork PRs run with a local cache only. Running `bun test` or `turbo` directly skips the remote cache.
+
 ## Database
 
 Patche uses Cloudflare D1 with Drizzle ORM. Schema definitions live in `packages/db/src/schema`, and generated migrations live in `packages/db/src/migrations`.

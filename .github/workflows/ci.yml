@@ -36,12 +36,20 @@ jobs:
 
       - name: Build workspace
         run: bun run build
+        # Varlock reads the Turborepo remote cache credentials from 1Password (.env.turbo) and strips this token before running turbo.
+        # Fork PRs get no secrets and fall back to a cold local cache.
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Run type checks
         run: bun run check-types
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Run package tests
-        run: bun test apps/web packages/email packages/payments packages/storage
+        run: bun run test
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
   e2e:
     name: E2E tests

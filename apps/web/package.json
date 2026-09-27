@@ -6,6 +6,7 @@
     "build": "vite build",
     "check-types": "tsgo --noEmit",
     "serve": "vite preview",
+    "test": "bun test src",
     "test:e2e": "APP_ENV=e2e varlock run -- playwright test",
     "test:integration": "vitest run --config vitest.config.ts"
   },
