@@ -37,7 +37,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 7   | Checkout without Stripe catalog | Slice 2    | in-progress |
 | 3   | Admin catalog E2E               | Slice 2    | done        |
 | 4   | Purchase E2E                    | Slice 3    | done        |
-| 5   | Post sale E2E                   | Slice 4    | planned     |
+| 5   | Post sale E2E                   | Slice 4    | done        |
 | 6   | Payments integration coverage   | Slice 5    | planned     |
 
 ## Already built
@@ -119,11 +119,14 @@ code in `apps/web/e2e/purchase.spec.ts`, `apps/web/e2e/support/seed-product.ts`
 
 ## Slice 4: Post sale E2E
 
-### 5. Post sale E2E
+### 5. Post sale E2E · done
 
 After a real purchase, the Admin fulfills and refunds the Order. **Done when:** an Order moves shipped then delivered, and a refund goes `refund_pending` then `refunded` once the real `charge.refunded` event is posted.
 
-- [ ] `/develop post sale e2e`
+- [x] `/develop post sale e2e`
+- [x] `/test post sale e2e`
+
+code in `apps/web/e2e/purchase.spec.ts`, `apps/web/src/routes/admin/orders/$orderId.tsx`
 
 ## Slice 5: Payments integration coverage
 

@@ -13,34 +13,38 @@ import { findStripeEvent, postSignedEvent } from "./support/stripe-events";
 test.use({ storageState: "e2e/.auth/customer.json" });
 
 async function fillStripeField(page: Page, name: string, value: string) {
-  function findFields() {
-    return page
-      .frames()
-      .map((frame) =>
-        frame.getByRole("textbox", { name: new RegExp(name, "iu") })
-      );
-  }
   await expect
     .poll(
       async () => {
-        const visibility = await Promise.all(
-          findFields().map((field) => field.isVisible())
-        );
-        return visibility.some(Boolean);
+        for (const frame of page.frames()) {
+          const field = frame.getByRole("textbox", {
+            name: new RegExp(name, "iu"),
+          });
+          try {
+            // oxlint-disable-next-line no-await-in-loop -- Stripe can replace frames between checks.
+            if (await field.isVisible()) {
+              // oxlint-disable-next-line no-await-in-loop -- Fill the live frame before it is replaced.
+              await field.fill(value);
+              return true;
+            }
+          } catch (error) {
+            if (
+              error instanceof Error &&
+              error.message.includes("Frame was detached")
+            ) {
+              continue;
+            }
+            throw error;
+          }
+        }
+        return false;
       },
       { timeout: 30_000 }
     )
     .toBe(true);
-  const fields = findFields();
-  const visible = await Promise.all(fields.map((field) => field.isVisible()));
-  const visibleIndex = visible.findIndex(Boolean);
-  if (visibleIndex === -1) {
-    throw new Error(`Stripe Checkout field not found: ${name}`);
-  }
-  await fields[visibleIndex].fill(value);
 }
 
-test("pays through Stripe Checkout and records the paid order", async ({
+test("purchase, fulfillment, and refund complete through Stripe", async ({
   browser,
   page,
 }, testInfo) => {
@@ -103,6 +107,14 @@ test("pays through Stripe Checkout and records the paid order", async ({
   if (!event) {
     throw new Error("Stripe did not emit checkout.session.completed");
   }
+  if (event.type !== "checkout.session.completed") {
+    throw new Error("Stripe did not emit checkout.session.completed");
+  }
+  // SAFETY: events.list is unexpanded here, so the Payment Intent is an ID.
+  const paymentIntentId = event.data.object.payment_intent as string | null;
+  if (!paymentIntentId) {
+    throw new Error("Stripe Checkout event did not contain a Payment Intent");
+  }
 
   const webhookResponse = await postSignedEvent(page.request, event);
   expect(webhookResponse.status()).toBe(200);
@@ -127,6 +139,40 @@ test("pays through Stripe Checkout and records the paid order", async ({
     const itemRow = adminPage.getByRole("row").filter({ hasText: variantName });
     await expect(itemRow).toContainText(productName);
     await expect(itemRow).toContainText("$250.00");
+
+    await adminPage.getByRole("button", { name: "Marcar enviada" }).click();
+    await expect(adminPage.getByText("Enviado", { exact: true })).toBeVisible();
+    await adminPage.getByRole("button", { name: "Marcar entregada" }).click();
+    await expect(
+      adminPage.getByText("Entregado", { exact: true })
+    ).toBeVisible();
+
+    await adminPage.getByRole("button", { name: "Reembolso total" }).click();
+    await expect(
+      adminPage.getByText("Reembolso pendiente", { exact: true })
+    ).toBeVisible();
+
+    let refundEvent: Stripe.Event | undefined;
+    await expect(async () => {
+      refundEvent = await findStripeEvent("charge.refunded", paymentIntentId);
+      expect(refundEvent).toBeDefined();
+    }).toPass({ timeout: 30_000 });
+    if (!refundEvent) {
+      throw new Error("Stripe did not emit charge.refunded");
+    }
+    const refundResponse = await postSignedEvent(
+      adminPage.request,
+      refundEvent
+    );
+    expect(refundResponse.status()).toBe(200);
+    expect(await refundResponse.json()).toMatchObject({
+      received: true,
+      result: "processed",
+    });
+    await adminPage.reload();
+    await expect(
+      adminPage.getByText("Reembolsado", { exact: true })
+    ).toBeVisible();
 
     await adminPage.goto("/admin/inventory");
     const inventoryRow = adminPage
