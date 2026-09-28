@@ -36,7 +36,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 2   | Auth E2E and CI job             | Slice 1    | done        |
 | 7   | Checkout without Stripe catalog | Slice 2    | in-progress |
 | 3   | Admin catalog E2E               | Slice 2    | done        |
-| 4   | Purchase E2E                    | Slice 3    | planned     |
+| 4   | Purchase E2E                    | Slice 3    | done        |
 | 5   | Post sale E2E                   | Slice 4    | planned     |
 | 6   | Payments integration coverage   | Slice 5    | planned     |
 
@@ -108,11 +108,14 @@ code in `apps/web/e2e/admin-catalog.spec.ts`, `apps/web/e2e/product-media.spec.t
 
 ## Slice 3: Purchase E2E
 
-### 4. Purchase E2E
+### 4. Purchase E2E · done
 
 A Customer pays in hosted Stripe Checkout, and the real event is signed and posted to the webhook. **Done when:** a paid Order shows in admin with Order Items at the captured price and Stock decremented, and a Checkout cannot start without enough Stock.
 
-- [ ] `/develop purchase e2e`
+- [x] `/develop purchase e2e`
+- [x] `/test purchase e2e`
+
+code in `apps/web/e2e/purchase.spec.ts`, `apps/web/e2e/support/seed-product.ts`
 
 ## Slice 4: Post sale E2E
 
