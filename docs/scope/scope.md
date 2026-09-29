@@ -38,7 +38,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 3   | Admin catalog E2E               | Slice 2    | done        |
 | 4   | Purchase E2E                    | Slice 3    | done        |
 | 5   | Post sale E2E                   | Slice 4    | done        |
-| 6   | Payments integration coverage   | Slice 5    | planned     |
+| 6   | Payments integration coverage   | Slice 5    | in-progress |
 
 ## Already built
 
@@ -130,11 +130,13 @@ code in `apps/web/e2e/purchase.spec.ts`, `apps/web/src/routes/admin/orders/$orde
 
 ## Slice 5: Payments integration coverage
 
-### 6. Payments integration coverage
+### 6. Payments integration coverage · in-progress
 
 Cover in the Miniflare integration suite the rules that need no browser, and run that suite in CI. **Done when:** a Download Grant is created on completion and revoked on refund, a Checkout Reservation is released on `checkout.session.expired` and on `payment_intent.payment_failed`, and CI runs `test:integration`.
 
-- [ ] `/develop payments integration coverage`
+- [x] `/develop payments integration coverage`
+
+code in `apps/web/src/lib/payments.integration.ts`, `.github/workflows/ci.yml` (step `Run integration tests`)
 
 ## Deferred
 
