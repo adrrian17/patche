@@ -81,6 +81,9 @@ function OrderDetailPage() {
   async function refund() {
     try {
       await refundOrder({ data: { orderId } });
+      await queryClient.invalidateQueries({
+        queryKey: ["admin", "orders", orderId],
+      });
       toast.success("Reembolso solicitado a Stripe");
     } catch (error) {
       toast.error(

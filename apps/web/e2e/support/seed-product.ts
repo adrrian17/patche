@@ -53,16 +53,30 @@ function withAdminDatabase<T>(
 }
 
 // Inserts straight into local D1 so the test does not need a real Stripe Product.
-export function seedProduct(name: string, adminEmail: string) {
+export function seedProduct(
+  name: string,
+  adminEmail: string,
+  status: "active" | "draft" = "draft"
+) {
   const id = randomId();
   withAdminDatabase(adminEmail, (db) =>
     db
       .prepare(
-        "INSERT INTO product (id, name, slug, stripe_product_id) VALUES (?, ?, ?, ?)"
+        "INSERT INTO product (id, name, slug, status) VALUES (?, ?, ?, ?)"
       )
-      .run(id, name, `e2e-${id}`, `prod_e2e_${id}`)
+      .run(id, name, `e2e-${id}`, status)
   );
   return id;
+}
+
+export function seedStock(email: string, variantId: string, quantity: number) {
+  withAdminDatabase(email, (db) =>
+    db
+      .prepare(
+        "INSERT INTO stock_movement (id, variant_id, quantity, reason, note) VALUES (?, ?, ?, 'received', 'E2E')"
+      )
+      .run(randomId(), variantId, quantity)
+  );
 }
 
 // Inserts straight into local D1 so the test does not need a real Stripe Price.
@@ -74,15 +88,14 @@ export function seedVariant(
   withAdminDatabase(adminEmail, (db) =>
     db
       .prepare(
-        "INSERT INTO variant (id, product_id, name, sku, kind, price_amount, stripe_price_id) VALUES (?, ?, ?, ?, 'physical', ?, ?)"
+        "INSERT INTO variant (id, product_id, name, sku, kind, price_amount) VALUES (?, ?, ?, ?, 'physical', ?)"
       )
       .run(
         id,
         variant.productId,
         variant.name,
         `E2E-${id}`,
-        variant.priceAmount,
-        `price_e2e_${id}`
+        variant.priceAmount
       )
   );
   return id;

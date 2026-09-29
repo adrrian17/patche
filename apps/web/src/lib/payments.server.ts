@@ -1,5 +1,5 @@
 import { createDb } from "@patche/db";
-import { product, variant } from "@patche/db/schema/catalog";
+import { product, productMedia, variant } from "@patche/db/schema/catalog";
 import { stockMovement } from "@patche/db/schema/inventory";
 import {
   checkoutReservation,
@@ -17,6 +17,7 @@ import type {
   WebhookStore,
   WebhookTransaction,
 } from "@patche/payments";
+import { mediaPublicUrl } from "@patche/storage";
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -28,6 +29,7 @@ import {
   releaseInventoryReservationBySession,
   reserveInventory,
 } from "@/lib/inventory-reservations.server";
+import { getMediaPublicBaseUrl } from "@/lib/storage.server";
 
 const checkoutMetadataSchema = z.array(
   z.object({
@@ -229,9 +231,9 @@ async function loadPurchasedLineItems(
     }
 
     purchasedItems.set(variantId, {
-      productName: lineItem.description,
+      productName: lineItem.metadata?.productName || null,
       unitAmount,
-      variantName: lineItem.price.nickname,
+      variantName: lineItem.metadata?.variantName || null,
     });
   }
 
@@ -301,11 +303,11 @@ function queueOrderEffects(
       id: nanoid(),
       kind: itemVariant.kind,
       orderId,
-      productName: purchasedItem.productName ?? itemVariant.productName,
+      productName: purchasedItem.productName || itemVariant.productName,
       quantity: item.quantity,
       unitAmount: purchasedItem.unitAmount,
       variantId: itemVariant.id,
-      variantName: purchasedItem.variantName ?? itemVariant.name,
+      variantName: purchasedItem.variantName || itemVariant.name,
     };
   });
   const itemIdsByVariant = new Map(
@@ -559,13 +561,22 @@ export async function startCustomerCheckout(
         if (variantIds.length === 0) {
           return [];
         }
-        return await db
+        const mediaBaseUrl = getMediaPublicBaseUrl();
+        const variants = await db
           .select({
             id: variant.id,
+            imageKey: sql<string | null>`(
+              select ${productMedia.r2Key}
+              from ${productMedia}
+              where ${productMedia.productId} = ${product.id}
+              order by ${productMedia.sort} asc, ${productMedia.id} asc
+              limit 1
+            )`,
             kind: variant.kind,
+            name: variant.name,
             priceAmount: variant.priceAmount,
+            productName: product.name,
             stock: sql<number>`coalesce(sum(${stockMovement.quantity}), 0)`,
-            stripePriceId: variant.stripePriceId,
           })
           .from(variant)
           .innerJoin(product, eq(variant.productId, product.id))
@@ -578,6 +589,10 @@ export async function startCustomerCheckout(
             )
           )
           .groupBy(variant.id);
+        return variants.map(({ imageKey, ...item }) => ({
+          ...item,
+          imageUrl: imageKey ? mediaPublicUrl(mediaBaseUrl, imageKey) : null,
+        }));
       },
       releaseInventoryReservation,
       reserveInventory,

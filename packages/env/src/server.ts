@@ -10,6 +10,7 @@ export interface ServerEnv {
   DB: D1Database;
   DIGITAL_BUCKET: R2Bucket;
   DIGITAL_BUCKET_NAME: string;
+  DEV_CHECKOUT_ENABLED: string;
   MEDIA_BUCKET: R2Bucket;
   MEDIA_PUBLIC_BASE_URL: string;
   MEDIA_PUBLIC_PROXY: string;

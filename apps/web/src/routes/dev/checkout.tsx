@@ -32,11 +32,16 @@ function DevCheckoutPage() {
 
     const form = new FormData(event.currentTarget);
     const variantId = String(form.get("variantId") ?? "").trim();
+    const secondVariantId = String(form.get("secondVariantId") ?? "").trim();
     const quantity = Number(form.get("quantity"));
+    const items = [{ quantity, variantId }];
+    if (secondVariantId) {
+      items.push({ quantity, variantId: secondVariantId });
+    }
 
     try {
       const session = await createCheckoutSession({
-        data: { items: [{ quantity, variantId }] },
+        data: { items },
       });
       window.location.assign(session.url);
     } catch (error) {
@@ -64,6 +69,15 @@ function DevCheckoutPage() {
         <div className="space-y-2">
           <Label htmlFor="variantId">Variant ID</Label>
           <Input id="variantId" name="variantId" required autoComplete="off" />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="secondVariantId">Segundo Variant ID (opcional)</Label>
+          <Input
+            autoComplete="off"
+            id="secondVariantId"
+            name="secondVariantId"
+          />
         </div>
 
         <div className="space-y-2">

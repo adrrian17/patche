@@ -11,6 +11,8 @@ const productId = "product_1";
 const reservationId = "reservation_1";
 const sessionId = "cs_test";
 const variantId = "variant_1";
+const checkoutExpiredType = "checkout.session.expired";
+const paymentFailedType = "payment_intent.payment_failed";
 
 function checkoutCompletedEvent(): Stripe.Event {
   // SAFETY: The processor reads only the fields supplied by this fixture.
@@ -60,7 +62,27 @@ function refundedEvent(): Stripe.Event {
   } as Stripe.Event;
 }
 
-function stubLineItems() {
+function checkoutExpiredEvent(): Stripe.Event {
+  // SAFETY: The processor reads only the fields supplied by this fixture.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- minimal Stripe fixture
+  return {
+    data: { object: { id: sessionId } },
+    id: "evt_checkout_expired",
+    type: checkoutExpiredType,
+  } as unknown as Stripe.Event;
+}
+
+function paymentFailedEvent(): Stripe.Event {
+  // SAFETY: The processor reads only the fields supplied by this fixture.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- minimal Stripe fixture
+  return {
+    data: { object: { id: "pi_failed", metadata: { reservationId } } },
+    id: "evt_payment_failed",
+    type: paymentFailedType,
+  } as unknown as Stripe.Event;
+}
+
+function stubLineItems(names?: { productName?: string; variantName?: string }) {
   const fetchMock = vi.fn((_input: RequestInfo | URL) =>
     Promise.resolve(
       Response.json(
@@ -68,9 +90,11 @@ function stubLineItems() {
           data: [
             {
               currency: "mxn",
-              description: "Cuaderno",
-              metadata: { variantId },
-              price: { nickname: "A5", unit_amount: 10_000 },
+              metadata: {
+                ...(names ?? { productName: "Cuaderno", variantName: "A5" }),
+                variantId,
+              },
+              price: { unit_amount: 10_000 },
               quantity: 1,
             },
           ],
@@ -99,14 +123,14 @@ async function seedCheckoutReservation(
     ),
     env.DB.prepare(
       `INSERT INTO product (
-        id, name, slug, description, status, stripe_product_id
-      ) VALUES (?, ?, ?, '', 'active', ?)`
-    ).bind(productId, "Cuaderno", "cuaderno", "prod_test"),
+        id, name, slug, description, status
+      ) VALUES (?, ?, ?, '', 'active')`
+    ).bind(productId, "Cuaderno", "cuaderno"),
     env.DB.prepare(
       `INSERT INTO variant (
-        id, product_id, name, sku, kind, price_amount, stripe_price_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).bind(variantId, productId, "A5", "SKU-TEST", kind, 10_000, "price_test"),
+        id, product_id, name, sku, kind, price_amount
+      ) VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(variantId, productId, "A5", "SKU-TEST", kind, 10_000),
     env.DB.prepare(
       `INSERT INTO checkout_reservation (
         id, customer_id, stripe_checkout_session_id, status, expires_at
@@ -146,6 +170,46 @@ afterEach(async () => {
 });
 
 describe("Stripe webhook inventory reservation", () => {
+  test.each([
+    [checkoutExpiredType, checkoutExpiredEvent],
+    [paymentFailedType, paymentFailedEvent],
+  ])("%s releases its Checkout Reservation", async (_eventType, event) => {
+    await seedCheckoutReservation();
+    if (_eventType === paymentFailedType) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() =>
+          Promise.resolve(
+            Response.json({
+              id: sessionId,
+              object: "checkout.session",
+              status: "expired",
+            })
+          )
+        )
+      );
+    }
+
+    expect(await processStripeEvent(event(), createWebhookStore())).toBe(
+      "processed"
+    );
+
+    const [reservation, releasedMovement] = await Promise.all([
+      env.DB.prepare("SELECT status FROM checkout_reservation WHERE id = ?")
+        .bind(reservationId)
+        .first<{ status: string }>(),
+      env.DB.prepare(
+        `SELECT id FROM stock_movement
+         WHERE reservation_id = ? AND reason = 'released'`
+      )
+        .bind(reservationId)
+        .first(),
+    ]);
+
+    expect(reservation?.status).toBe("released");
+    expect(releasedMovement).not.toBeNull();
+  });
+
   test("a completed Checkout consumes its reservation permanently", async () => {
     const expiresAt = await seedCheckoutReservation();
     const fetchMock = stubLineItems();
@@ -186,6 +250,64 @@ describe("Stripe webhook inventory reservation", () => {
     });
     expect(releasedMovement).toBeNull();
   });
+
+  test("a completed Checkout keeps the purchased names and amount", async () => {
+    await seedCheckoutReservation();
+    stubLineItems();
+    await env.DB.batch([
+      env.DB.prepare("UPDATE product SET name = ? WHERE id = ?").bind(
+        "Cuaderno renombrado",
+        productId
+      ),
+      env.DB.prepare(
+        "UPDATE variant SET name = ?, price_amount = ? WHERE id = ?"
+      ).bind("A4", 20_000, variantId),
+    ]);
+
+    await processStripeEvent(checkoutCompletedEvent(), createWebhookStore());
+    const orderItem = await env.DB.prepare(
+      `SELECT product_name AS productName, variant_name AS variantName,
+        unit_amount AS unitAmount FROM order_item WHERE variant_id = ?`
+    )
+      .bind(variantId)
+      .first<{
+        productName: string;
+        unitAmount: number;
+        variantName: string;
+      }>();
+
+    expect(orderItem).toEqual({
+      productName: "Cuaderno",
+      unitAmount: 10_000,
+      variantName: "A5",
+    });
+  });
+
+  test.each([{}, { productName: "", variantName: "" }])(
+    "falls back to current catalog names for absent or empty metadata",
+    async (names) => {
+      await seedCheckoutReservation();
+      stubLineItems(names);
+
+      await processStripeEvent(checkoutCompletedEvent(), createWebhookStore());
+      const orderItem = await env.DB.prepare(
+        `SELECT product_name AS productName, variant_name AS variantName,
+        unit_amount AS unitAmount FROM order_item WHERE variant_id = ?`
+      )
+        .bind(variantId)
+        .first<{
+          productName: string;
+          unitAmount: number;
+          variantName: string;
+        }>();
+
+      expect(orderItem).toEqual({
+        productName: "Cuaderno",
+        unitAmount: 10_000,
+        variantName: "A5",
+      });
+    }
+  );
 });
 
 describe("Stripe webhook event store", () => {
@@ -229,6 +351,12 @@ describe("Stripe webhook event store", () => {
       .first();
     // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- Stripe delivers these in sequence
     await processStripeEvent(checkoutCompletedEvent(), store);
+    const createdGrant = await env.DB.prepare(
+      "SELECT revoked_at AS revokedAt FROM download_grant WHERE variant_id = ?"
+    )
+      .bind(variantId)
+      .first<{ revokedAt: number | null }>();
+    expect(createdGrant?.revokedAt).toBeNull();
     // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- the retry must follow the Checkout commit
     const retry = await processStripeEvent(refundedEvent(), store);
     // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- reads must follow the retry commit

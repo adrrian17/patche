@@ -26,18 +26,19 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 
 ## At a glance
 
-| #   | Feature                       | Phase      | Status      |
-| --- | ----------------------------- | ---------- | ----------- |
-| A   | Magic link auth               | Existing   | existing    |
-| B   | Admin catalog                 | Existing   | existing    |
-| C   | Admin orders and refunds      | Existing   | existing    |
-| D   | Checkout and Stripe webhooks  | Existing   | in-progress |
-| 1   | E2E harness                   | Foundation | done        |
-| 2   | Auth E2E and CI job           | Slice 1    | done        |
-| 3   | Admin catalog E2E             | Slice 2    | planned     |
-| 4   | Purchase E2E                  | Slice 3    | planned     |
-| 5   | Post sale E2E                 | Slice 4    | planned     |
-| 6   | Payments integration coverage | Slice 5    | planned     |
+| #   | Feature                         | Phase      | Status      |
+| --- | ------------------------------- | ---------- | ----------- |
+| A   | Magic link auth                 | Existing   | existing    |
+| B   | Admin catalog                   | Existing   | existing    |
+| C   | Admin orders and refunds        | Existing   | existing    |
+| D   | Checkout and Stripe webhooks    | Existing   | in-progress |
+| 1   | E2E harness                     | Foundation | done        |
+| 2   | Auth E2E and CI job             | Slice 1    | done        |
+| 7   | Checkout without Stripe catalog | Slice 2    | done        |
+| 3   | Admin catalog E2E               | Slice 2    | done        |
+| 4   | Purchase E2E                    | Slice 3    | done        |
+| 5   | Post sale E2E                   | Slice 4    | done        |
+| 6   | Payments integration coverage   | Slice 5    | done        |
 
 ## Already built
 
@@ -77,35 +78,65 @@ code in `apps/web/e2e/auth.spec.ts`, `.github/workflows/ci.yml` (job `e2e`)
 
 ## Slice 2: Admin catalog E2E
 
-### 3. Admin catalog E2E
+### 7. Checkout without Stripe catalog · GA · done
 
-The Admin manages the catalog through the UI, and the tests check that Stripe mirrors it. **Done when:** create Category, Product and Physical Variant (Product and Price present in Stripe), change price (new Price active, old one off), archive, upload Media, record a Stock Movement with the low stock warning, and change the Shipping Rate all pass.
+Stop creating Products and Prices in Stripe. Checkout sends each line's price and name inline, read from D1 at payment time, so the catalog lives only in Patche (in line with ADR 0001). Removes the Stripe calls and their rollback code from create, edit, archive and price change. **Done when:** creating, editing, archiving and repricing a Product or Variant makes no Stripe call, a Checkout charges the D1 price, existing Orders still reconcile through webhooks, and the columns `stripe_product_id` and `stripe_price_id` are gone.
 
-- [ ] `/develop admin catalog e2e`
+Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md) · code in `packages/payments/src/checkout.ts`, `apps/web/src/functions/catalog.ts`, `apps/web/src/lib/payments.server.ts`, `packages/db/src/schema/catalog.ts`
+
+- [x] Design it (spec): `/architect checkout without stripe catalog`
+- [x] Build it: `/develop checkout without stripe catalog`
+  - [x] Inline `price_data` checkout and webhook reading names from line item metadata (AC-2, AC-3, AC-4, AC-5)
+  - [x] Catalog server functions without Stripe, admin copy, ADR 0005 (AC-1, AC-7, AC-8)
+  - [x] Migration dropping the Stripe catalog columns, proven by the safety check (AC-5, AC-6)
+- [x] Verify it: `/check verify checkout without stripe catalog`
+- [x] Test it: `/test checkout without stripe catalog`
+- [x] Review it (fresh model): `/check review checkout without stripe catalog`
+- [x] Document it: `/document checkout without stripe catalog`
+
+### 3. Admin catalog E2E · done
+
+Waits for feature 7: once it ships, drop the checks that Stripe mirrors the catalog.
+
+The Admin manages the catalog through the UI, and the tests check that changes persist in D1. **Done when:** create Category, Product and Physical Variant and verify them after reload; change a price and verify the saved price; archive and verify the archived state; upload Media, record a Stock Movement with the low stock warning, and change the Shipping Rate all pass.
+
+code in `apps/web/e2e/admin-catalog.spec.ts`, `apps/web/e2e/product-media.spec.ts`, `apps/web/e2e/support/promote-to-admin.ts`
+
+- [x] `/develop admin catalog e2e`
+- [x] `/check verify admin catalog e2e`
+- [x] `/test admin catalog e2e`
 
 ## Slice 3: Purchase E2E
 
-### 4. Purchase E2E
+### 4. Purchase E2E · done
 
 A Customer pays in hosted Stripe Checkout, and the real event is signed and posted to the webhook. **Done when:** a paid Order shows in admin with Order Items at the captured price and Stock decremented, and a Checkout cannot start without enough Stock.
 
-- [ ] `/develop purchase e2e`
+- [x] `/develop purchase e2e`
+- [x] `/test purchase e2e`
+
+code in `apps/web/e2e/purchase.spec.ts`, `apps/web/e2e/support/seed-product.ts`
 
 ## Slice 4: Post sale E2E
 
-### 5. Post sale E2E
+### 5. Post sale E2E · done
 
 After a real purchase, the Admin fulfills and refunds the Order. **Done when:** an Order moves shipped then delivered, and a refund goes `refund_pending` then `refunded` once the real `charge.refunded` event is posted.
 
-- [ ] `/develop post sale e2e`
+- [x] `/develop post sale e2e`
+- [x] `/test post sale e2e`
+
+code in `apps/web/e2e/purchase.spec.ts`, `apps/web/src/routes/admin/orders/$orderId.tsx`
 
 ## Slice 5: Payments integration coverage
 
-### 6. Payments integration coverage
+### 6. Payments integration coverage · done
 
 Cover in the Miniflare integration suite the rules that need no browser, and run that suite in CI. **Done when:** a Download Grant is created on completion and revoked on refund, a Checkout Reservation is released on `checkout.session.expired` and on `payment_intent.payment_failed`, and CI runs `test:integration`.
 
-- [ ] `/develop payments integration coverage`
+- [x] `/develop payments integration coverage`
+
+code in `apps/web/src/lib/payments.integration.ts`, `.github/workflows/ci.yml` (step `Run integration tests`)
 
 ## Deferred
 
