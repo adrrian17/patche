@@ -106,6 +106,17 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
     (checkbox as HTMLInputElement).click()
   );
   await expect(agentDisclosure).toBeChecked();
+  // Outside Mexico Stripe pre-checks Link and then requires a phone number.
+  const saveInfo = page.getByRole("checkbox", {
+    name: "Save my information for faster checkout",
+  });
+  if ((await saveInfo.count()) > 0 && (await saveInfo.isChecked())) {
+    // SAFETY: This locator resolves Stripe's native checkbox input.
+    await saveInfo.evaluate((checkbox) =>
+      (checkbox as HTMLInputElement).click()
+    );
+    await expect(saveInfo).not.toBeChecked();
+  }
   await page
     .getByRole("button", { name: /pay|pagar/iu })
     .last()
