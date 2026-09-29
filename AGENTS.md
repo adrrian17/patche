@@ -12,7 +12,7 @@ Patche is an online stationery store for notebooks, calendars, planners, and rel
 
 ## Build approach
 
-<TBD, set by /scope>
+Tracer Bullet: prove the whole pipe with one thin working thread, then thicken one segment at a time.
 
 ## Essentials
 
@@ -22,6 +22,7 @@ Patche is an online stationery store for notebooks, calendars, planners, and rel
 - Check changed code with `bun run check`; apply automated fixes with `bun run fix`.
 - Run the test suite with `bun test`.
 - Run the Cloudflare and D1 integration suite with `bun run test:integration`.
+- Run the Playwright E2E suite with `bun run test:e2e`.
 - Read `CONTEXT.md` before changing domain terms or business rules.
 - Read the testing approach in [docs/agent-guidelines/testing.md](docs/agent-guidelines/testing.md) before writing any code, because it decides when tests come first.
 

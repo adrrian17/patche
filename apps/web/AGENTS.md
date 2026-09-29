@@ -24,6 +24,7 @@ bun run dev
 bun run build
 bun run check-types
 bun run test:integration
+bun run test:e2e
 ```
 
 ## Conventions
@@ -39,5 +40,6 @@ bun run test:integration
 - The runtime is Cloudflare Workers. Server bindings come from `@patche/env/server`.
 - Local development listens on port `3001`.
 - The development checkout route lives at `/dev/checkout` and must stay limited to development use.
+- E2E tests live in `e2e/` and run with `APP_ENV=e2e`. Varlock reads the Stripe keys from the `E2E` item in 1Password (`op://Patche/E2E/*`), and CI needs `OP_SERVICE_ACCOUNT_TOKEN` for that.
 
 _Drafted by /audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._
