@@ -96,8 +96,6 @@ Spec: [0001](../specs/_root/0001-checkout-without-stripe-catalog.md) · code in 
 
 ### 3. Admin catalog E2E · done
 
-Waits for feature 7: once it ships, drop the checks that Stripe mirrors the catalog.
-
 The Admin manages the catalog through the UI, and the tests check that changes persist in D1. **Done when:** create Category, Product and Physical Variant and verify them after reload; change a price and verify the saved price; archive and verify the archived state; upload Media, record a Stock Movement with the low stock warning, and change the Shipping Rate all pass.
 
 code in `apps/web/e2e/admin-catalog.spec.ts`, `apps/web/e2e/product-media.spec.ts`, `apps/web/e2e/support/promote-to-admin.ts`
