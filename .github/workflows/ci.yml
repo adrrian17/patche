@@ -78,7 +78,7 @@ jobs:
 
       - name: Run E2E tests
         run: bun run test:e2e
-        # Auth runs on local D1 and the Alchemy email simulator, so placeholders are enough until a slice needs the E2E Stripe sandbox.
+        # Varlock reads the Stripe keys from the E2E item in 1Password (.env.schema). The other values run on local D1 and the Alchemy email simulator, so placeholders are enough.
         # `alchemy dev` in CI insists on Cloudflare credentials but never calls the API for local resources.
         env:
           CLOUDFLARE_ACCOUNT_ID: "00000000000000000000000000000000"
@@ -86,8 +86,7 @@ jobs:
           BETTER_AUTH_SECRET: ci-placeholder-better-auth-secret-000000
           R2_ACCESS_KEY_ID: ci-placeholder-r2-access-key-id
           R2_SECRET_ACCESS_KEY: ci-placeholder-r2-secret-access-key
-          STRIPE_SECRET_KEY: ${{ secrets.E2E_STRIPE_SECRET_KEY || 'sk_test_ci_placeholder_000000000000' }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.E2E_STRIPE_WEBHOOK_SECRET || 'whsec_ci_placeholder_0000000000000' }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Upload Playwright report and traces
         if: failure()

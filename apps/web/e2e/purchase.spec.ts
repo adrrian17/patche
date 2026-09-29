@@ -12,6 +12,20 @@ import { findStripeEvent, postSignedEvent } from "./support/stripe-events";
 
 test.use({ storageState: "e2e/.auth/customer.json" });
 
+// The dev checkout form submits natively when clicked before hydration, so retry from a fresh load.
+async function submitDevCheckout(
+  page: Page,
+  variantId: string,
+  outcome: () => Promise<void>
+) {
+  await expect(async () => {
+    await page.goto("/dev/checkout");
+    await page.getByLabel("Variant ID", { exact: true }).fill(variantId);
+    await page.getByRole("button", { name: "Ir a Stripe Checkout" }).click();
+    await outcome();
+  }).toPass({ timeout: 25_000 });
+}
+
 async function fillStripeField(page: Page, name: string, value: string) {
   await expect
     .poll(
@@ -61,10 +75,9 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   });
   seedStock(customerEmail, variantId, 2);
 
-  await page.goto("/dev/checkout");
-  await page.getByLabel("Variant ID", { exact: true }).fill(variantId);
-  await page.getByRole("button", { name: "Ir a Stripe Checkout" }).click();
-  await expect(page).toHaveURL(/checkout\.stripe\.com/u);
+  await submitDevCheckout(page, variantId, () =>
+    expect(page).toHaveURL(/checkout\.stripe\.com/u, { timeout: 5000 })
+  );
 
   const sessionId = page.url().match(/cs_test_[A-Za-z0-9]+/u)?.[0];
   if (!sessionId) {
@@ -200,11 +213,11 @@ test("does not start Checkout when Stock is insufficient", async ({
     productId,
   });
 
-  await page.goto("/dev/checkout");
-  await page.getByLabel("Variant ID", { exact: true }).fill(variantId);
-  await page.getByRole("button", { name: "Ir a Stripe Checkout" }).click();
-
-  await expect(page.getByRole("alert")).toContainText("Stock insuficiente");
+  await submitDevCheckout(page, variantId, () =>
+    expect(page.getByRole("alert")).toContainText("Stock insuficiente", {
+      timeout: 5000,
+    })
+  );
   await expect(page).toHaveURL(/localhost:3001\/dev\/checkout/u);
   await testInfo.attach("insufficient-stock", {
     body: await page.screenshot({ fullPage: true }),
