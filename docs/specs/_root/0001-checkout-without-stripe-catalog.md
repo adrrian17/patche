@@ -1,6 +1,6 @@
 # 0001. Price Checkout inline from D1 instead of a Stripe catalog
 
-**Date**: 2026-09-26 **Status**: In Progress
+**Date**: 2026-09-26 **Status**: Accepted
 
 ## Summary
 

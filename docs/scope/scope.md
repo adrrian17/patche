@@ -34,11 +34,11 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | D   | Checkout and Stripe webhooks    | Existing   | in-progress |
 | 1   | E2E harness                     | Foundation | done        |
 | 2   | Auth E2E and CI job             | Slice 1    | done        |
-| 7   | Checkout without Stripe catalog | Slice 2    | in-progress |
+| 7   | Checkout without Stripe catalog | Slice 2    | done        |
 | 3   | Admin catalog E2E               | Slice 2    | done        |
 | 4   | Purchase E2E                    | Slice 3    | done        |
 | 5   | Post sale E2E                   | Slice 4    | done        |
-| 6   | Payments integration coverage   | Slice 5    | in-progress |
+| 6   | Payments integration coverage   | Slice 5    | done        |
 
 ## Already built
 
@@ -78,7 +78,7 @@ code in `apps/web/e2e/auth.spec.ts`, `.github/workflows/ci.yml` (job `e2e`)
 
 ## Slice 2: Admin catalog E2E
 
-### 7. Checkout without Stripe catalog · GA · in-progress
+### 7. Checkout without Stripe catalog · GA · done
 
 Stop creating Products and Prices in Stripe. Checkout sends each line's price and name inline, read from D1 at payment time, so the catalog lives only in Patche (in line with ADR 0001). Removes the Stripe calls and their rollback code from create, edit, archive and price change. **Done when:** creating, editing, archiving and repricing a Product or Variant makes no Stripe call, a Checkout charges the D1 price, existing Orders still reconcile through webhooks, and the columns `stripe_product_id` and `stripe_price_id` are gone.
 
@@ -130,7 +130,7 @@ code in `apps/web/e2e/purchase.spec.ts`, `apps/web/src/routes/admin/orders/$orde
 
 ## Slice 5: Payments integration coverage
 
-### 6. Payments integration coverage · in-progress
+### 6. Payments integration coverage · done
 
 Cover in the Miniflare integration suite the rules that need no browser, and run that suite in CI. **Done when:** a Download Grant is created on completion and revoked on refund, a Checkout Reservation is released on `checkout.session.expired` and on `payment_intent.payment_failed`, and CI runs `test:integration`.
 
