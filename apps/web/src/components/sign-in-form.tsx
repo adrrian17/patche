@@ -29,11 +29,17 @@ function SignInForm({
           password: value.password,
         });
         if (authError) {
-          setAuthMessage(
-            authError.code === "EMAIL_NOT_VERIFIED"
-              ? "Verifica tu correo para entrar. Te enviamos un nuevo enlace."
-              : "Correo o contraseña incorrectos. Inténtalo de nuevo."
-          );
+          if (authError.code === "EMAIL_NOT_VERIFIED") {
+            setAuthMessage(
+              "Verifica tu correo para entrar. Te enviamos un nuevo enlace."
+            );
+          } else if (authError.status === 401) {
+            setAuthMessage(
+              "Correo o contraseña incorrectos. Inténtalo de nuevo."
+            );
+          } else {
+            setAuthMessage("No pudimos iniciar sesión. Inténtalo de nuevo.");
+          }
           return;
         }
         window.location.assign("/auth/continue");

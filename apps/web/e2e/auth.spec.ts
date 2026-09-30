@@ -104,6 +104,25 @@ test("rejects incorrect credentials and signs in with a password", async ({
   await expect(page).toHaveURL(/\/dashboard$/u);
 });
 
+for (const status of [429, 500]) {
+  test(`does not blame credentials for HTTP ${status}`, async ({ page }) => {
+    await page.route("**/api/auth/sign-in/email", async (route) => {
+      await route.fulfill({
+        body: JSON.stringify({ message: "Temporary failure" }),
+        contentType: "application/json",
+        status,
+      });
+    });
+    await signIn(page, uniqueEmail("temporary"));
+    await expect(
+      page.getByRole("alert").filter({
+        hasText: "No pudimos iniciar sesión. Inténtalo de nuevo.",
+      })
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/login$/u);
+  });
+}
+
 test("recovers a legacy account, revokes sessions and rejects reused tokens", async ({
   page,
   browser,
