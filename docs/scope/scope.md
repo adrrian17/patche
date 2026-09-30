@@ -14,7 +14,7 @@ The decisions for this slice were settled in a grilling session and are recorded
 2. **Tool:** Playwright in `apps/web/e2e/`, Chromium only.
 3. **Stripe:** real test mode in a dedicated E2E sandbox, with no cleanup (names get a per run suffix). The purchase happy path pays in hosted Checkout (`4242…`); other scenarios use synthetic events where the handler allows it.
 4. **Webhook delivery:** no Stripe CLI. After paying, the test fetches the real event with `stripe.events.list({ type })`, filters by session or payment intent, signs it with `STRIPE_WEBHOOK_SECRET`, and POSTs it to `/api/stripe/webhook`. The same helper signs synthetic events. `checkout.session.completed` calls `sessions.listLineItems`, so it needs a real session; `charge.refunded` only touches D1.
-5. **Login:** real magic link. A helper requests the link on `/login`, reads the newest email that `alchemy dev` writes under `.alchemy/local/email/`, and opens the URL. The Admin role is set directly in the local D1 SQLite file. A Playwright setup project logs in once per role and saves `storageState`. Better Auth `testUtils` was ruled out because it has no HTTP routes and would need a privileged test route inside the Worker; revisit if tests need many roles or users.
+5. **Login:** real email/password authentication. Registration verifies email through the message that `alchemy dev` writes under `.alchemy/local/email/`; recovery also covers existing Customers without credentials. The Admin role is set directly in the local D1 SQLite file. A Playwright setup project logs in once per role and saves `storageState`. Better Auth `testUtils` was ruled out because it has no HTTP routes and would need a privileged test route inside the Worker; revisit if tests need many roles or users.
 6. **Server under test:** `alchemy dev --stage e2e` (keeps `/dev/checkout`), whose state is wiped each run so D1 and R2 start empty. Move to a production-like server once a real storefront and cart exist.
 7. **Secrets:** `APP_ENV=e2e` in `.env.schema` reads an E2E 1Password item locally; CI injects values from GitHub Secrets.
 8. **Catalog fixtures:** the admin catalog test drives the UI. Other tests create fixtures by calling the catalog server functions with the admin session (`page.request`), falling back to a UI helper `createActiveProduct()` if that isn't clean. Each test creates its own Variant so tests can run in parallel.
@@ -28,7 +28,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 
 | #   | Feature                         | Phase      | Status      |
 | --- | ------------------------------- | ---------- | ----------- |
-| A   | Magic link auth                 | Existing   | existing    |
+| A   | Email/password auth             | Existing   | existing    |
 | B   | Admin catalog                   | Existing   | existing    |
 | C   | Admin orders and refunds        | Existing   | existing    |
 | D   | Checkout and Stripe webhooks    | Existing   | in-progress |
@@ -42,9 +42,9 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 
 ## Already built
 
-### A. Magic link auth · existing
+### A. Email/password auth · existing
 
-Sign in and register by magic link, sign out, protected routes, admin role check. code in `packages/auth/`, `apps/web/src/routes/login.tsx`, `apps/web/src/functions/request-magic-link.ts`
+Sign in and register with email/password, verify new emails, recover passwords (including existing Customers without credentials), sign out, protected routes, admin role check. code in `packages/auth/`, `apps/web/src/routes/login.tsx`, `apps/web/src/routes/reset-password.tsx`
 
 ### B. Admin catalog · existing
 
@@ -62,7 +62,7 @@ Server priced hosted Stripe Checkout with Checkout Reservations, and idempotent 
 
 ### 1. E2E harness
 
-Playwright in `apps/web/e2e/`, running against `alchemy dev --stage e2e` with `APP_ENV=e2e` and an isolated D1 that is wiped each run. Shared helpers: magic link login from the local email file, admin promotion via local D1, Stripe event fetch and signing, catalog fixtures, and `storageState` per role. **Done when:** `bun run test:e2e` boots a clean app, logs in a Customer and an Admin through the setup project, and a smoke test passes with a trace kept on failure.
+Playwright in `apps/web/e2e/`, running against `alchemy dev --stage e2e` with `APP_ENV=e2e` and an isolated D1 that is wiped each run. Shared helpers: password login and email verification from the local email file, admin promotion via local D1, Stripe event fetch and signing, catalog fixtures, and `storageState` per role. **Done when:** `bun run test:e2e` boots a clean app, logs in a Customer and an Admin through the setup project, and a smoke test passes with a trace kept on failure.
 
 - [x] `/develop e2e harness`
 
@@ -70,7 +70,7 @@ Playwright in `apps/web/e2e/`, running against `alchemy dev --stage e2e` with `A
 
 ### 2. Auth E2E and CI job
 
-The thin thread through every layer: real magic link login, protected routes, and a CI job that runs the suite on each PR. **Done when:** register, sign out, and Customer blocked from `/admin` pass locally and in CI, and CI uploads the Playwright report and traces when a test fails.
+The thin thread through every layer: real email/password login, protected routes, and a CI job that runs the suite on each PR. **Done when:** register, sign out, and Customer blocked from `/admin` pass locally and in CI, and CI uploads the Playwright report and traces when a test fails.
 
 - [x] `/develop auth e2e and ci job`
 

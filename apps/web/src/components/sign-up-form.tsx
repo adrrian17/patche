@@ -6,31 +6,33 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { MagicLinkConfirmation } from "@/components/magic-link-confirmation";
-import { requestMagicLink } from "@/functions/request-magic-link";
+import { authClient } from "@/lib/auth-client";
 
 function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
-  const [sentDetails, setSentDetails] = useState<{
-    email: string;
-    name: string;
-  } | null>(null);
+  const [sent, setSent] = useState(false);
   const form = useForm({
     defaultValues: {
       email: "",
       name: "",
+      password: "",
     },
     onSubmit: async ({ value }) => {
       try {
-        await requestMagicLink({
-          data: {
-            email: value.email,
-            mode: "register",
-            name: value.name,
-          },
+        const { error } = await authClient.signUp.email({
+          callbackURL: new URL("/auth/continue", window.location.origin).href,
+          email: value.email.trim().toLowerCase(),
+          name: value.name.trim(),
+          password: value.password,
         });
-        setSentDetails({ email: value.email, name: value.name });
+        if (error) {
+          toast.error(
+            "No pudimos crear la cuenta. Si ya tienes una, inicia sesión o recupera tu contraseña."
+          );
+          return;
+        }
+        setSent(true);
       } catch {
-        toast.error("No pudimos enviar el correo. Inténtalo de nuevo.");
+        toast.error("No pudimos crear la cuenta. Inténtalo de nuevo.");
       }
     },
     validators: {
@@ -41,31 +43,26 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
           .trim()
           .min(2, "Escribe tu nombre")
           .max(120, "El nombre es demasiado largo"),
+        password: z
+          .string()
+          .min(8, "Usa al menos 8 caracteres")
+          .max(128, "Usa como máximo 128 caracteres"),
       }),
     },
   });
 
-  if (sentDetails) {
+  if (sent) {
     return (
-      <MagicLinkConfirmation
-        email={sentDetails.email}
-        onBack={() => setSentDetails(null)}
-        onResend={async () => {
-          try {
-            await requestMagicLink({
-              data: {
-                email: sentDetails.email,
-                mode: "register",
-                name: sentDetails.name,
-              },
-            });
-            return true;
-          } catch {
-            toast.error("No pudimos reenviar el correo. Inténtalo de nuevo.");
-            return false;
-          }
-        }}
-      />
+      <div className="mx-auto w-full max-w-md space-y-4 p-6 text-center">
+        <h1 className="text-3xl font-bold">Verifica tu correo</h1>
+        <output className="block" aria-live="polite">
+          Revisa tu correo y abre el enlace para verificar tu cuenta. Si ya
+          tienes una cuenta, inicia sesión o recupera tu contraseña.
+        </output>
+        <Button onClick={onSwitchToSignIn} variant="link">
+          Volver a iniciar sesión
+        </Button>
+      </div>
     );
   }
 
@@ -73,10 +70,11 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
     <div className="mx-auto mt-2 w-full max-w-md p-4">
       <h1 className="mb-2 text-center text-3xl font-bold">Crear cuenta</h1>
       <p className="text-muted-foreground mb-6 text-center text-sm">
-        Regístrate con tu correo y recibe un enlace para entrar.
+        Regístrate con tu correo y una contraseña.
       </p>
 
       <form
+        method="post"
         className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault();
@@ -127,6 +125,30 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
           )}
         </form.Field>
 
+        <form.Field name="password">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Contraseña</Label>
+              <Input
+                autoComplete="new-password"
+                id={field.name}
+                name={field.name}
+                type="password"
+                required
+                maxLength={128}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+              {field.state.meta.errors.map((error) => (
+                <p className="text-sm text-red-500" key={error?.message}>
+                  {error?.message}
+                </p>
+              ))}
+            </div>
+          )}
+        </form.Field>
+
         <form.Subscribe
           selector={(state) => ({
             canSubmit: state.canSubmit,
@@ -139,7 +161,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
               disabled={!canSubmit || isSubmitting}
               type="submit"
             >
-              {isSubmitting ? "Enviando..." : "Enviar enlace"}
+              {isSubmitting ? "Creando..." : "Crear cuenta"}
             </Button>
           )}
         </form.Subscribe>

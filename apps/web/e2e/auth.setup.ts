@@ -1,12 +1,12 @@
 import { test as setup } from "@playwright/test";
 
-import { registerWithMagicLink } from "./support/magic-link";
+import { registerWithPassword } from "./support/password-auth";
 import { promoteToAdmin } from "./support/promote-to-admin";
 
 const runId = Date.now().toString(36);
 
 setup("log in a Customer", async ({ page }) => {
-  await registerWithMagicLink(page, {
+  await registerWithPassword(page, {
     email: `customer-${runId}@e2e.patche.test`,
     name: "Cliente E2E",
   });
@@ -15,7 +15,7 @@ setup("log in a Customer", async ({ page }) => {
 
 setup("log in an Admin", async ({ page }) => {
   const email = `admin-${runId}@e2e.patche.test`;
-  await registerWithMagicLink(page, { email, name: "Admin E2E" });
+  await registerWithPassword(page, { email, name: "Admin E2E" });
   promoteToAdmin(email);
   await page.context().storageState({ path: "e2e/.auth/admin.json" });
 });

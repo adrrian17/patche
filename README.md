@@ -76,7 +76,7 @@ Install Chromium first if Playwright has not been set up locally:
 bunx playwright install chromium
 ```
 
-The suite covers storefront smoke checks and magic-link authentication. On failure, Playwright saves an HTML report, screenshots, and traces under `apps/web/playwright-report` and `apps/web/test-results`.
+The suite covers storefront smoke checks and email/password authentication, email verification, and password recovery. On failure, Playwright saves an HTML report, screenshots, and traces under `apps/web/playwright-report` and `apps/web/test-results`.
 
 ## UI development
 
