@@ -54,15 +54,25 @@ test("signs out and loses access to the dashboard", async ({ page }) => {
     name: "Cliente Saliente",
   });
 
-  // A click before hydration does nothing, so retry until the redirect lands.
-  await expect(async () => {
-    if (!page.url().endsWith("/login")) {
-      await page
-        .getByRole("button", { name: "Cerrar sesión" })
-        .click({ timeout: 2000 });
+  const hydration = Promise.withResolvers<undefined>();
+  await page.route("**/*", async (route) => {
+    if (route.request().resourceType() === "script") {
+      await hydration.promise;
     }
-    await expect(page).toHaveURL(/\/login$/u, { timeout: 2000 });
-  }).toPass();
+    await route.continue();
+  });
+  await page.goto("/dashboard", { waitUntil: "commit" });
+  try {
+    await expect(
+      page.getByRole("button", { name: "Cerrar sesión" })
+    ).toBeDisabled();
+  } finally {
+    hydration.resolve();
+    await page.unrouteAll({ behavior: "wait" });
+  }
+
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page).toHaveURL(/\/login$/u);
 
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login$/u);

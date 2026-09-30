@@ -2,6 +2,7 @@ import type { Stripe } from "@patche/payments";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
+import { registerWithPassword } from "./support/password-auth";
 import {
   seedProduct,
   seedStock,
@@ -63,7 +64,12 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
-  const customerEmail = await signedInEmail(page);
+  const customerEmail = `purchase-${crypto.randomUUID()}@e2e.patche.test`;
+  await page.context().clearCookies();
+  await registerWithPassword(page, {
+    email: customerEmail,
+    name: "Cliente Compra",
+  });
   const productName = `Compra E2E ${crypto.randomUUID().slice(0, 8)}`;
   const variantName = "Tapa dura";
   const priceAmount = 25_000;
@@ -134,6 +140,15 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   if (event.type !== "checkout.session.completed") {
     throw new Error("Stripe did not emit checkout.session.completed");
   }
+  expect(event.data.object.amount_subtotal).toBe(priceAmount);
+  const totalAmount = event.data.object.amount_total;
+  if (totalAmount === null) {
+    throw new Error("Stripe Checkout event did not contain its total");
+  }
+  const expectedTotal = new Intl.NumberFormat("es-MX", {
+    currency: "MXN",
+    style: "currency",
+  }).format(totalAmount / 100);
   // SAFETY: events.list is unexpanded here, so the Payment Intent is an ID.
   const paymentIntentId = event.data.object.payment_intent as string | null;
   if (!paymentIntentId) {
@@ -158,7 +173,7 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
       .getByRole("row")
       .filter({ hasText: customerEmail });
     await expect(orderRow).toContainText("Pagado");
-    await expect(orderRow).toContainText("$250.00");
+    await expect(orderRow).toContainText(expectedTotal);
     await orderRow.getByRole("link").click();
     const itemRow = adminPage.getByRole("row").filter({ hasText: variantName });
     await expect(itemRow).toContainText(productName);

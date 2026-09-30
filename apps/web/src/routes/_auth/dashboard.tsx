@@ -1,5 +1,10 @@
 import { Button } from "@patche/ui/components/button";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  useHydrated,
+  useNavigate,
+} from "@tanstack/react-router";
 import { LogOutIcon } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
@@ -14,6 +19,7 @@ export const Route = createFileRoute("/_auth/dashboard")({
 });
 
 function RouteComponent() {
+  const hydrated = useHydrated();
   const { session } = Route.useRouteContext();
   const navigate = useNavigate();
 
@@ -26,6 +32,7 @@ function RouteComponent() {
           <p className="text-sm text-slate-500">{session.user.email}</p>
         </div>
         <Button
+          disabled={!hydrated}
           onClick={() => {
             authClient.signOut({
               fetchOptions: {
