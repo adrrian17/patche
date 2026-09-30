@@ -175,6 +175,11 @@ test("replaces an existing password through recovery", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Iniciar sesión" })
   ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Contraseña guardada. Inicia sesión con tu nueva contraseña."
+    )
+  ).toBeVisible();
   await signIn(page, email);
   await expect(
     page

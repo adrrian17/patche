@@ -1,7 +1,12 @@
 import { Button } from "@patche/ui/components/button";
 import { Input } from "@patche/ui/components/input";
 import { Label } from "@patche/ui/components/label";
-import { createFileRoute, Link, useHydrated } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useHydrated,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -18,12 +23,13 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPassword() {
   const hydrated = useHydrated();
+  const navigate = useNavigate();
   const { token, error: linkError } = Route.useSearch();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const invalidLink = !token || Boolean(linkError);
 
-  async function submit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!token || pending) {
       return;
@@ -48,7 +54,7 @@ function ResetPassword() {
         toast.success(
           "Contraseña guardada. Inicia sesión con tu nueva contraseña."
         );
-        window.location.assign("/login");
+        await navigate({ to: "/login" });
       }
     } catch {
       setError("No pudimos guardar la contraseña. Inténtalo de nuevo.");
@@ -69,7 +75,7 @@ function ResetPassword() {
             El enlace ya no es válido. Solicita una nueva recuperación.
           </p>
         ) : (
-          <form method="post" className="space-y-4" onSubmit={submit}>
+          <form method="post" className="space-y-4" onSubmit={handleSubmit}>
             <Label htmlFor="new-password">Nueva contraseña</Label>
             <Input
               autoComplete="new-password"
