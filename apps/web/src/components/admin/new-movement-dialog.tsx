@@ -186,10 +186,14 @@ export function NewMovementDialog({
                 </Field>
               )}
             </form.Field>
-            <Button type="submit">
-              <ArrowDownToLineIcon data-icon="inline-start" />
-              Registrar
-            </Button>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
+                <Button disabled={isSubmitting} type="submit">
+                  <ArrowDownToLineIcon data-icon="inline-start" />
+                  {isSubmitting ? "Registrando…" : "Registrar"}
+                </Button>
+              )}
+            </form.Subscribe>
           </FieldGroup>
         </form>
       </DialogContent>
