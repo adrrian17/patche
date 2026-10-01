@@ -33,9 +33,9 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4 p-4">
-      <h1 className="text-center text-3xl font-bold">Recuperar contraseña</h1>
+      <h1 className="text-center text-3xl font-bold">Cambiar contraseña</h1>
       <p className="text-muted-foreground text-sm">
-        Si antes entrabas con un enlace, usa este paso para crear tu contraseña.
+        Escribe tu correo y te enviaremos un enlace para cambiar tu contraseña.
       </p>
       {sent ? (
         <output className="block" aria-live="polite">
@@ -58,7 +58,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
             </p>
           ) : null}
           <Button className="w-full" disabled={pending} type="submit">
-            {pending ? "Enviando..." : "Enviar recuperación"}
+            {pending ? "Enviando..." : "Enviar"}
           </Button>
         </form>
       )}
