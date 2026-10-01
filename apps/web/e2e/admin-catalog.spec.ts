@@ -155,12 +155,16 @@ test("records stock movements and shows the low stock warning", async ({
   await editDialog.getByRole("button", { name: "Guardar" }).click();
 
   await page.goto("/admin/inventory");
-  await page.getByRole("button", { name: "Registrar movimiento" }).click();
   const movementDialog = page.getByRole("dialog", {
     name: "Registrar movimiento",
   });
   const option = page.getByRole("option", { name: `${product} · ${variant}` });
   await expect(async () => {
+    if (!(await movementDialog.isVisible())) {
+      await page
+        .getByRole("button", { name: "Registrar movimiento" })
+        .click({ timeout: 2000 });
+    }
     if (!(await option.isVisible())) {
       await movementDialog
         .getByRole("combobox", { name: "Variante" })
