@@ -34,13 +34,19 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
   return (
     <div className="mx-auto w-full max-w-md space-y-4 p-4">
       <h1 className="text-center text-3xl font-bold">Cambiar contraseña</h1>
-      <p className="text-muted-foreground text-sm">
-        Escribe tu correo y te enviaremos un enlace para cambiar tu contraseña.
-      </p>
+      {sent ? null : (
+        <p className="text-muted-foreground text-sm">
+          Escribe tu correo y te enviaremos un enlace para cambiar tu
+          contraseña.
+        </p>
+      )}
       {sent ? (
-        <output className="block" aria-live="polite">
+        <output
+          className="text-muted-foreground block text-sm"
+          aria-live="polite"
+        >
           Si existe una cuenta con ese correo, recibirás un enlace para crear o
-          restablecer tu contraseña. Revisa también spam.
+          restablecer tu contraseña. Revisa tu bandeja de spam.
         </output>
       ) : (
         <form method="post" className="space-y-4" onSubmit={submit}>
