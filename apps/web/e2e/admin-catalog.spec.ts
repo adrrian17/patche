@@ -11,17 +11,18 @@ test("creates catalog records, changes a price, and archives a product", async (
 }, testInfo) => {
   const category = uniqueName("Libretas");
   await page.goto("/admin/categories");
-  await page.getByLabel("Nombre", { exact: true }).fill(category);
-  const categoryCreated = page.getByText("Categoría creada");
+  const categoryDialog = page.getByRole("dialog", { name: "Nueva categoría" });
   await expect(async () => {
-    if (!(await categoryCreated.isVisible())) {
-      await page.getByLabel("Nombre", { exact: true }).fill(category);
+    if (!(await categoryDialog.isVisible())) {
       await page
-        .getByRole("button", { name: "Crear categoría" })
+        .getByRole("button", { name: "Nueva categoría" })
         .click({ timeout: 2000 });
     }
-    await expect(categoryCreated).toBeVisible({ timeout: 2000 });
+    await expect(categoryDialog).toBeVisible({ timeout: 2000 });
   }).toPass();
+  await categoryDialog.getByLabel("Nombre").fill(category);
+  await categoryDialog.getByRole("button", { name: "Crear categoría" }).click();
+  await expect(page.getByText("Categoría creada")).toBeVisible();
   const categoryName = page.getByRole("textbox", {
     name: `Nombre de ${category}`,
   });
