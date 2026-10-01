@@ -59,6 +59,7 @@ export function NewMovementDialog({
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] }),
           queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] }),
+          queryClient.invalidateQueries({ queryKey: ["admin", "products"] }),
         ]);
         toast.success("Movimiento registrado");
         setOpen(false);
