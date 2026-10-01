@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@patche/ui/components/card";
+import { Card, CardContent } from "@patche/ui/components/card";
 import {
   Empty,
   EmptyDescription,
@@ -49,13 +43,6 @@ function InventoryPage() {
         title="Inventario"
       />
       <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <HistoryIcon aria-hidden="true" className="text-primary size-4" />
-            Movimientos recientes
-          </CardTitle>
-          <CardDescription>Últimos 50 registros</CardDescription>
-        </CardHeader>
         <CardContent>
           {inventory.data?.movements.length === 0 ? (
             <Empty>
