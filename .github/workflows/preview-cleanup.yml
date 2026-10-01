@@ -8,7 +8,7 @@ permissions:
   contents: read
   pull-requests: write
 
-# Shares the Deploy workflow's group so a destroy never overlaps a deploy of the same PR.
+# Shares the deploy job's group in ci.yml so a destroy never overlaps a deploy of the same PR.
 concurrency:
   group: deploy-pr-${{ github.event.number }}
   cancel-in-progress: false
