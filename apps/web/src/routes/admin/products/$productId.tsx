@@ -42,6 +42,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   ArchiveIcon,
+  ArchiveRestoreIcon,
   ArrowLeftIcon,
   FileTextIcon,
   InfoIcon,
@@ -59,6 +60,7 @@ import { getAdminProduct } from "@/functions/admin-products";
 import {
   archiveProduct,
   archiveVariant,
+  unarchiveVariant,
   changeVariantPrice,
   createVariant,
   updateProduct,
@@ -535,18 +537,23 @@ function VariantCard({
   productId: string;
 }) {
   const queryClient = useQueryClient();
-  async function archive() {
+  const isArchived = Boolean(item.archivedAt);
+  async function toggleArchived() {
     try {
-      await archiveVariant({ data: { id: item.id } });
+      await (isArchived ? unarchiveVariant : archiveVariant)({
+        data: { id: item.id },
+      });
       await queryClient.invalidateQueries({
         queryKey: ["admin", "products", productId],
       });
-      toast.success("Variante archivada");
+      toast.success(
+        isArchived ? "Variante desarchivada" : "Variante archivada"
+      );
     } catch (error) {
       toast.error(
         errorMessage(
           error instanceof Error ? error : null,
-          "No se pudo archivar"
+          isArchived ? "No se pudo desarchivar" : "No se pudo archivar"
         )
       );
     }
@@ -590,13 +597,16 @@ function VariantCard({
       ) : null}
       <CardFooter className="justify-between">
         <Button
-          disabled={Boolean(item.archivedAt)}
-          onClick={archive}
+          onClick={toggleArchived}
           size="sm"
-          variant="destructive"
+          variant={isArchived ? "outline" : "destructive"}
         >
-          <ArchiveIcon data-icon="inline-start" />
-          Archivar
+          {isArchived ? (
+            <ArchiveRestoreIcon data-icon="inline-start" />
+          ) : (
+            <ArchiveIcon data-icon="inline-start" />
+          )}
+          {isArchived ? "Desarchivar" : "Archivar"}
         </Button>
         <EditVariantDialog item={item} productId={productId} />
       </CardFooter>

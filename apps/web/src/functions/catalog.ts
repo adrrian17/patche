@@ -229,6 +229,27 @@ export const archiveVariant = createServerFn({ method: "POST" })
     return { archivedAt };
   });
 
+export const unarchiveVariant = createServerFn({ method: "POST" })
+  .middleware([adminMiddleware])
+  .validator(z.object({ id: idSchema }))
+  .handler(async ({ data }) => {
+    const db = createDb();
+    const current = await db
+      .select({ id: variant.id })
+      .from(variant)
+      .where(eq(variant.id, data.id))
+      .get();
+    if (!current) {
+      throw new Error(variantNotFoundMessage);
+    }
+
+    await db
+      .update(variant)
+      .set({ archivedAt: null })
+      .where(eq(variant.id, data.id));
+    return { archivedAt: null };
+  });
+
 export const reorderProductMedia = createServerFn({ method: "POST" })
   .middleware([adminMiddleware])
   .validator(

@@ -84,13 +84,17 @@ test("creates catalog records, changes a price, and archives a product", async (
   await expect(page.getByText(/Físico · \$275\.00/u)).toBeVisible();
 
   await variantCard.getByRole("button", { name: "Archivar" }).click();
-  await expect(
-    variantCard.getByRole("button", { name: "Archivar" })
-  ).toBeDisabled();
+  await expect(variantCard.getByText("Archivado")).toBeVisible();
   await page.reload();
+  await expect(variantCard.getByText("Archivado")).toBeVisible();
+
+  await variantCard.getByRole("button", { name: "Desarchivar" }).click();
+  await expect(variantCard.getByText("Archivado")).toBeHidden();
+  await page.reload();
+  await expect(variantCard.getByText("Archivado")).toBeHidden();
   await expect(
     variantCard.getByRole("button", { name: "Archivar" })
-  ).toBeDisabled();
+  ).toBeEnabled();
 
   await page.getByRole("button", { name: "Archivar" }).first().click();
   await expect(page).toHaveURL(/\/admin\/products$/u);
