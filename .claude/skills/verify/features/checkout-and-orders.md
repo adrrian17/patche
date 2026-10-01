@@ -1,6 +1,6 @@
 # Checkout and orders
 
-A signed-in Customer starts Stripe Checkout for a variant, pays on Stripe's hosted page in test mode, and returns to the dashboard. Stock is reserved before the Stripe session is created. The paid order appears in `/admin/orders`, where an Admin marks it shipped, delivered, and refunds it; the refund returns Stock.
+A signed-in Customer starts Stripe Checkout for a variant, pays on Stripe's hosted page in test mode, and returns to the dashboard. Stock is reserved before the Stripe session is created. The paid order appears in `/admin/orders`, where an Admin marks it shipped, delivered, and refunds it. Stock drops by the quantity sold; a refund does not return it.
 
 ## Sub-features
 
@@ -9,7 +9,7 @@ A signed-in Customer starts Stripe Checkout for a variant, pays on Stripe's host
 - `checkout-pay` completes payment on Stripe and returns to `/dashboard`.
 - `orders-paid` shows the order as `Pagado` with the Stripe total after the webhook.
 - `orders-fulfill` moves the order to `Enviado` and `Entregado`.
-- `orders-refund` moves it to `Reembolso pendiente`, then `Reembolsado` after the `charge.refunded` webhook, and restores Stock.
+- `orders-refund` moves it to `Reembolso pendiente`, then `Reembolsado` after the `charge.refunded` webhook. Stock stays reduced.
 
 ## How to get to it (user POV)
 
@@ -21,7 +21,7 @@ A signed-in Customer starts Stripe Checkout for a variant, pays on Stripe's host
 Preconditions:
 
 - An active product with a physical variant and Stock. Create them through `admin-catalog`, or seed with `seedProduct(name, email, "active")`, `seedVariant(email, { name, priceAmount, productId })`, `seedStock(email, variantId, 2)` when checkout is the feature under test.
-- The 1:1 reference is `apps/web/e2e/purchase.spec.ts`; copy its `submitDevCheckout` and `fillStripeField` helpers.
+- Worked drive: `drives/checkout-and-orders.spec.ts` covers every sub-feature, including the D1 reservation and order rows.
 
 - **Start.** Retry: `goto("/dev/checkout")`, fill `Variant ID`, click `Ir a Stripe Checkout`, expect URL `checkout.stripe.com`. The session ID is `cs_test_…` in the URL.
 - **No stock.** Same with a variant without Stock: alert `Stock insuficiente`, URL stays on `/dev/checkout`.
@@ -29,7 +29,7 @@ Preconditions:
 - **Webhook.** `findStripeEvent("checkout.session.completed", sessionId)` until defined, then `postSignedEvent(page.request, event)`. Response `200` with body `{ received: true, result: "processed" }`.
 - **Admin order.** New context with `admin.json`: `/admin/orders` row for the customer email shows `Pagado` and the Stripe total formatted `es-MX` MXN. Detail shows the item row with product name and `$250.00`.
 - **Fulfill and refund.** Click `Marcar enviada` (text `Enviado`), `Marcar entregada` (`Entregado`), `Reembolso total` (`Reembolso pendiente`). Find and post `charge.refunded` by Payment Intent ID; after reload, `Reembolsado`.
-- **Proof.** Screenshots of Stripe before paying, the dashboard return, the order at each status; the two webhook response bodies as JSON; `/admin/products` variant list `Variantes de <product>` showing the restored `Stock`.
+- **Proof.** Screenshots of Stripe before paying, the dashboard return, the order at each status; the two webhook response bodies as JSON; `/admin/products` variant list `Variantes de <product>` showing `Stock 1` (seeded 2, sold 1).
 
 ## Gotchas
 

@@ -24,6 +24,7 @@ Preconditions:
 
 - Fresh launch; email files land in `packages/infra/.alchemy/local/email/text/`.
 - Import helpers from `../../../../apps/web/e2e/support/password-auth`.
+- Worked drive: `drives/auth.spec.ts` covers every sub-feature.
 
 - **Register.** Go to `/login`, click button `¿Aún no tienes cuenta? Regístrate`, fill label `Nombre`, label `Correo electrónico`, label `Contraseña` (exact), click button `Crear cuenta` (exact). Heading `Verifica tu correo` appears.
 - **Verify.** `page.goto(await emailLink(email, "/verify-email?"))`. URL ends in `/dashboard` and text `Bienvenido, <name>` plus the email are visible. `registerWithPassword(page, { email, name })` does register and verify in one call.
@@ -36,6 +37,7 @@ Preconditions:
 ## Gotchas
 
 - `registerWithPassword` sets a random `cf-connecting-ip` header so Better Auth's rate limiter does not trip across many sign-ups. Hand-written registrations need the same.
+- Better Auth allows 3 sign-in attempts per IP every 10 seconds; a 4th shows alert `No pudimos iniciar sesión. Inténtalo de nuevo.`, not the wrong-password message. Rotate `cf-connecting-ip` between phases of a long drive.
 - `Cerrar sesión` is disabled until hydration; click it only after the page has loaded.
 - The reset link is single use. Reusing it shows alert `El enlace ya no es válido`.
 - Unknown emails get the same `Si existe una cuenta` status on purpose; it does not prove an email was sent. Check the email directory.

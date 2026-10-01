@@ -48,8 +48,8 @@ Driving is Playwright, reusing the repo's E2E helpers in `apps/web/e2e/support/`
 What is already in `drives/`:
 
 - `auth.setup.ts` runs first on every drive. It registers a Customer and an Admin through the real sign-up form and emailed verification link, promotes the Admin in local D1, and writes `.verify/auth/customer.json` and `.verify/auth/admin.json`.
-- `admin-catalog.spec.ts` is the worked example: Admin creates a category, product, and variant, then reads the rows back from D1.
-- `d1.ts` exports `findRow(sql, ...params)` for read-only D1 checks.
+- One spec per mapped feature: `auth.spec.ts`, `admin-catalog.spec.ts`, `product-media.spec.ts`, `checkout-and-orders.spec.ts`. Each saves ordered screenshots and D1 rows as JSON. Pass the file name as the filter to run one.
+- `d1.ts` exports `findRows(sql, ...params)` and `findRow(sql, ...params)` for read-only D1 checks. They return the first database file with matching rows, so never query aggregates (`COUNT`, `SUM` always return a row, from whichever file comes first).
 
 Writing a new drive:
 

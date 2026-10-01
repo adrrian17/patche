@@ -30,9 +30,9 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 
 ## Features
 
-- [Accounts and sign-in](./auth.md) covers registration with email verification, sign-in, sign-out, password recovery, and role routing.
-- [Admin catalog](./admin-catalog.md) covers categories, products, variants, price edits, and archiving. Worked drive: `drives/admin-catalog.spec.ts`.
-- [Product media](./product-media.md) covers image upload, reorder, alt text, deletion, and the viewer.
-- [Checkout and orders](./checkout-and-orders.md) covers Stripe Checkout, webhook processing, stock reservation, fulfillment, and refunds.
+- [Accounts and sign-in](./auth.md) covers registration with email verification, sign-in, sign-out, password recovery, and role routing. Drive: `drives/auth.spec.ts`.
+- [Admin catalog](./admin-catalog.md) covers categories, products, variants, price edits, and archiving. Drive: `drives/admin-catalog.spec.ts` (category, product, variant only).
+- [Product media](./product-media.md) covers image upload, reorder, alt text, deletion, and the viewer. Drive: `drives/product-media.spec.ts`.
+- [Checkout and orders](./checkout-and-orders.md) covers Stripe Checkout, webhook processing, stock reservation, fulfillment, and refunds. Drive: `drives/checkout-and-orders.spec.ts` (uses real Stripe test mode and the network).
 
 Not yet mapped: `/admin/inventory`, `/admin/settings`, and digital downloads (`/api/download/*`).
