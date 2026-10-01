@@ -13,8 +13,9 @@ import {
 
 const fontFamily = "Inter, Arial, Helvetica, sans-serif";
 
-export interface MagicLinkEmailProps {
+export interface AuthEmailProps {
   email: string;
+  purpose: "verify-email" | "reset-password";
   expiresInMinutes: number;
   url: string;
 }
@@ -28,15 +29,20 @@ const colors = {
   text: "#373737",
 } as const;
 
-export function MagicLinkEmail({
+export function AuthEmail({
   email,
   expiresInMinutes,
+  purpose,
   url,
-}: MagicLinkEmailProps) {
+}: AuthEmailProps) {
+  const action =
+    purpose === "verify-email"
+      ? "Verifica tu correo"
+      : "Restablece tu contraseña";
   return (
     <Html lang="es">
       <Head />
-      <Preview>Tu enlace para entrar a Patche</Preview>
+      <Preview>{action} en Patche</Preview>
       <Section style={styles.page}>
         <Container style={styles.card}>
           <Img
@@ -47,17 +53,17 @@ export function MagicLinkEmail({
             width="192"
           />
           <Text style={styles.eyebrow}>ACCESO A PATCHE</Text>
-          <Text style={styles.title}>Entra a tu cuenta</Text>
+          <Text style={styles.title}>{action}</Text>
           <Text style={styles.copy}>
-            Recibimos una solicitud para entrar con {email}. Usa el botón para
-            continuar de forma segura.
+            Recibimos una solicitud para {email}. Usa el botón para continuar de
+            forma segura.
           </Text>
           <Button href={url} style={styles.button}>
-            Iniciar sesión
+            {action}
           </Button>
           <Text style={styles.expiry}>
-            Este enlace caduca en {expiresInMinutes} minutos y solo puede usarse
-            una vez.
+            Este enlace caduca en {expiresInMinutes} minutos.
+            {purpose === "reset-password" ? " Solo puede usarse una vez." : ""}
           </Text>
           <Hr style={styles.rule} />
           <Text style={styles.fallback}>
@@ -65,7 +71,7 @@ export function MagicLinkEmail({
           </Text>
           <Text style={styles.url}>{url}</Text>
           <Text style={styles.footer}>
-            Si no solicitaste este acceso, puedes ignorar este correo.
+            Si no hiciste esta solicitud, puedes ignorar este correo.
           </Text>
         </Container>
         <Text style={styles.brand}>Patche · Papelería para tus ideas</Text>

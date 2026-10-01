@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useHydrated } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 
+import { ForgotPasswordForm } from "@/components/forgot-password-form";
 import SignInForm from "@/components/sign-in-form";
 import SignUpForm from "@/components/sign-up-form";
 
@@ -13,10 +14,13 @@ export const Route = createFileRoute("/login")({
 });
 
 function RouteComponent() {
-  const [showSignIn, setShowSignIn] = useState(false);
+  const hydrated = useHydrated();
+  const [mode, setMode] = useState<"sign-in" | "sign-up" | "forgot-password">(
+    "sign-in"
+  );
   const { error } = Route.useSearch();
   const errorMessage = error
-    ? "El enlace ya no es válido. Solicita uno nuevo para entrar."
+    ? "No pudimos verificar tu correo. Inicia sesión para solicitar un nuevo enlace."
     : null;
 
   return (
@@ -30,7 +34,11 @@ function RouteComponent() {
           />
         </div>
         <div className="w-full rounded-[2rem] border border-slate-200 bg-white p-2 shadow-[0_24px_80px_rgb(15_23_42_/_0.1)] sm:p-3">
-          <div className="rounded-[1.5rem] border border-slate-200/70 bg-white px-2 py-2 sm:px-3">
+          <fieldset
+            disabled={!hydrated}
+            className="rounded-[1.5rem] border border-slate-200/70 bg-white px-2 py-2 sm:px-3"
+          >
+            <legend className="sr-only">Acceso a Patche</legend>
             {errorMessage ? (
               <p
                 aria-live="assertive"
@@ -40,12 +48,19 @@ function RouteComponent() {
                 {errorMessage}
               </p>
             ) : null}
-            {showSignIn ? (
-              <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-            ) : (
-              <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
+            {mode === "sign-in" && (
+              <SignInForm
+                onForgotPassword={() => setMode("forgot-password")}
+                onSwitchToSignUp={() => setMode("sign-up")}
+              />
             )}
-          </div>
+            {mode === "sign-up" && (
+              <SignUpForm onSwitchToSignIn={() => setMode("sign-in")} />
+            )}
+            {mode === "forgot-password" && (
+              <ForgotPasswordForm onBack={() => setMode("sign-in")} />
+            )}
+          </fieldset>
         </div>
       </div>
     </main>
