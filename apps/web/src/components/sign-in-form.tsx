@@ -60,10 +60,7 @@ function SignInForm({
 
   return (
     <div className="mx-auto mt-2 w-full max-w-md p-4">
-      <h1 className="mb-2 text-center text-3xl font-bold">Iniciar sesión</h1>
-      <p className="text-muted-foreground mb-6 text-center text-sm">
-        Entra con tu correo y contraseña.
-      </p>
+      <h1 className="mb-6 text-center text-3xl font-bold">Iniciar sesión</h1>
 
       {authMessage ? (
         <p className="mb-4 text-sm text-red-600" role="alert">
