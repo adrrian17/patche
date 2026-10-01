@@ -1,15 +1,10 @@
 import { Button, buttonVariants } from "@patche/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@patche/ui/components/card";
+import { Card, CardContent } from "@patche/ui/components/card";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from "@patche/ui/components/empty";
 import {
@@ -46,16 +41,6 @@ function OrdersPage() {
     <>
       <AdminPageHeader icon={PackageSearchIcon} title="Órdenes" />
       <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <ReceiptTextIcon
-              aria-hidden="true"
-              className="text-primary size-4"
-            />
-            Historial
-          </CardTitle>
-          <CardDescription>{orders.data?.length ?? 0} órdenes</CardDescription>
-        </CardHeader>
         <CardContent>
           {orders.isPending && (
             <p className="text-muted-foreground text-sm">Cargando órdenes…</p>
@@ -128,7 +113,13 @@ function OrdersPage() {
           {orders.isSuccess && orders.data.length === 0 && (
             <Empty>
               <EmptyHeader>
-                <EmptyTitle>No hay órdenes</EmptyTitle>
+                <EmptyMedia
+                  className="bg-primary/10 text-primary"
+                  variant="icon"
+                >
+                  <ReceiptTextIcon />
+                </EmptyMedia>
+                <EmptyTitle>Aún no hay órdenes</EmptyTitle>
                 <EmptyDescription>
                   Las órdenes aparecerán cuando Stripe confirme un checkout.
                 </EmptyDescription>
