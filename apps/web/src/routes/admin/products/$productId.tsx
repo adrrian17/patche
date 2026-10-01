@@ -1,6 +1,7 @@
 import { Button, buttonVariants } from "@patche/ui/components/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -42,9 +43,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   ArchiveIcon,
+  ArchiveRestoreIcon,
   ArrowLeftIcon,
+  ClipboardListIcon,
   FileTextIcon,
   InfoIcon,
+  LayersIcon,
   PencilIcon,
   PlusIcon,
   SaveIcon,
@@ -59,6 +63,7 @@ import { getAdminProduct } from "@/functions/admin-products";
 import {
   archiveProduct,
   archiveVariant,
+  unarchiveVariant,
   changeVariantPrice,
   createVariant,
   updateProduct,
@@ -212,11 +217,12 @@ function ProductBasics({
     <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          Ficha
+          <ClipboardListIcon
+            aria-hidden="true"
+            className="text-primary size-4"
+          />
+          Datos
         </CardTitle>
-        <CardDescription>
-          Los cambios de nombre y estado se guardan en el catálogo.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -351,32 +357,37 @@ function ProductBasics({
 
 function VariantManager({ data }: { data: ProductData }) {
   return (
-    <section className="flex flex-col gap-5">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold">Variantes</h2>
+    <Card className="rounded-xl shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <LayersIcon aria-hidden="true" className="text-primary size-4" />
+          Variantes
+        </CardTitle>
+        <CardDescription>
+          El precio se puede cambiar cuando lo necesites.
+        </CardDescription>
+        <CardAction>
+          <NewVariantDialog productId={data.product.id} />
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        {data.variants.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {data.variants.map((item) => (
+              <VariantCard
+                item={item}
+                key={item.id}
+                productId={data.product.id}
+              />
+            ))}
+          </div>
+        ) : (
           <p className="text-muted-foreground text-sm">
-            El precio se puede cambiar cuando lo necesites.
+            Este producto todavía no tiene variantes.
           </p>
-        </div>
-        <NewVariantDialog productId={data.product.id} />
-      </div>
-      {data.variants.length ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {data.variants.map((item) => (
-            <VariantCard
-              item={item}
-              key={item.id}
-              productId={data.product.id}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-muted-foreground text-sm">
-          Este producto todavía no tiene variantes.
-        </p>
-      )}
-    </section>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -535,18 +546,23 @@ function VariantCard({
   productId: string;
 }) {
   const queryClient = useQueryClient();
-  async function archive() {
+  const isArchived = Boolean(item.archivedAt);
+  async function toggleArchived() {
     try {
-      await archiveVariant({ data: { id: item.id } });
+      await (isArchived ? unarchiveVariant : archiveVariant)({
+        data: { id: item.id },
+      });
       await queryClient.invalidateQueries({
         queryKey: ["admin", "products", productId],
       });
-      toast.success("Variante archivada");
+      toast.success(
+        isArchived ? "Variante desarchivada" : "Variante archivada"
+      );
     } catch (error) {
       toast.error(
         errorMessage(
           error instanceof Error ? error : null,
-          "No se pudo archivar"
+          isArchived ? "No se pudo desarchivar" : "No se pudo archivar"
         )
       );
     }
@@ -555,8 +571,8 @@ function VariantCard({
     <Card
       className={
         item.archivedAt
-          ? "rounded-xl opacity-60 shadow-sm"
-          : "rounded-xl shadow-sm"
+          ? "ring-foreground/15 dark:ring-foreground/20 rounded-xl opacity-60 shadow-none"
+          : "ring-foreground/15 dark:ring-foreground/20 rounded-xl shadow-none"
       }
     >
       <CardHeader>
@@ -588,15 +604,18 @@ function VariantCard({
           )}
         </CardContent>
       ) : null}
-      <CardFooter className="justify-between">
+      <CardFooter className="mt-auto justify-between">
         <Button
-          disabled={Boolean(item.archivedAt)}
-          onClick={archive}
+          onClick={toggleArchived}
           size="sm"
-          variant="destructive"
+          variant={isArchived ? "outline" : "destructive"}
         >
-          <ArchiveIcon data-icon="inline-start" />
-          Archivar
+          {isArchived ? (
+            <ArchiveRestoreIcon data-icon="inline-start" />
+          ) : (
+            <ArchiveIcon data-icon="inline-start" />
+          )}
+          {isArchived ? "Desarchivar" : "Archivar"}
         </Button>
         <EditVariantDialog item={item} productId={productId} />
       </CardFooter>
@@ -777,25 +796,26 @@ function EditVariantForm({
             </Field>
           )}
         </form.Field>
-        <form.Field name="lowStockThreshold">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor={`${item.id}-stock`}>
-                Umbral de stock
-              </FieldLabel>
-              <Input
-                disabled={item.kind === "digital"}
-                id={`${item.id}-stock`}
-                min="0"
-                type="number"
-                value={field.state.value}
-                onChange={(event) =>
-                  field.handleChange(event.target.valueAsNumber)
-                }
-              />
-            </Field>
-          )}
-        </form.Field>
+        {item.kind === "physical" && (
+          <form.Field name="lowStockThreshold">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={`${item.id}-stock`}>
+                  Umbral de stock
+                </FieldLabel>
+                <Input
+                  id={`${item.id}-stock`}
+                  min="0"
+                  type="number"
+                  value={field.state.value}
+                  onChange={(event) =>
+                    field.handleChange(event.target.valueAsNumber)
+                  }
+                />
+              </Field>
+            )}
+          </form.Field>
+        )}
         {item.kind === "digital" && (
           <Field className="sm:col-span-2">
             <FieldLabel htmlFor={`${item.id}-file`}>Archivo digital</FieldLabel>
@@ -821,10 +841,7 @@ function EditVariantForm({
                 </span>
               </FieldDescription>
             ) : (
-              <FieldDescription>
-                Máximo 500 MB. La carga va directo a R2 y se guarda al
-                seleccionarlo.
-              </FieldDescription>
+              <FieldDescription>Máximo 500 MB.</FieldDescription>
             )}
           </Field>
         )}

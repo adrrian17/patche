@@ -1,17 +1,12 @@
 import { Button } from "@patche/ui/components/button";
+import { Card, CardContent } from "@patche/ui/components/card";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@patche/ui/components/card";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@patche/ui/components/field";
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@patche/ui/components/empty";
 import { Input } from "@patche/ui/components/input";
 import {
   Table,
@@ -24,19 +19,13 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  ListTreeIcon,
-  PlusIcon,
-  SaveIcon,
-  TagsIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { ListTreeIcon, SaveIcon, TagsIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { NewCategoryDialog } from "@/components/admin/new-category-dialog";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import {
-  createCategory,
   deleteCategory,
   listCategories,
   updateCategory,
@@ -57,129 +46,74 @@ function CategoriesPage() {
     queryFn: () => listCategories(),
     queryKey: ["admin", "categories"],
   });
-  const form = useForm({
-    defaultValues: { name: "" },
-    onSubmit: async ({ value }) => {
-      try {
-        await createCategory({ data: value });
-        form.reset();
-        await queryClient.invalidateQueries({
-          queryKey: ["admin", "categories"],
-        });
-        toast.success("Categoría creada");
-      } catch (error) {
-        toast.error(
-          errorMessage(
-            error instanceof Error ? error : null,
-            "No se pudo crear la categoría"
-          )
-        );
-      }
-    },
-    validators: { onSubmit: categorySchema },
-  });
   return (
     <>
-      <AdminPageHeader icon={ListTreeIcon} title="Categorías" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <TagsIcon aria-hidden="true" className="text-primary size-4" />
-              Categorías existentes
-            </CardTitle>
-            <CardDescription>
-              Los productos conservan su categoría hasta que la cambies.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {categories.isPending && (
-              <p className="text-muted-foreground text-sm">
-                Cargando categorías…
+      <AdminPageHeader
+        actions={<NewCategoryDialog />}
+        icon={ListTreeIcon}
+        title="Categorías"
+      />
+      <Card className="rounded-xl shadow-sm">
+        <CardContent>
+          {categories.isPending && (
+            <p className="text-muted-foreground text-sm">
+              Cargando categorías…
+            </p>
+          )}
+          {categories.isError && (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-destructive text-sm">
+                No se pudieron cargar las categorías.
               </p>
-            )}
-            {categories.isError && (
-              <div className="flex flex-col items-start gap-3">
-                <p className="text-destructive text-sm">
-                  No se pudieron cargar las categorías.
-                </p>
-                <Button
-                  onClick={async () => await categories.refetch()}
-                  size="sm"
-                  variant="outline"
+              <Button
+                onClick={async () => await categories.refetch()}
+                size="sm"
+                variant="outline"
+              >
+                Reintentar
+              </Button>
+            </div>
+          )}
+          {categories.isSuccess && categories.data.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Acciones</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.data.map((item) => (
+                  <CategoryRow
+                    item={item}
+                    key={item.id}
+                    queryClient={queryClient}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          )}
+          {categories.isSuccess && categories.data.length === 0 && (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia
+                  className="bg-primary/10 text-primary"
+                  variant="icon"
                 >
-                  Reintentar
-                </Button>
-              </div>
-            )}
-            {categories.isSuccess && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Acciones</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {categories.data.map((item) => (
-                    <CategoryRow
-                      item={item}
-                      key={item.id}
-                      queryClient={queryClient}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <PlusIcon aria-hidden="true" className="text-primary size-4" />
-              Nueva categoría
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                form.handleSubmit();
-              }}
-            >
-              <FieldGroup>
-                <form.Field name="name">
-                  {(field) => (
-                    <Field data-invalid={field.state.meta.errors.length > 0}>
-                      <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
-                      <Input
-                        aria-invalid={field.state.meta.errors.length > 0}
-                        id={field.name}
-                        value={field.state.value}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                      />
-                      {field.state.meta.errors.map((error) => (
-                        <FieldError key={error?.message}>
-                          {error?.message}
-                        </FieldError>
-                      ))}
-                    </Field>
-                  )}
-                </form.Field>
-                <Button type="submit">
-                  <PlusIcon data-icon="inline-start" />
-                  Crear categoría
-                </Button>
-              </FieldGroup>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+                  <TagsIcon />
+                </EmptyMedia>
+                <EmptyTitle>Aún no hay categorías</EmptyTitle>
+                <EmptyDescription>
+                  Usa el botón de arriba para crear la primera.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }

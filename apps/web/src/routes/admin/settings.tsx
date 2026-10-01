@@ -6,12 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@patche/ui/components/card";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@patche/ui/components/field";
+import { Field, FieldGroup, FieldLabel } from "@patche/ui/components/field";
 import { Input } from "@patche/ui/components/input";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -124,9 +119,6 @@ function ShippingForm({ shippingRateAmount }: { shippingRateAmount: number }) {
                       field.handleChange(event.target.valueAsNumber)
                     }
                   />
-                  <FieldDescription>
-                    Los productos exclusivamente digitales no pagan envío.
-                  </FieldDescription>
                 </Field>
               )}
             </form.Field>

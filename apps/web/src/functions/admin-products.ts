@@ -1,8 +1,9 @@
 import { createDb } from "@patche/db";
 import { product, productMedia, variant } from "@patche/db/schema/catalog";
+import { stockMovement } from "@patche/db/schema/inventory";
 import { mediaPublicUrl } from "@patche/storage";
 import { createServerFn } from "@tanstack/react-start";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 
@@ -32,11 +33,16 @@ export const listAdminProducts = createServerFn({ method: "GET" })
         .select({
           archivedAt: variant.archivedAt,
           id: variant.id,
+          kind: variant.kind,
+          lowStockThreshold: variant.lowStockThreshold,
           name: variant.name,
           priceAmount: variant.priceAmount,
           productId: variant.productId,
+          stock: sql<number>`coalesce(sum(${stockMovement.quantity}), 0)`,
         })
         .from(variant)
+        .leftJoin(stockMovement, eq(stockMovement.variantId, variant.id))
+        .groupBy(variant.id)
         .orderBy(asc(variant.name)),
       db
         .select({

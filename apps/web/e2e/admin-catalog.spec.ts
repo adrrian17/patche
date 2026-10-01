@@ -11,17 +11,18 @@ test("creates catalog records, changes a price, and archives a product", async (
 }, testInfo) => {
   const category = uniqueName("Libretas");
   await page.goto("/admin/categories");
-  await page.getByLabel("Nombre", { exact: true }).fill(category);
-  const categoryCreated = page.getByText("Categoría creada");
+  const categoryDialog = page.getByRole("dialog", { name: "Nueva categoría" });
   await expect(async () => {
-    if (!(await categoryCreated.isVisible())) {
-      await page.getByLabel("Nombre", { exact: true }).fill(category);
+    if (!(await categoryDialog.isVisible())) {
       await page
-        .getByRole("button", { name: "Crear categoría" })
+        .getByRole("button", { name: "Nueva categoría" })
         .click({ timeout: 2000 });
     }
-    await expect(categoryCreated).toBeVisible({ timeout: 2000 });
+    await expect(categoryDialog).toBeVisible({ timeout: 2000 });
   }).toPass();
+  await categoryDialog.getByLabel("Nombre").fill(category);
+  await categoryDialog.getByRole("button", { name: "Crear categoría" }).click();
+  await expect(page.getByText("Categoría creada")).toBeVisible();
   const categoryName = page.getByRole("textbox", {
     name: `Nombre de ${category}`,
   });
@@ -84,13 +85,17 @@ test("creates catalog records, changes a price, and archives a product", async (
   await expect(page.getByText(/Físico · \$275\.00/u)).toBeVisible();
 
   await variantCard.getByRole("button", { name: "Archivar" }).click();
-  await expect(
-    variantCard.getByRole("button", { name: "Archivar" })
-  ).toBeDisabled();
+  await expect(variantCard.getByText("Archivado")).toBeVisible();
   await page.reload();
+  await expect(variantCard.getByText("Archivado")).toBeVisible();
+
+  await variantCard.getByRole("button", { name: "Desarchivar" }).click();
+  await expect(variantCard.getByText("Archivado")).toBeHidden();
+  await page.reload();
+  await expect(variantCard.getByText("Archivado")).toBeHidden();
   await expect(
     variantCard.getByRole("button", { name: "Archivar" })
-  ).toBeDisabled();
+  ).toBeEnabled();
 
   await page.getByRole("button", { name: "Archivar" }).first().click();
   await expect(page).toHaveURL(/\/admin\/products$/u);
@@ -150,22 +155,30 @@ test("records stock movements and shows the low stock warning", async ({
   await editDialog.getByRole("button", { name: "Guardar" }).click();
 
   await page.goto("/admin/inventory");
+  const movementDialog = page.getByRole("dialog", {
+    name: "Registrar movimiento",
+  });
   const option = page.getByRole("option", { name: `${product} · ${variant}` });
   await expect(async () => {
-    if (!(await option.isVisible())) {
+    if (!(await movementDialog.isVisible())) {
       await page
+        .getByRole("button", { name: "Registrar movimiento" })
+        .click({ timeout: 2000 });
+    }
+    if (!(await option.isVisible())) {
+      await movementDialog
         .getByRole("combobox", { name: "Variante" })
         .click({ timeout: 2000 });
     }
     await expect(option).toBeVisible({ timeout: 2000 });
   }).toPass();
   await option.click();
-  await page.getByLabel("Cantidad").fill("1");
-  await page.getByLabel("Nota").fill("Recepción E2E");
-  await page.getByRole("button", { name: "Registrar" }).click();
+  await movementDialog.getByLabel("Cantidad").fill("1");
+  await movementDialog.getByLabel("Nota").fill("Recepción E2E");
+  await movementDialog.getByRole("button", { name: "Registrar" }).click();
+  await expect(movementDialog).toBeHidden();
   const movementRow = page
     .getByRole("table")
-    .nth(1)
     .getByRole("row")
     .filter({ hasText: variant });
   await expect(movementRow).toContainText("+1");

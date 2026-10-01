@@ -1,11 +1,6 @@
+import { Badge } from "@patche/ui/components/badge";
 import { Button, buttonVariants } from "@patche/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@patche/ui/components/card";
+import { Card, CardContent } from "@patche/ui/components/card";
 import {
   Dialog,
   DialogContent,
@@ -51,7 +46,6 @@ import {
   ChevronDownIcon,
   ImageIcon,
   NotebookTabsIcon,
-  PackageIcon,
   PencilIcon,
   PlusIcon,
 } from "lucide-react";
@@ -103,9 +97,6 @@ function ProductsPage() {
     queryFn: () => listCategories(),
     queryKey: ["admin", "categories"],
   });
-  const productCount = products.data?.length ?? 0;
-  const productSummary =
-    productCount === 1 ? "producto registrado" : "productos registrados";
 
   return (
     <>
@@ -115,15 +106,6 @@ function ProductsPage() {
         title="Productos"
       />
       <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <PackageIcon aria-hidden="true" className="text-primary size-4" />
-            Catálogo
-          </CardTitle>
-          <CardDescription>
-            {productCount} {productSummary}
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           {products.isPending && (
             <p className="text-muted-foreground text-sm">Cargando productos…</p>
@@ -334,6 +316,17 @@ function ProductsTable({ products }: { products: ProductListItem[] }) {
                           <span className="text-muted-foreground tabular-nums">
                             {formatMoney(entry.priceAmount)}
                           </span>
+                          {entry.kind === "physical" ? (
+                            <Badge
+                              variant={
+                                entry.stock <= entry.lowStockThreshold
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                            >
+                              Stock {entry.stock}
+                            </Badge>
+                          ) : null}
                           {entry.archivedAt ? (
                             <StatusBadge status="archived" />
                           ) : null}
