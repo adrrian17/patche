@@ -154,22 +154,26 @@ test("records stock movements and shows the low stock warning", async ({
   await editDialog.getByRole("button", { name: "Guardar" }).click();
 
   await page.goto("/admin/inventory");
+  await page.getByRole("button", { name: "Registrar movimiento" }).click();
+  const movementDialog = page.getByRole("dialog", {
+    name: "Registrar movimiento",
+  });
   const option = page.getByRole("option", { name: `${product} · ${variant}` });
   await expect(async () => {
     if (!(await option.isVisible())) {
-      await page
+      await movementDialog
         .getByRole("combobox", { name: "Variante" })
         .click({ timeout: 2000 });
     }
     await expect(option).toBeVisible({ timeout: 2000 });
   }).toPass();
   await option.click();
-  await page.getByLabel("Cantidad").fill("1");
-  await page.getByLabel("Nota").fill("Recepción E2E");
-  await page.getByRole("button", { name: "Registrar" }).click();
+  await movementDialog.getByLabel("Cantidad").fill("1");
+  await movementDialog.getByLabel("Nota").fill("Recepción E2E");
+  await movementDialog.getByRole("button", { name: "Registrar" }).click();
+  await expect(movementDialog).toBeHidden();
   const movementRow = page
     .getByRole("table")
-    .nth(1)
     .getByRole("row")
     .filter({ hasText: variant });
   await expect(movementRow).toContainText("+1");

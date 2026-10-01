@@ -213,11 +213,14 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
       adminPage.getByText("Reembolsado", { exact: true })
     ).toBeVisible();
 
-    await adminPage.goto("/admin/inventory");
-    const inventoryRow = adminPage
+    await adminPage.goto("/admin/products");
+    const productRow = adminPage
       .getByRole("row")
       .filter({ hasText: productName });
-    await expect(inventoryRow.getByRole("cell").nth(2)).toHaveText("1");
+    await productRow.getByRole("button", { name: /variante/u }).click();
+    await expect(
+      adminPage.getByRole("list", { name: `Variantes de ${productName}` })
+    ).toContainText("Stock 1");
     await testInfo.attach("paid-order", {
       body: await adminPage.screenshot({ fullPage: true }),
       contentType: "image/png",

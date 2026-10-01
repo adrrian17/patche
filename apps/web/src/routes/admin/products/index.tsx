@@ -1,3 +1,4 @@
+import { Badge } from "@patche/ui/components/badge";
 import { Button, buttonVariants } from "@patche/ui/components/button";
 import { Card, CardContent } from "@patche/ui/components/card";
 import {
@@ -315,6 +316,17 @@ function ProductsTable({ products }: { products: ProductListItem[] }) {
                           <span className="text-muted-foreground tabular-nums">
                             {formatMoney(entry.priceAmount)}
                           </span>
+                          {entry.kind === "physical" ? (
+                            <Badge
+                              variant={
+                                entry.stock <= entry.lowStockThreshold
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                            >
+                              Stock {entry.stock}
+                            </Badge>
+                          ) : null}
                           {entry.archivedAt ? (
                             <StatusBadge status="archived" />
                           ) : null}
