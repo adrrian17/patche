@@ -77,6 +77,6 @@ export async function requestReset(page: Page, email: string) {
   await page.goto("/login");
   await page.getByRole("button", { name: "Olvidé mi contraseña" }).click();
   await page.getByLabel(emailLabel).fill(email);
-  await page.getByRole("button", { name: "Enviar recuperación" }).click();
+  await page.getByRole("button", { exact: true, name: "Enviar" }).click();
   await expect(page.getByRole("status")).toContainText("Si existe una cuenta");
 }
