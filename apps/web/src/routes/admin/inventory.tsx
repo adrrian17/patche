@@ -44,7 +44,12 @@ function InventoryPage() {
       />
       <Card className="rounded-xl shadow-sm">
         <CardContent>
-          {inventory.data?.movements.length === 0 ? (
+          {inventory.isPending && (
+            <p className="text-muted-foreground text-sm">
+              Cargando movimientos…
+            </p>
+          )}
+          {inventory.isSuccess && inventory.data.movements.length === 0 && (
             <Empty>
               <EmptyHeader>
                 <EmptyMedia
@@ -59,7 +64,8 @@ function InventoryPage() {
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
-          ) : (
+          )}
+          {inventory.isSuccess && inventory.data.movements.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -70,7 +76,7 @@ function InventoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inventory.data?.movements.map((item) => (
+                {inventory.data.movements.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{formatDate(item.createdAt)}</TableCell>
                     <TableCell>
