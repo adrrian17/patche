@@ -44,6 +44,7 @@ import {
   ArchiveIcon,
   ArchiveRestoreIcon,
   ArrowLeftIcon,
+  ClipboardListIcon,
   FileTextIcon,
   InfoIcon,
   PencilIcon,
@@ -214,11 +215,12 @@ function ProductBasics({
     <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          Ficha
+          <ClipboardListIcon
+            aria-hidden="true"
+            className="text-primary size-4"
+          />
+          Datos
         </CardTitle>
-        <CardDescription>
-          Los cambios de nombre y estado se guardan en el catálogo.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <form
