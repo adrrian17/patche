@@ -1,3 +1,4 @@
+import { Button } from "@patche/ui/components/button";
 import { Card, CardContent } from "@patche/ui/components/card";
 import {
   Empty,
@@ -48,6 +49,20 @@ function InventoryPage() {
             <p className="text-muted-foreground text-sm">
               Cargando movimientos…
             </p>
+          )}
+          {inventory.isError && (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-destructive text-sm">
+                No se pudieron cargar los movimientos.
+              </p>
+              <Button
+                onClick={async () => await inventory.refetch()}
+                size="sm"
+                variant="outline"
+              >
+                Reintentar
+              </Button>
+            </div>
           )}
           {inventory.isSuccess && inventory.data.movements.length === 0 && (
             <Empty>
