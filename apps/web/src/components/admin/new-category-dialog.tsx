@@ -24,7 +24,11 @@ import { createCategory } from "@/functions/categories";
 import { errorMessage } from "@/lib/errors";
 
 const categorySchema = z.object({
-  name: z.string().trim().min(1, "Escribe un nombre"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Escribe un nombre")
+    .max(100, "Máximo 100 caracteres"),
 });
 
 export function NewCategoryDialog() {
