@@ -32,6 +32,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | B   | Admin catalog                   | Existing   | existing    |
 | C   | Admin orders and refunds        | Existing   | existing    |
 | D   | Checkout and Stripe webhooks    | Existing   | in-progress |
+| E   | Public storefront               | Existing   | in-progress |
 | 1   | E2E harness                     | Foundation | done        |
 | 2   | Auth E2E and CI job             | Slice 1    | done        |
 | 7   | Checkout without Stripe catalog | Slice 2    | done        |
@@ -39,6 +40,9 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 4   | Purchase E2E                    | Slice 3    | done        |
 | 5   | Post sale E2E                   | Slice 4    | done        |
 | 6   | Payments integration coverage   | Slice 5    | done        |
+| 8   | Purchase E2E on the storefront  | Slice 6    | planned     |
+| 9   | Customer orders page            | Slice 7    | planned     |
+| 10  | Home images in R2               | Slice 8    | planned     |
 
 ## Already built
 
@@ -56,7 +60,11 @@ Order list and detail, Fulfillment Status updates, refunds that settle through t
 
 ### D. Checkout and Stripe webhooks · in-progress
 
-Server priced hosted Stripe Checkout with Checkout Reservations, and idempotent webhook handling that creates Orders. The only entry point today is the DEV only `/dev/checkout` page; the storefront and cart are not built yet. code in `packages/payments/`, `apps/web/src/lib/payments.server.ts`
+Server priced hosted Stripe Checkout with Checkout Reservations, and idempotent webhook handling that creates Orders. The storefront cart starts it, and the DEV only `/dev/checkout` page is still used by the E2E suite. code in `packages/payments/`, `apps/web/src/lib/payments.server.ts`
+
+### E. Public storefront · in-progress
+
+Home, product list and detail, and a browser cart that starts hosted Checkout. Demo catalog seed for local development (`bun run --cwd apps/web seed:storefront`). Not yet verified or covered by the full E2E purchase path. code in `apps/web/src/routes/_store/`, `apps/web/src/components/storefront/`, `apps/web/scripts/seed-storefront/`
 
 ## Foundations
 
@@ -136,12 +144,37 @@ Cover in the Miniflare integration suite the rules that need no browser, and run
 
 code in `apps/web/src/lib/payments.integration.ts`, `.github/workflows/ci.yml` (step `Run integration tests`)
 
+## Slice 6: Purchase E2E on the storefront
+
+### 8. Purchase E2E on the storefront
+
+Move the purchase and post sale E2E tests from `/dev/checkout` to the real storefront and cart, then remove `/dev/checkout`. **Done when:** a Customer adds a Product to the cart, pays in hosted Checkout, and the Order shows in admin, with `/dev/checkout` deleted and the suite green in CI.
+
+- [ ] `/develop purchase e2e on the storefront`
+- [ ] `/test purchase e2e on the storefront`
+
+## Slice 7: Customer orders page
+
+### 9. Customer orders page · needs a decision
+
+A signed in Customer sees their Orders and downloads the Digital Files they bought, from `/dashboard`. **Done when:** a Customer lists their Orders, opens one, and downloads a purchased Digital File through a Download Grant.
+
+- [ ] Design it (spec): `/architect customer orders page`
+
+## Slice 8: Home images in R2
+
+### 10. Home images in R2 · needs a decision
+
+The three home page images live in the repo (`apps/web/public/storefront/`). Serve them from R2 instead, which needs an upload path that does not depend on a Product. **Done when:** the home page renders its hero and collection images from R2 and no image file is committed.
+
+- [ ] Design it (spec): `/architect home images in r2`
+
 ## Deferred
 
 Out of scope for the current build pass, kept so the plan stays honest.
 
 - **Digital Variant E2E**: buy and download a Digital File, which needs a real R2 test bucket and credentials
-- **Production like E2E server**: run against a production-like build once a real storefront and cart replace `/dev/checkout`
+- **Production like E2E server**: run against a production-like build after feature 8 moves the suite onto the real storefront and cart
 - **Test only login route**: better-auth `testUtils` behind a test route, if many roles or users per test make magic link login too slow · needs a decision
 
 ## Legend
