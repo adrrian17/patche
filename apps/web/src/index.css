@@ -1,8 +1,23 @@
 @import "@patche/ui/globals.css";
+@import "@fontsource-variable/quicksand";
+@import "@fontsource-variable/outfit";
 
 @theme inline {
   --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-display: "Quicksand Variable", sans-serif;
+  --font-body: "Outfit Variable", sans-serif;
+  --color-brand: #38a396;
+  --color-mustard: #e9b44c;
+  --color-paper: #fdfcf8;
+  --color-mint: #f0f7f6;
+  --animate-float: float 3s ease-in-out infinite;
+
+  @keyframes float {
+    50% {
+      transform: translateY(-0.5rem);
+    }
+  }
 }
 
 @layer base {
@@ -48,6 +63,16 @@
   --sidebar-ring: oklch(0.6 0.11 182);
 }
 
-body:has(.admin-shell) {
+body:has(.admin-shell),
+body:has(.storefront) {
   background-image: none;
+}
+
+.storefront {
+  --primary: #38a396;
+  --ring: #38a396;
+}
+
+.storefront :is(h1, h2, h3, h4) {
+  font-family: var(--font-display);
 }

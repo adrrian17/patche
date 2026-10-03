@@ -26,10 +26,10 @@ function RouteComponent() {
   return (
     <main className="relative flex min-h-svh items-center justify-center overflow-hidden bg-white px-4 py-10 text-slate-900 [--accent-foreground:oklch(0.48_0.09_182)] [--accent:oklch(0.955_0.028_182)] [--background:oklch(1_0_0)] [--border:oklch(0.91_0.005_240)] [--input:oklch(0.91_0.005_240)] [--muted-foreground:oklch(0.53_0.014_240)] [--primary-foreground:oklch(0.99_0_0)] [--primary:oklch(0.6_0.11_182)] [--ring:oklch(0.6_0.11_182)] sm:px-6">
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
-        <div className="mb-3 text-center">
+        <div className="mb-6 text-center">
           <img
             alt="Patche"
-            className="mx-auto h-28 w-auto object-contain sm:h-32"
+            className="mx-auto h-20 w-auto object-contain sm:h-24"
             src="/logo.png"
           />
         </div>

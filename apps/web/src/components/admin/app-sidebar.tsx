@@ -29,7 +29,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             >
               <img
                 alt="Patche"
-                className="h-16 w-full object-cover group-data-[collapsible=icon]:hidden"
+                className="h-12 w-full object-contain object-left group-data-[collapsible=icon]:hidden"
                 src="/logo.png"
               />
               <img
