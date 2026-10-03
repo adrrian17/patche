@@ -40,7 +40,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 4   | Purchase E2E                    | Slice 3    | done        |
 | 5   | Post sale E2E                   | Slice 4    | done        |
 | 6   | Payments integration coverage   | Slice 5    | done        |
-| 8   | Purchase E2E on the storefront  | Slice 6    | in-progress |
+| 8   | Purchase E2E on the storefront  | Slice 6    | done        |
 | 9   | Customer orders page            | Slice 7    | planned     |
 | 10  | Home images in R2               | Slice 8    | planned     |
 
@@ -146,12 +146,12 @@ code in `apps/web/src/lib/payments.integration.ts`, `.github/workflows/ci.yml` (
 
 ## Slice 6: Purchase E2E on the storefront
 
-### 8. Purchase E2E on the storefront · in-progress
+### 8. Purchase E2E on the storefront · done
 
 Move the purchase and post sale E2E tests from `/dev/checkout` to the real storefront and cart, then remove `/dev/checkout`. **Done when:** a Customer adds a Product to the cart, pays in hosted Checkout, and the Order shows in admin, with `/dev/checkout` deleted and the suite green in CI.
 
 - [x] `/develop purchase e2e on the storefront`
-- [ ] `/test purchase e2e on the storefront`
+- [x] `/test purchase e2e on the storefront`
 
 ## Slice 7: Customer orders page
 
