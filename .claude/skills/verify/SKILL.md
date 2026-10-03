@@ -5,7 +5,7 @@ description: Launch and drive the Patche storefront and admin (TanStack Start on
 
 # Verify Patche
 
-Patche's user surface is one web app at `http://localhost:3001`: the storefront (`/`, `/login`, `/dashboard`, `/dev/checkout`) and the admin (`/admin/*`). Stripe Checkout is a real hosted page in Stripe test mode. There is no CLI surface; HTTP endpoints (`/api/auth/*`, `/api/stripe/webhook`, `/api/media/*`) are reached through the browser.
+Patche's user surface is one web app at `http://localhost:3001`: the storefront (`/`, `/products`, `/cart`, `/login`, `/dashboard`) and the admin (`/admin/*`). Stripe Checkout is a real hosted page in Stripe test mode. There is no CLI surface; HTTP endpoints (`/api/auth/*`, `/api/stripe/webhook`, `/api/media/*`) are reached through the browser.
 
 All helpers live in `.claude/skills/verify/scripts/` and run from any directory inside the repo. Feature recipes live in [`features/`](features/README.md); read the index before driving.
 

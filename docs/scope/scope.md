@@ -15,7 +15,7 @@ The decisions for this slice were settled in a grilling session and are recorded
 3. **Stripe:** real test mode in a dedicated E2E sandbox, with no cleanup (names get a per run suffix). The purchase happy path pays in hosted Checkout (`4242…`); other scenarios use synthetic events where the handler allows it.
 4. **Webhook delivery:** no Stripe CLI. After paying, the test fetches the real event with `stripe.events.list({ type })`, filters by session or payment intent, signs it with `STRIPE_WEBHOOK_SECRET`, and POSTs it to `/api/stripe/webhook`. The same helper signs synthetic events. `checkout.session.completed` calls `sessions.listLineItems`, so it needs a real session; `charge.refunded` only touches D1.
 5. **Login:** real email/password authentication. Registration verifies email through the message that `alchemy dev` writes under `.alchemy/local/email/`; recovery also covers existing Customers without credentials. The Admin role is set directly in the local D1 SQLite file. A Playwright setup project logs in once per role and saves `storageState`. Better Auth `testUtils` was ruled out because it has no HTTP routes and would need a privileged test route inside the Worker; revisit if tests need many roles or users.
-6. **Server under test:** `alchemy dev --stage e2e` (keeps `/dev/checkout`), whose state is wiped each run so D1 and R2 start empty. Move to a production-like server once a real storefront and cart exist.
+6. **Server under test:** `alchemy dev --stage e2e`, whose state is wiped each run so D1 and R2 start empty. Move to a production-like server once a real storefront and cart exist.
 7. **Secrets:** `APP_ENV=e2e` in `.env.schema` reads an E2E 1Password item locally; CI injects values from GitHub Secrets.
 8. **Catalog fixtures:** the admin catalog test drives the UI. Other tests create fixtures by calling the catalog server functions with the admin session (`page.request`), falling back to a UI helper `createActiveProduct()` if that isn't clean. Each test creates its own Variant so tests can run in parallel.
 9. **Digital Variant:** out of E2E, because presigned PUT needs real R2. Download Grants are covered in integration.
@@ -40,7 +40,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 4   | Purchase E2E                    | Slice 3    | done        |
 | 5   | Post sale E2E                   | Slice 4    | done        |
 | 6   | Payments integration coverage   | Slice 5    | done        |
-| 8   | Purchase E2E on the storefront  | Slice 6    | planned     |
+| 8   | Purchase E2E on the storefront  | Slice 6    | in-progress |
 | 9   | Customer orders page            | Slice 7    | planned     |
 | 10  | Home images in R2               | Slice 8    | planned     |
 
@@ -146,11 +146,11 @@ code in `apps/web/src/lib/payments.integration.ts`, `.github/workflows/ci.yml` (
 
 ## Slice 6: Purchase E2E on the storefront
 
-### 8. Purchase E2E on the storefront
+### 8. Purchase E2E on the storefront · in-progress
 
 Move the purchase and post sale E2E tests from `/dev/checkout` to the real storefront and cart, then remove `/dev/checkout`. **Done when:** a Customer adds a Product to the cart, pays in hosted Checkout, and the Order shows in admin, with `/dev/checkout` deleted and the suite green in CI.
 
-- [ ] `/develop purchase e2e on the storefront`
+- [x] `/develop purchase e2e on the storefront`
 - [ ] `/test purchase e2e on the storefront`
 
 ## Slice 7: Customer orders page

@@ -55,7 +55,6 @@ export const Web = Cloudflare.Website.Vite("Web", {
     // Only presigned R2 URLs need it; local dev serves R2 through the Worker.
     CF_ACCOUNT_ID: Config.String("CLOUDFLARE_ACCOUNT_ID"),
     DB: Database,
-    DEV_CHECKOUT_ENABLED: String(!isProductionStage),
     DIGITAL_BUCKET: DigitalBucket,
     DIGITAL_BUCKET_NAME: DigitalBucket.pipe(
       Effect.map((bucket) => bucket.bucketName)

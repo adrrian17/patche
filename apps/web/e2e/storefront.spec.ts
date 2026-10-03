@@ -39,8 +39,15 @@ test("a Customer finds a Product, fills the cart, and reaches Stripe Checkout", 
   await expect(page).toHaveURL(/\/products\?q=/u);
   await shot("2-catalog-search");
 
-  await page.getByRole("link", { name: productName }).first().click();
-  await expect(page.getByRole("heading", { name: productName })).toBeVisible();
+  // The card link does nothing until the page hydrates, so retry the click until the Product page opens.
+  await expect(async () => {
+    await page.getByRole("link", { name: productName }).first().click();
+    await expect(page).toHaveURL(/\/products\/e2e-/u, { timeout: 1500 });
+  }).toPass({ timeout: 15_000 });
+  // The URL changes before the Product loader resolves, so the catalog's headings can still be on screen.
+  await expect(
+    page.getByRole("heading", { exact: true, level: 1, name: productName })
+  ).toBeVisible();
   await expect(page.getByText("$320.00").first()).toBeVisible();
   await page.getByRole("button", { name: "Agregar al carrito" }).click();
   const cartLink = page.getByRole("link", { name: /Carrito, 1 artículo/u });
