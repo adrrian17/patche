@@ -180,7 +180,7 @@ function CartPage() {
   async function handleCheckout() {
     if (!user) {
       toast.info("Inicia sesión para completar tu compra.");
-      await navigate({ to: "/login" });
+      await navigate({ search: { next: "/cart" }, to: "/login" });
       return;
     }
     setPending(true);

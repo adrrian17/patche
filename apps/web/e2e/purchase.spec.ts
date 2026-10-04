@@ -251,6 +251,9 @@ test("does not start Checkout when Stock is insufficient", async ({
     timeout: 10_000,
   });
   await expect(page).toHaveURL(/localhost:3001\/cart/u);
+  await expect(
+    page.getByRole("heading", { level: 2, name: productName })
+  ).toBeVisible();
   await testInfo.attach("insufficient-stock", {
     body: await page.screenshot({ fullPage: true }),
     contentType: "image/png",

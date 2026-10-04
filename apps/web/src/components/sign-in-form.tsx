@@ -8,13 +8,16 @@ import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
 
 function SignInForm({
+  next,
   onSwitchToSignUp,
   onForgotPassword,
 }: {
+  next?: "/cart";
   onSwitchToSignUp: () => void;
   onForgotPassword: () => void;
 }) {
   const [authMessage, setAuthMessage] = useState<string | null>(null);
+  const continuePath = next ? `/auth/continue?next=${next}` : "/auth/continue";
   const form = useForm({
     defaultValues: {
       email: "",
@@ -24,7 +27,7 @@ function SignInForm({
       setAuthMessage(null);
       try {
         const { error: authError } = await authClient.signIn.email({
-          callbackURL: new URL("/auth/continue", window.location.origin).href,
+          callbackURL: new URL(continuePath, window.location.origin).href,
           email: value.email.trim().toLowerCase(),
           password: value.password,
         });
@@ -42,7 +45,7 @@ function SignInForm({
           }
           return;
         }
-        window.location.assign("/auth/continue");
+        window.location.assign(continuePath);
       } catch {
         setAuthMessage("No pudimos iniciar sesión. Inténtalo de nuevo.");
       }

@@ -10,6 +10,7 @@ export const Route = createFileRoute("/login")({
   component: RouteComponent,
   validateSearch: z.object({
     error: z.string().optional(),
+    next: z.literal("/cart").optional(),
   }),
 });
 
@@ -18,7 +19,7 @@ function RouteComponent() {
   const [mode, setMode] = useState<"sign-in" | "sign-up" | "forgot-password">(
     "sign-in"
   );
-  const { error } = Route.useSearch();
+  const { error, next } = Route.useSearch();
   const errorMessage = error
     ? "No pudimos verificar tu correo. Inicia sesión para solicitar un nuevo enlace."
     : null;
@@ -50,6 +51,7 @@ function RouteComponent() {
             ) : null}
             {mode === "sign-in" && (
               <SignInForm
+                next={next}
                 onForgotPassword={() => setMode("forgot-password")}
                 onSwitchToSignUp={() => setMode("sign-up")}
               />
