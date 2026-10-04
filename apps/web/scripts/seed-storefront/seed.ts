@@ -192,7 +192,21 @@ let created = 0;
 const now = Date.now();
 for (const [index, item] of products.entries()) {
   const slug = slugify(item.name);
-  if (db.query("SELECT 1 FROM product WHERE slug = ?").get(slug)) {
+  const existing = db
+    .query<{ id: string }, [string]>("SELECT id FROM product WHERE slug = ?")
+    .get(slug);
+  if (existing) {
+    // Resume a Product whose uploads failed on an earlier run; the first images keep their order.
+    const uploaded =
+      db
+        .query<{ count: number }, [string]>(
+          "SELECT COUNT(*) AS count FROM product_media WHERE product_id = ?"
+        )
+        .get(existing.id)?.count ?? 0;
+    for (const image of item.images.slice(uploaded)) {
+      // oxlint-disable-next-line no-await-in-loop, react-doctor/async-await-in-loop -- uploads keep their order so the first image is the main one.
+      await uploadImage(cookie, existing.id, image, item.name);
+    }
     continue;
   }
   const productId = randomId();
