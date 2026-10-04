@@ -60,11 +60,11 @@ Order list and detail, Fulfillment Status updates, refunds that settle through t
 
 ### D. Checkout and Stripe webhooks · in-progress
 
-Server priced hosted Stripe Checkout with Checkout Reservations, and idempotent webhook handling that creates Orders. The storefront cart starts it, and the DEV only `/dev/checkout` page is still used by the E2E suite. code in `packages/payments/`, `apps/web/src/lib/payments.server.ts`
+Server priced hosted Stripe Checkout with Checkout Reservations, and idempotent webhook handling that creates Orders. The storefront cart starts it, and the E2E suite covers the purchase through the storefront. code in `packages/payments/`, `apps/web/src/lib/payments.server.ts`
 
 ### E. Public storefront · in-progress
 
-Home, product list and detail, and a browser cart that starts hosted Checkout. Demo catalog seed for local development (`bun run --cwd apps/web seed:storefront`). Not yet verified or covered by the full E2E purchase path. code in `apps/web/src/routes/_store/`, `apps/web/src/components/storefront/`, `apps/web/scripts/seed-storefront/`
+Home, product list and detail, and a browser cart that starts hosted Checkout. Demo catalog seed for local development (`bun run --cwd apps/web seed:storefront`). Covered by the E2E purchase path. code in `apps/web/src/routes/_store/`, `apps/web/src/components/storefront/`, `apps/web/scripts/seed-storefront/`
 
 ## Foundations
 

@@ -16,13 +16,10 @@ test.use({ storageState: "e2e/.auth/customer.json" });
 // The Product page is the first stop of every storefront purchase; the slug comes from seedProduct.
 async function addToCartFromStorefront(page: Page, productId: string) {
   await page.goto(`/products/e2e-${productId}`);
-  // The button stays disabled until the page hydrates, so retry the click until the cart link shows it.
-  await expect(async () => {
-    await page.getByRole("button", { name: "Agregar al carrito" }).click();
-    await expect(
-      page.getByRole("link", { name: /Carrito, 1 artículo/u })
-    ).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 25_000 });
+  // The button stays disabled until the page hydrates; click once it is enabled so the item is added once.
+  const addButton = page.getByRole("button", { name: "Agregar al carrito" });
+  await expect(addButton).toBeEnabled({ timeout: 25_000 });
+  await addButton.click();
   await page.getByRole("link", { name: /Carrito, 1 artículo/u }).click();
   await expect(
     page.getByRole("heading", { name: "Carrito de compras" })

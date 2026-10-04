@@ -10,7 +10,7 @@ import { stockMovement } from "@patche/db/schema/inventory";
 import { storeSetting } from "@patche/db/schema/settings";
 import { mediaPublicUrl } from "@patche/storage";
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq, inArray, isNull, like, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 
@@ -117,7 +117,8 @@ export const listStoreProducts = createServerFn({ method: "GET" })
       productFilters.push(eq(category.slug, data.category));
     }
     if (data.q) {
-      productFilters.push(like(product.name, `%${data.q}%`));
+      const pattern = `%${data.q.replaceAll(/[\\%_]/gu, "\\$&")}%`;
+      productFilters.push(sql`${product.name} LIKE ${pattern} ESCAPE '\\'`);
     }
     // ponytail: loads the whole active catalog per request; paginate in SQL when it outgrows one page.
     const [products, variants, media] = await Promise.all([
