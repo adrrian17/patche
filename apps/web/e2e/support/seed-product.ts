@@ -69,13 +69,18 @@ export function seedProduct(
   return id;
 }
 
-export function seedStock(email: string, variantId: string, quantity: number) {
+export function seedStock(
+  email: string,
+  variantId: string,
+  quantity: number,
+  reason: "adjusted" | "received" = "received"
+) {
   withAdminDatabase(email, (db) =>
     db
       .prepare(
-        "INSERT INTO stock_movement (id, variant_id, quantity, reason, note) VALUES (?, ?, ?, 'received', 'E2E')"
+        "INSERT INTO stock_movement (id, variant_id, quantity, reason, note) VALUES (?, ?, ?, ?, 'E2E')"
       )
-      .run(randomId(), variantId, quantity)
+      .run(randomId(), variantId, quantity, reason)
   );
 }
 

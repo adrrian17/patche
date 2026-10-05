@@ -13,18 +13,17 @@ import { findStripeEvent, postSignedEvent } from "./support/stripe-events";
 
 test.use({ storageState: "e2e/.auth/customer.json" });
 
-// The dev checkout form submits natively when clicked before hydration, so retry from a fresh load.
-async function submitDevCheckout(
-  page: Page,
-  variantId: string,
-  outcome: () => Promise<void>
-) {
-  await expect(async () => {
-    await page.goto("/dev/checkout");
-    await page.getByLabel("Variant ID", { exact: true }).fill(variantId);
-    await page.getByRole("button", { name: "Ir a Stripe Checkout" }).click();
-    await outcome();
-  }).toPass({ timeout: 25_000 });
+// The Product page is the first stop of every storefront purchase; the slug comes from seedProduct.
+async function addToCartFromStorefront(page: Page, productId: string) {
+  await page.goto(`/products/e2e-${productId}`);
+  // The button stays disabled until the page hydrates; click once it is enabled so the item is added once.
+  const addButton = page.getByRole("button", { name: "Agregar al carrito" });
+  await expect(addButton).toBeEnabled({ timeout: 25_000 });
+  await addButton.click();
+  await page.getByRole("link", { name: /Carrito, 1 artículo/u }).click();
+  await expect(
+    page.getByRole("heading", { name: "Carrito de compras" })
+  ).toBeVisible();
 }
 
 async function fillStripeField(page: Page, name: string, value: string) {
@@ -81,9 +80,9 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   });
   seedStock(customerEmail, variantId, 2);
 
-  await submitDevCheckout(page, variantId, () =>
-    expect(page).toHaveURL(/checkout\.stripe\.com/u, { timeout: 5000 })
-  );
+  await addToCartFromStorefront(page, productId);
+  await page.getByRole("button", { name: "Proceder al pago" }).click();
+  await expect(page).toHaveURL(/checkout\.stripe\.com/u, { timeout: 15_000 });
 
   const sessionId = page.url().match(/cs_test_[A-Za-z0-9]+/u)?.[0];
   if (!sessionId) {
@@ -104,9 +103,10 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   await fillStripeField(page, "card number", "4242424242424242");
   await fillStripeField(page, "expiration", "1234");
   await fillStripeField(page, "security code|cvc", "123");
-  const agentDisclosure = page.getByRole("checkbox", {
-    name: "I am an AI agent acting on behalf of someone else",
-  });
+  // Stripe words this disclosure as "I am an AI agent and have followed the instructions above" and its checkbox has no label.
+  const agentDisclosure = page
+    .getByText(/I am an AI agent/u)
+    .locator("input[type=checkbox]");
   // SAFETY: This locator resolves Stripe's native checkbox input.
   await agentDisclosure.evaluate((checkbox) =>
     (checkbox as HTMLInputElement).click()
@@ -241,13 +241,19 @@ test("does not start Checkout when Stock is insufficient", async ({
     priceAmount: 25_000,
     productId,
   });
+  seedStock(customerEmail, variantId, 1);
 
-  await submitDevCheckout(page, variantId, () =>
-    expect(page.getByRole("alert")).toContainText("Stock insuficiente", {
-      timeout: 5000,
-    })
-  );
-  await expect(page).toHaveURL(/localhost:3001\/dev\/checkout/u);
+  await addToCartFromStorefront(page, productId);
+  // Someone else takes the last unit after the cart loaded, so Checkout must refuse.
+  seedStock(customerEmail, variantId, -1, "adjusted");
+  await page.getByRole("button", { name: "Proceder al pago" }).click();
+  await expect(page.getByText("Stock insuficiente")).toBeVisible({
+    timeout: 10_000,
+  });
+  await expect(page).toHaveURL(/localhost:3001\/cart/u);
+  await expect(
+    page.getByRole("heading", { level: 2, name: productName })
+  ).toBeVisible();
   await testInfo.attach("insufficient-stock", {
     body: await page.screenshot({ fullPage: true }),
     contentType: "image/png",

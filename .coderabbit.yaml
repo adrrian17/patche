@@ -1,0 +1,8 @@
+reviews:
+  high_level_summary: false
+  review_status: false
+  auto_review:
+    enabled: true
+  path_filters:
+    - "!.claude/skills/**"
+    - "!.agents/skills/**"

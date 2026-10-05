@@ -64,3 +64,6 @@ temp
 apps/web/playwright-report/
 apps/web/test-results/
 apps/web/e2e/.auth/
+
+# Verification skill runtime state and evidence
+.verify/
