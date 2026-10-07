@@ -229,6 +229,35 @@ function DigitalDownloadControl({
   return <DownloadButton grantId={download.grantId} orderId={orderId} />;
 }
 
+async function downloadOrderFile({
+  grantId,
+  onError,
+  onPendingChange,
+  invalidateOrder,
+}: {
+  grantId: string;
+  onError: (error: string | null) => void;
+  onPendingChange: (isPending: boolean) => void;
+  invalidateOrder: () => Promise<void>;
+}): Promise<void> {
+  onPendingChange(true);
+  onError(null);
+  try {
+    const result = await createDownloadUrl({ data: { grantId } });
+    window.location.assign(result.url);
+  } catch (caughtError) {
+    onError(
+      errorMessage(
+        caughtError instanceof Error ? caughtError : null,
+        "No se pudo iniciar la descarga. Inténtalo de nuevo."
+      )
+    );
+    await invalidateOrder();
+  } finally {
+    onPendingChange(false);
+  }
+}
+
 function DownloadButton({
   grantId,
   orderId,
@@ -241,23 +270,15 @@ function DownloadButton({
   const [error, setError] = useState<string | null>(null);
 
   async function download(): Promise<void> {
-    setIsPending(true);
-    setError(null);
-    try {
-      const result = await createDownloadUrl({ data: { grantId } });
-      window.location.assign(result.url);
-    } catch (caughtError) {
-      setError(
-        errorMessage(
-          caughtError instanceof Error ? caughtError : null,
-          "No se pudo iniciar la descarga. Inténtalo de nuevo."
-        )
-      );
-      await queryClient.invalidateQueries({
-        queryKey: ["customer", "orders", orderId],
-      });
-      setIsPending(false);
-    }
+    await downloadOrderFile({
+      grantId,
+      invalidateOrder: () =>
+        queryClient.invalidateQueries({
+          queryKey: ["customer", "orders", orderId],
+        }),
+      onError: setError,
+      onPendingChange: setIsPending,
+    });
   }
 
   return (
