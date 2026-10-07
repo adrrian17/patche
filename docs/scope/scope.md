@@ -41,7 +41,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 5   | Post sale E2E                   | Slice 4    | done        |
 | 6   | Payments integration coverage   | Slice 5    | done        |
 | 8   | Purchase E2E on the storefront  | Slice 6    | done        |
-| 9   | Customer orders page            | Slice 7    | planned     |
+| 9   | Customer orders page            | Slice 7    | in-progress |
 | 10  | Home images in R2               | Slice 8    | planned     |
 
 ## Already built
@@ -155,11 +155,14 @@ Move the purchase and post sale E2E tests from `/dev/checkout` to the real store
 
 ## Slice 7: Customer orders page
 
-### 9. Customer orders page · needs a decision
+### 9. Customer orders page · in-progress
 
 A signed in Customer sees their Orders and downloads the Digital Files they bought, from `/dashboard`. **Done when:** a Customer lists their Orders, opens one, and downloads a purchased Digital File through a Download Grant.
 
-- [ ] Design it (spec): `/architect customer orders page`
+- [x] Design it: `/architect customer orders page`
+- [ ] Verify the customer list, detail, and download flow in E2E.
+
+code in `apps/web/src/functions/customer-orders.ts`, `apps/web/src/routes/_auth/dashboard/`, and `apps/web/src/components/customer/order-status.tsx`
 
 ## Slice 8: Home images in R2
 
