@@ -103,15 +103,17 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   await fillStripeField(page, "card number", "4242424242424242");
   await fillStripeField(page, "expiration", "1234");
   await fillStripeField(page, "security code|cvc", "123");
-  // Stripe words this disclosure as "I am an AI agent and have followed the instructions above" and its checkbox has no label.
+  // Stripe only sometimes asks "I am an AI agent and have followed the instructions above", and its checkbox has no label.
   const agentDisclosure = page
     .getByText(/I am an AI agent/u)
     .locator("input[type=checkbox]");
-  // SAFETY: This locator resolves Stripe's native checkbox input.
-  await agentDisclosure.evaluate((checkbox) =>
-    (checkbox as HTMLInputElement).click()
-  );
-  await expect(agentDisclosure).toBeChecked();
+  if ((await agentDisclosure.count()) > 0) {
+    // SAFETY: This locator resolves Stripe's native checkbox input.
+    await agentDisclosure.evaluate((checkbox) =>
+      (checkbox as HTMLInputElement).click()
+    );
+    await expect(agentDisclosure).toBeChecked();
+  }
   // Outside Mexico Stripe pre-checks Link and then requires a phone number.
   const saveInfo = page.getByRole("checkbox", {
     name: "Save my information for faster checkout",
