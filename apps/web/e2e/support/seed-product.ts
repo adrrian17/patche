@@ -23,7 +23,7 @@ export async function signedInEmail(page: Page) {
 }
 
 // Old stages leave their D1 files behind, so target the one holding the signed-in Admin.
-function withAdminDatabase<T>(
+export function withAdminDatabase<T>(
   adminEmail: string,
   run: (db: Database.Database) => T
 ) {
@@ -87,20 +87,28 @@ export function seedStock(
 // Inserts straight into local D1 so the test does not need a real Stripe Price.
 export function seedVariant(
   adminEmail: string,
-  variant: { name: string; priceAmount: number; productId: string }
+  variant: {
+    name: string;
+    priceAmount: number;
+    productId: string;
+    digitalFile?: { key: string; name: string };
+  }
 ) {
   const id = randomId();
   withAdminDatabase(adminEmail, (db) =>
     db
       .prepare(
-        "INSERT INTO variant (id, product_id, name, sku, kind, price_amount) VALUES (?, ?, ?, ?, 'physical', ?)"
+        "INSERT INTO variant (id, product_id, name, sku, kind, price_amount, digital_file_key, digital_file_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       )
       .run(
         id,
         variant.productId,
         variant.name,
         `E2E-${id}`,
-        variant.priceAmount
+        variant.digitalFile ? "digital" : "physical",
+        variant.priceAmount,
+        variant.digitalFile?.key ?? null,
+        variant.digitalFile?.name ?? null
       )
   );
   return id;

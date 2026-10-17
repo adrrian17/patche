@@ -160,7 +160,7 @@ Move the purchase and post sale E2E tests from `/dev/checkout` to the real store
 A signed in Customer sees their Orders and downloads the Digital Files they bought, from `/dashboard`. **Done when:** a Customer lists their Orders, opens one, and downloads a purchased Digital File through a Download Grant.
 
 - [x] Design it: `/architect customer orders page`
-- [ ] Verify the customer list, detail, and download flow in E2E.
+- [x] Verify the customer list, detail, and download flow in E2E.
 
 code in `apps/web/src/functions/customer-orders.ts`, `apps/web/src/routes/_auth/dashboard/`, and `apps/web/src/components/customer/order-status.tsx`
 
