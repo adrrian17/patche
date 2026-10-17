@@ -115,8 +115,9 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
     await expect(agentDisclosure).toBeChecked();
   }
   // Outside Mexico Stripe pre-checks Link and then requires a phone number.
+  // Stripe sometimes labels it "Save my information with Link for faster checkout".
   const saveInfo = page.getByRole("checkbox", {
-    name: "Save my information for faster checkout",
+    name: /Save my information (?:with Link )?for faster checkout/u,
   });
   if ((await saveInfo.count()) > 0 && (await saveInfo.isChecked())) {
     // SAFETY: This locator resolves Stripe's native checkbox input.
