@@ -37,7 +37,21 @@ function seedCatalog(email: string) {
     priceAmount: 5000,
     productId: plannerProductId,
   });
-  return { calendarId, notebookId, notebookName, plannerId, plannerName };
+  // A digital Variant can be sold before the Admin uploads its file.
+  const stickersId = seedVariant(email, {
+    kind: "digital",
+    name: "Stickers sin archivo",
+    priceAmount: 3000,
+    productId: plannerProductId,
+  });
+  return {
+    calendarId,
+    notebookId,
+    notebookName,
+    plannerId,
+    plannerName,
+    stickersId,
+  };
 }
 
 test("shows an empty state before the first purchase", async ({
@@ -93,6 +107,15 @@ test("lists Orders, opens one, and downloads through its Download Grant", async 
         variantId: catalog.calendarId,
         variantName: "Calendario PDF",
       },
+      {
+        grant: "active",
+        kind: "digital",
+        productName: catalog.plannerName,
+        quantity: 1,
+        unitAmount: 3000,
+        variantId: catalog.stickersId,
+        variantName: "Stickers sin archivo",
+      },
     ],
     paymentStatus: "succeeded",
     shipping: {
@@ -133,7 +156,7 @@ test("lists Orders, opens one, and downloads through its Download Grant", async 
   await expect(orderLinks).toHaveCount(2);
   // Newest first: the paid Order was placed a day after the pending one.
   await expect(orderLinks.nth(0)).toContainText(`Pedido ${paid.orderId}`);
-  await expect(orderLinks.nth(0)).toContainText("$748.00");
+  await expect(orderLinks.nth(0)).toContainText("$778.00");
   await expect(orderLinks.nth(0)).toContainText("Pagado");
   await expect(orderLinks.nth(0)).toContainText("Enviado");
   await expect(orderLinks.nth(1)).toContainText(`Pedido ${pending.orderId}`);
@@ -150,12 +173,17 @@ test("lists Orders, opens one, and downloads through its Download Grant", async 
   await expect(notebook).toContainText("Tapa dura · Físico");
   await expect(notebook).toContainText("2 × $250.00");
   await expect(notebook.getByRole("button")).toHaveCount(0);
+  const missingFile = items.filter({ hasText: "Stickers sin archivo" });
+  await expect(missingFile).toContainText(
+    "Este archivo no está disponible para descarga."
+  );
+  await expect(missingFile.getByRole("button")).toHaveCount(0);
   const revoked = items.filter({ hasText: "Calendario PDF" });
   await expect(revoked).toContainText(
     "Este archivo no está disponible para descarga."
   );
-  await expect(page.getByText("$649.00", { exact: true })).toBeVisible();
-  await expect(page.getByText("$748.00", { exact: true })).toBeVisible();
+  await expect(page.getByText("$679.00", { exact: true })).toBeVisible();
+  await expect(page.getByText("$778.00", { exact: true })).toBeVisible();
   await expect(page.getByText("Av. Constitución 100")).toBeVisible();
   await expect(page.getByText("64000 Monterrey")).toBeVisible();
   await testInfo.attach("order-detail", {

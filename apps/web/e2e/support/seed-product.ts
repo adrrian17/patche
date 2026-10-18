@@ -91,6 +91,7 @@ export function seedVariant(
     name: string;
     priceAmount: number;
     productId: string;
+    kind?: "digital" | "physical";
     digitalFile?: { key: string; name: string };
   }
 ) {
@@ -105,7 +106,7 @@ export function seedVariant(
         variant.productId,
         variant.name,
         `E2E-${id}`,
-        variant.digitalFile ? "digital" : "physical",
+        variant.kind ?? (variant.digitalFile ? "digital" : "physical"),
         variant.priceAmount,
         variant.digitalFile?.key ?? null,
         variant.digitalFile?.name ?? null

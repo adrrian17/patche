@@ -1,4 +1,5 @@
 import { createDb } from "@patche/db";
+import { variant } from "@patche/db/schema/catalog";
 import { downloadGrant, order, orderItem } from "@patche/db/schema/orders";
 import type {
   fulfillmentStatuses,
@@ -6,7 +7,7 @@ import type {
   ShippingAddress,
 } from "@patche/db/schema/orders";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { authenticatedMiddleware } from "@/middleware/authenticated";
@@ -114,16 +115,20 @@ export const getCustomerOrder = createServerFn({ method: "GET" })
           .select({
             id: downloadGrant.id,
             orderItemId: downloadGrant.orderItemId,
-            revokedAt: downloadGrant.revokedAt,
           })
           .from(downloadGrant)
+          .innerJoin(variant, eq(downloadGrant.variantId, variant.id))
           .where(
             and(
               inArray(downloadGrant.orderItemId, itemIds),
-              eq(downloadGrant.customerId, customerId)
+              eq(downloadGrant.customerId, customerId),
+              isNull(downloadGrant.revokedAt),
+              // A digital Variant can be sold before its file is uploaded.
+              isNotNull(variant.digitalFileKey)
             )
           )
       : [];
+    // Only grants that can be downloaded right now reach this map.
     const grantsByItemId = new Map(
       grants.map((grant) => [grant.orderItemId, grant] as const)
     );
@@ -144,9 +149,7 @@ export const getCustomerOrder = createServerFn({ method: "GET" })
 
         const grant = grantsByItemId.get(item.id);
         const download =
-          matchingOrder.paymentStatus === "succeeded" &&
-          grant &&
-          !grant.revokedAt
+          matchingOrder.paymentStatus === "succeeded" && grant
             ? { grantId: grant.id, state: "available" as const }
             : { state: "unavailable" as const };
 
