@@ -59,6 +59,9 @@ export const Web = Cloudflare.Website.Vite("Web", {
     DIGITAL_BUCKET_NAME: DigitalBucket.pipe(
       Effect.map((bucket) => bucket.bucketName)
     ),
+    // Local R2 has no S3 endpoint, so `alchemy dev` uploads Digital Files through the Worker.
+    DIGITAL_UPLOAD_TRANSPORT:
+      process.env.ALCHEMY_DEV && !isProductionStage ? "worker" : "presigned",
     MEDIA_BUCKET: MediaBucket,
     // Media is served through the Worker (/media proxy), so it shares the Worker URL.
     MEDIA_PUBLIC_BASE_URL: Cloudflare.Worker.URL,

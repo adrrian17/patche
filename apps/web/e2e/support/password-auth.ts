@@ -80,3 +80,11 @@ export async function requestReset(page: Page, email: string) {
   await page.getByRole("button", { exact: true, name: "Enviar" }).click();
   await expect(page.getByRole("status")).toContainText("Si existe una cuenta");
 }
+
+// Each test gets its own Customer so seeded Orders never leak between parallel workers.
+export async function registerCustomer(page: Page, name: string) {
+  const email = `orders-${crypto.randomUUID()}@e2e.patche.test`;
+  await page.context().clearCookies();
+  await registerWithPassword(page, { email, name });
+  return email;
+}
