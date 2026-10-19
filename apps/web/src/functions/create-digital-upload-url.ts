@@ -13,7 +13,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import {
-  createDigitalPutUrl,
+  createDigitalUploadTarget,
   retryPendingStorageDeletions,
 } from "@/lib/storage.server";
 import { adminMiddleware } from "@/middleware/admin";
@@ -67,7 +67,11 @@ export const createDigitalUploadUrl = createServerFn({ method: "POST" })
       temporaryKey,
       variantId: data.variantId,
     });
-    const url = await createDigitalPutUrl(temporaryKey, data.contentType);
+    const url = await createDigitalUploadTarget({
+      contentType: data.contentType,
+      id: intentId,
+      temporaryKey,
+    });
     return {
       contentType: data.contentType,
       fileName: data.fileName,

@@ -95,14 +95,24 @@ export function isLocalMediaProxyEnabled(): boolean {
   return env.MEDIA_PUBLIC_PROXY === "true";
 }
 
-export async function createDigitalPutUrl(
-  key: string,
-  contentType: string
-): Promise<string> {
+// Anything but the exact local value keeps presigned URLs, so a missing or mistyped setting fails closed.
+export function isLocalDigitalUploadEnabled(): boolean {
+  return env.DIGITAL_UPLOAD_TRANSPORT === "worker";
+}
+
+// Where the browser PUTs a Digital File: real R2 when deployed, the Worker's local bucket under `alchemy dev`.
+export async function createDigitalUploadTarget(intent: {
+  id: string;
+  temporaryKey: string;
+  contentType: string;
+}): Promise<string> {
+  if (isLocalDigitalUploadEnabled()) {
+    return `/api/admin/digital-uploads/${encodeURIComponent(intent.id)}`;
+  }
   return await createPresignedUrl(getPresignConfig(), {
-    contentType,
+    contentType: intent.contentType,
     expiresSeconds: DIGITAL_UPLOAD_EXPIRES_SECONDS,
-    key,
+    key: intent.temporaryKey,
     method: "PUT",
   });
 }

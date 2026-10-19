@@ -1,19 +1,10 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
 
-import { registerWithPassword } from "./support/password-auth";
+import { registerCustomer } from "./support/password-auth";
 import { seedOrder } from "./support/seed-order";
 import { seedProduct, seedVariant } from "./support/seed-product";
 
 const day = 86_400_000;
-
-// Each test gets its own Customer so seeded Orders never leak between parallel workers.
-async function registerCustomer(page: Page, name: string) {
-  const email = `orders-${crypto.randomUUID()}@e2e.patche.test`;
-  await page.context().clearCookies();
-  await registerWithPassword(page, { email, name });
-  return email;
-}
 
 function seedCatalog(email: string) {
   const suffix = crypto.randomUUID().slice(0, 8);
@@ -191,7 +182,7 @@ test("lists Orders, opens one, and downloads through its Download Grant", async 
     contentType: "image/png",
   });
 
-  // Digital files upload straight to real R2, so the local bucket has no object behind the grant.
+  // The seeded file key has no object in R2; digital-download.spec.ts covers a real upload.
   // "Archivo no encontrado" is the reply that comes only after the grant passed every check.
   const [grantId] = paid.grantIds;
   const downloadButton = items

@@ -18,7 +18,7 @@ The decisions for this slice were settled in a grilling session and are recorded
 6. **Server under test:** `alchemy dev --stage e2e`, whose state is wiped each run so D1 and R2 start empty. Move to a production-like server once a real storefront and cart exist.
 7. **Secrets:** `APP_ENV=e2e` in `.env.schema` reads an E2E 1Password item locally; CI injects values from GitHub Secrets.
 8. **Catalog fixtures:** the admin catalog test drives the UI. Other tests create fixtures by calling the catalog server functions with the admin session (`page.request`), falling back to a UI helper `createActiveProduct()` if that isn't clean. Each test creates its own Variant so tests can run in parallel.
-9. **Digital Variant:** out of E2E, because presigned PUT needs real R2. Download Grants are covered in integration.
+9. **Digital Variant:** under `alchemy dev` the admin upload goes through the Worker into local R2 (`DIGITAL_UPLOAD_TRANSPORT=worker`), so E2E uploads and downloads a real Digital File. Deployed stages keep presigned PUT, which E2E does not exercise.
 10. **Runner:** `workers: 2` in CI, retries 1 in CI and 0 locally, traces and screenshots kept on failure.
 11. **CI:** a separate E2E job on every PR that uploads the Playwright report and traces when a test fails.
 
@@ -41,7 +41,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 5   | Post sale E2E                   | Slice 4    | done        |
 | 6   | Payments integration coverage   | Slice 5    | done        |
 | 8   | Purchase E2E on the storefront  | Slice 6    | done        |
-| 9   | Customer orders page            | Slice 7    | in-progress |
+| 9   | Customer orders page            | Slice 7    | done        |
 | 10  | Home images in R2               | Slice 8    | planned     |
 
 ## Already built
@@ -155,12 +155,13 @@ Move the purchase and post sale E2E tests from `/dev/checkout` to the real store
 
 ## Slice 7: Customer orders page
 
-### 9. Customer orders page · in-progress
+### 9. Customer orders page · done
 
 A signed in Customer sees their Orders and downloads the Digital Files they bought, from `/dashboard`. **Done when:** a Customer lists their Orders, opens one, and downloads a purchased Digital File through a Download Grant.
 
 - [x] Design it: `/architect customer orders page`
 - [x] Verify the customer list, detail, and download flow in E2E.
+- [x] Verify a real Digital File upload and download in E2E (`apps/web/e2e/digital-download.spec.ts`).
 
 code in `apps/web/src/functions/customer-orders.ts`, `apps/web/src/routes/_auth/dashboard/`, and `apps/web/src/components/customer/order-status.tsx`
 
@@ -176,7 +177,6 @@ The three home page images live in the repo (`apps/web/public/storefront/`). Ser
 
 Out of scope for the current build pass, kept so the plan stays honest.
 
-- **Digital Variant E2E**: buy and download a Digital File, which needs a real R2 test bucket and credentials
 - **Production like E2E server**: run against a production-like build after feature 8 moves the suite onto the real storefront and cart
 - **Test only login route**: better-auth `testUtils` behind a test route, if many roles or users per test make magic link login too slow · needs a decision
 
