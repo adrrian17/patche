@@ -67,7 +67,7 @@ jobs:
             exit 1
           fi
         env:
-          APP_ENV: development
+          APP_ENV: preview
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         working-directory: packages/infra
@@ -76,6 +76,6 @@ jobs:
         run: bunx varlock run --path ../../.env.schema -- bunx alchemy destroy --stage "$STAGE" --yes
         working-directory: packages/infra
         env:
-          APP_ENV: development
+          APP_ENV: preview
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

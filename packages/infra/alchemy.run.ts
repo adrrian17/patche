@@ -6,7 +6,7 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
-// Secrets come from Varlock (`varlock run -- ...`), which fills process.env from 1Password.
+// Secrets come from Varlock (`varlock run -- ...`), which fills process.env from .env.schema.
 
 const isProductionStage = process.env.STAGE === "production";
 
