@@ -1,10 +1,13 @@
 export {
   digitalObjectKey,
   digitalUploadTemporaryKey,
+  homeImageObjectKey,
+  homeImageSlots,
   mediaObjectKey,
   mediaPublicUrl,
 } from "./keys";
 export { createPresignedUrl, r2ObjectUrl } from "./presign";
+export type { HomeImageSlot } from "./keys";
 export type { PresignConfig, PresignInput } from "./presign";
 export {
   DIGITAL_FILE_MAX_BYTES,

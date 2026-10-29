@@ -1,10 +1,6 @@
 import { createDb } from "@patche/db";
 import { product, productMedia } from "@patche/db/schema/catalog";
-import {
-  MEDIA_FILE_MAX_BYTES,
-  mediaObjectKey,
-  mediaPublicUrl,
-} from "@patche/storage";
+import { mediaObjectKey, mediaPublicUrl } from "@patche/storage";
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, max } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -15,15 +11,8 @@ import {
   deleteStorageObjectWithRetry,
   getMediaBucket,
   getMediaPublicBaseUrl,
+  validateMediaFile,
 } from "@/lib/storage.server";
-
-const allowedMediaTypes = new Set([
-  "image/avif",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
 
 export const Route = createFileRoute("/api/admin/media")({
   server: {
@@ -41,11 +30,9 @@ export const Route = createFileRoute("/api/admin/media")({
         if (!(productId && file instanceof File)) {
           return new Response("Media inválida", { status: 400 });
         }
-        if (!allowedMediaTypes.has(file.type)) {
-          return new Response("Tipo de Media no permitido", { status: 400 });
-        }
-        if (file.size === 0 || file.size > MEDIA_FILE_MAX_BYTES) {
-          return new Response("Tamaño de Media no permitido", { status: 400 });
+        const invalidFile = validateMediaFile(file);
+        if (invalidFile) {
+          return invalidFile;
         }
 
         const db = createDb();
