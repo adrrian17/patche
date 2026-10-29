@@ -5,6 +5,7 @@ import { env } from "@patche/env/server";
 import {
   createPresignedUrl,
   DIGITAL_UPLOAD_EXPIRES_SECONDS,
+  MEDIA_FILE_MAX_BYTES,
   mediaObjectKey,
 } from "@patche/storage";
 import { and, eq, isNotNull } from "drizzle-orm";
@@ -21,6 +22,25 @@ function getPresignConfig() {
     bucket: env.DIGITAL_BUCKET_NAME,
     secretAccessKey: env.R2_SECRET_ACCESS_KEY,
   };
+}
+
+const allowedMediaTypes = new Set([
+  "image/avif",
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+// Returns the 400 response for an image the Media bucket must not store, or null when it is valid.
+export function validateMediaFile(file: File): Response | null {
+  if (!allowedMediaTypes.has(file.type)) {
+    return new Response("Tipo de Media no permitido", { status: 400 });
+  }
+  if (file.size === 0 || file.size > MEDIA_FILE_MAX_BYTES) {
+    return new Response("Tamaño de Media no permitido", { status: 400 });
+  }
+  return null;
 }
 
 export function getMediaBucket(): R2Bucket {

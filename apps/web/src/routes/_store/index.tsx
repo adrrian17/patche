@@ -2,37 +2,65 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowRightIcon, MailIcon, StarIcon } from "lucide-react";
 
 import { FeaturedProductCard } from "@/components/storefront/product-card";
+import { getHomeImages } from "@/functions/home-images";
 import { listStoreProducts } from "@/functions/storefront";
 import { handleNewsletterSubmit } from "@/lib/newsletter";
 
 export const Route = createFileRoute("/_store/")({
   component: HomePage,
-  loader: () => listStoreProducts({ data: { kind: "digital", limit: 4 } }),
+  loader: async () => {
+    const [digitalProducts, homeImages] = await Promise.all([
+      listStoreProducts({ data: { kind: "digital", limit: 4 } }),
+      getHomeImages(),
+    ]);
+    return { digitalProducts, homeImages };
+  },
 });
 
 const collections = [
   {
     alt: "Rollos de washi tape con patrones",
+    slot: "washi",
     cta: "Ver colección",
     ctaClassName: "text-brand",
     description: "Patrones que van con tu personalidad",
-    image: "/storefront/washi-tapes.jpg",
+    fallbackClassName: "bg-brand/30",
     overlayClassName: "bg-brand/40",
     title: "Washi tapes",
   },
   {
     alt: "Selección de plumas finas",
+    slot: "pens",
     cta: "Ver plumas",
     ctaClassName: "text-mustard",
     description: "Plumas que se deslizan sobre la página",
-    image: "/storefront/fine-pens.jpg",
+    fallbackClassName: "bg-mustard/30",
     overlayClassName: "bg-mustard/40",
     title: "Escritura fina",
   },
-];
+] as const;
+
+// An empty slot (a fresh stage before the Admin uploads) shows a color panel instead of a broken image.
+function HomeImage({
+  alt,
+  className,
+  fallbackClassName,
+  src,
+}: {
+  alt: string;
+  className: string;
+  fallbackClassName: string;
+  src: string | null;
+}) {
+  return src ? (
+    <img alt={alt} className={className} src={src} />
+  ) : (
+    <div aria-hidden className={`${className} ${fallbackClassName}`} />
+  );
+}
 
 function HomePage() {
-  const digitalProducts = Route.useLoaderData();
+  const { digitalProducts, homeImages } = Route.useLoaderData();
 
   return (
     <>
@@ -71,10 +99,11 @@ function HomePage() {
           </div>
           <div className="z-10 w-full max-w-md flex-1 md:max-w-none">
             <div className="relative">
-              <img
+              <HomeImage
                 alt="Agenda verde de tapa dura sobre un escritorio"
                 className="aspect-square w-full rotate-2 rounded-[2rem] object-cover shadow-2xl transition-transform duration-500 hover:rotate-0"
-                src="/storefront/hero-planner.jpg"
+                fallbackClassName="bg-brand/20"
+                src={homeImages.hero}
               />
               <div className="animate-float absolute -bottom-6 -left-6 flex items-center gap-3 rounded-3xl bg-white p-4 shadow-xl motion-reduce:animate-none">
                 <div className="bg-mustard flex size-10 items-center justify-center rounded-full text-white">
@@ -128,10 +157,11 @@ function HomePage() {
               className="group relative h-64 overflow-hidden rounded-[2rem]"
               key={collection.title}
             >
-              <img
+              <HomeImage
                 alt={collection.alt}
                 className="size-full object-cover transition-transform duration-700 group-hover:scale-110"
-                src={collection.image}
+                fallbackClassName={collection.fallbackClassName}
+                src={homeImages[collection.slot]}
               />
               <div
                 className={`absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white backdrop-blur-[2px] ${collection.overlayClassName}`}

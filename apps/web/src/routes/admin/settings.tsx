@@ -1,3 +1,4 @@
+import type { HomeImageSlot } from "@patche/storage";
 import { Button } from "@patche/ui/components/button";
 import {
   Card,
@@ -11,10 +12,12 @@ import { Input } from "@patche/ui/components/input";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { SaveIcon, Settings2Icon, TruckIcon } from "lucide-react";
+import { ImageIcon, SaveIcon, Settings2Icon, TruckIcon } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { getHomeImages } from "@/functions/home-images";
 import {
   getStoreSettings,
   updateShippingRate,
@@ -51,7 +54,10 @@ function SettingsPage() {
         </div>
       )}
       {settings.isSuccess && settings.data && (
-        <ShippingForm shippingRateAmount={settings.data.shippingRateAmount} />
+        <div className="flex flex-col gap-6">
+          <ShippingForm shippingRateAmount={settings.data.shippingRateAmount} />
+          <HomeImagesCard />
+        </div>
       )}
       {settings.isSuccess && !settings.data && (
         <p className="text-destructive text-sm">
@@ -130,5 +136,137 @@ function ShippingForm({ shippingRateAmount }: { shippingRateAmount: number }) {
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+const homeImageFields: { label: string; slot: HomeImageSlot }[] = [
+  { label: "Imagen principal", slot: "hero" },
+  { label: "Washi tapes", slot: "washi" },
+  { label: "Escritura fina", slot: "pens" },
+];
+const homeImagesQueryKey = ["admin", "home-images"];
+
+async function uploadHomeImage(slot: HomeImageSlot, file: File) {
+  const body = new FormData();
+  body.set("slot", slot);
+  body.set("file", file);
+  try {
+    const response = await fetch("/api/admin/home-images", {
+      body,
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    return true;
+  } catch (error) {
+    toast.error(
+      errorMessage(
+        error instanceof Error ? error : null,
+        "No se pudo subir la imagen"
+      )
+    );
+    return false;
+  }
+}
+
+function HomeImagesCard() {
+  const homeImages = useQuery({
+    queryFn: () => getHomeImages(),
+    queryKey: homeImagesQueryKey,
+  });
+  return (
+    <section aria-labelledby="home-images-title">
+      <Card className="max-w-xl rounded-xl shadow-sm">
+        <CardHeader>
+          <CardTitle
+            className="flex items-center gap-2 text-base font-semibold"
+            id="home-images-title"
+          >
+            <ImageIcon aria-hidden="true" className="text-primary size-4" />
+            Imágenes de inicio
+          </CardTitle>
+          <CardDescription>
+            Se muestran en la página de inicio de la tienda. Al subir una imagen
+            se reemplaza la anterior.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {homeImages.isError && (
+            <p className="text-destructive text-sm">
+              No se pudieron cargar las imágenes.
+            </p>
+          )}
+          {homeImages.isSuccess && (
+            <FieldGroup>
+              {homeImageFields.map(({ label, slot }) => (
+                <HomeImageField
+                  key={slot}
+                  label={label}
+                  slot={slot}
+                  url={homeImages.data[slot]}
+                />
+              ))}
+            </FieldGroup>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function HomeImageField({
+  label,
+  slot,
+  url,
+}: {
+  label: string;
+  slot: HomeImageSlot;
+  url: string | null;
+}) {
+  const queryClient = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+  const inputId = `home-image-${slot}`;
+
+  async function upload(file: File) {
+    setUploading(true);
+    const saved = await uploadHomeImage(slot, file);
+    setUploading(false);
+    if (saved) {
+      await queryClient.invalidateQueries({ queryKey: homeImagesQueryKey });
+      toast.success("Imagen guardada");
+    }
+  }
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <div className="flex items-center gap-4">
+        {url ? (
+          <img
+            alt=""
+            className="size-16 shrink-0 rounded-lg border object-cover"
+            src={url}
+          />
+        ) : (
+          <div className="bg-muted text-muted-foreground flex size-16 shrink-0 items-center justify-center rounded-lg border text-xs">
+            Vacía
+          </div>
+        )}
+        <Input
+          accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+          disabled={uploading}
+          id={inputId}
+          type="file"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) {
+              await upload(file);
+            }
+          }}
+        />
+      </div>
+    </Field>
   );
 }
