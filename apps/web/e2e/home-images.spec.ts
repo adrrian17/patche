@@ -15,7 +15,10 @@ const secondPng = Buffer.from(
   "base64"
 );
 
-const heroAlt = "Agenda verde de tapa dura sobre un escritorio";
+// Home images are decorative (alt=""), so they are found by their R2 source.
+function slotImage(page: Page, slot: string) {
+  return page.locator(`main img[src*="/api/media/home/${slot}/"]`);
+}
 
 async function uploadHero(page: Page, png: Buffer) {
   const section = page.getByRole("region", { name: "Imágenes de inicio" });
@@ -33,8 +36,8 @@ async function uploadHero(page: Page, png: Buffer) {
 
 async function heroSrc(page: Page) {
   await page.goto("/");
-  const hero = page.getByRole("img", { name: heroAlt });
-  await expect(hero).toHaveAttribute("src", /\/api\/media\/home\/hero\//u);
+  const hero = slotImage(page, "hero");
+  await expect(hero).toHaveAttribute("alt", "");
   await expect
     .poll(() => hero.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBe(1);
@@ -57,9 +60,7 @@ test("the Admin replaces the Home hero image stored in R2", async ({
   expect(oldImage.status()).toBe(404);
 
   // No test uploads the pens slot, so it shows the color panel, not a broken image.
-  await expect(
-    page.getByRole("img", { name: "Selección de plumas finas" })
-  ).toHaveCount(0);
+  await expect(slotImage(page, "pens")).toHaveCount(0);
   await testInfo.attach("home-with-r2-hero", {
     body: await page.screenshot({ fullPage: true }),
     contentType: "image/png",

@@ -49,7 +49,7 @@ loader: async () => {
   ]);
   return { digitalProducts, homeImages };
 },
-// <HomeImage src={homeImages.hero} alt="…" className="…" fallbackClassName="bg-mint" />
+// <HomeImage src={homeImages.hero} className="…" fallbackClassName="bg-brand/20" />
 ```
 
 Types and signatures:
@@ -82,7 +82,7 @@ export function validateMediaFile(file: unknown): Response | null; // null when 
 
 UI:
 
-- `/admin/settings` gets a "Imágenes de inicio" section with three rows (preview, file input, upload button) that follow the existing Media upload controls. Alt text stays hardcoded in Home because it describes the fixed design copy.
+- `/admin/settings` gets a "Imágenes de inicio" section with three rows (preview, file input, upload button) that follow the existing Media upload controls. Home images are decorative (`alt=""`): an uploaded photo can show anything, and the adjacent copy already names each block. Collection fallbacks use a dark background under the color overlay so the white copy keeps its contrast. Changed after PR #17 review (CodeRabbit), approved by the owner on 2026-10-28.
 - Home gets a small local `HomeImage` component: it renders `<img>` when `src` is set, otherwise an `aria-hidden` `div` with the same box classes plus the fallback color.
 
 ## Build plan
@@ -101,4 +101,4 @@ UI:
 
 ## Follow-up
 
-- Editable alt text or more slots only if the Home design starts changing often. Not requested.
+- Per-upload alt text or more slots only if the Home design starts changing often. Not requested.

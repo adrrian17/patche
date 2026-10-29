@@ -19,41 +19,39 @@ export const Route = createFileRoute("/_store/")({
 
 const collections = [
   {
-    alt: "Rollos de washi tape con patrones",
     slot: "washi",
     cta: "Ver colección",
     ctaClassName: "text-brand",
     description: "Patrones que van con tu personalidad",
-    fallbackClassName: "bg-brand/30",
+    // Dark under the color overlay so the white copy stays readable without a photo.
+    fallbackClassName: "bg-slate-800",
     overlayClassName: "bg-brand/40",
     title: "Washi tapes",
   },
   {
-    alt: "Selección de plumas finas",
     slot: "pens",
     cta: "Ver plumas",
     ctaClassName: "text-mustard",
     description: "Plumas que se deslizan sobre la página",
-    fallbackClassName: "bg-mustard/30",
+    fallbackClassName: "bg-slate-800",
     overlayClassName: "bg-mustard/40",
     title: "Escritura fina",
   },
 ] as const;
 
 // An empty slot (a fresh stage before the Admin uploads) shows a color panel instead of a broken image.
+// Decorative: an uploaded photo can show anything, and the adjacent copy already names each block.
 function HomeImage({
-  alt,
   className,
   fallbackClassName,
   src,
 }: {
-  alt: string;
   className: string;
   fallbackClassName: string;
   src: string | null;
 }) {
   return src ? (
-    <img alt={alt} className={className} src={src} />
+    <img alt="" className={className} src={src} />
   ) : (
     <div aria-hidden className={`${className} ${fallbackClassName}`} />
   );
@@ -100,7 +98,6 @@ function HomePage() {
           <div className="z-10 w-full max-w-md flex-1 md:max-w-none">
             <div className="relative">
               <HomeImage
-                alt="Agenda verde de tapa dura sobre un escritorio"
                 className="aspect-square w-full rotate-2 rounded-[2rem] object-cover shadow-2xl transition-transform duration-500 hover:rotate-0"
                 fallbackClassName="bg-brand/20"
                 src={homeImages.hero}
@@ -158,7 +155,6 @@ function HomePage() {
               key={collection.title}
             >
               <HomeImage
-                alt={collection.alt}
                 className="size-full object-cover transition-transform duration-700 group-hover:scale-110"
                 fallbackClassName={collection.fallbackClassName}
                 src={homeImages[collection.slot]}

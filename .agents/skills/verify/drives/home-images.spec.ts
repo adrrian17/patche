@@ -16,11 +16,8 @@ const pngs = {
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4cMAAAASEAeFrDGXYAAAAAElFTkSuQmCC",
 };
 
-const homeAlts = {
-  hero: "Agenda verde de tapa dura sobre un escritorio",
-  pens: "Selección de plumas finas",
-  washi: "Rollos de washi tape con patrones",
-};
+// Home images are decorative (alt=""), so they are found by their R2 source.
+const slots = ["hero", "washi", "pens"];
 
 test("the Admin fills the three Home image slots and the Home serves them from R2", async ({
   page,
@@ -29,7 +26,7 @@ test("the Admin fills the three Home image slots and the Home serves them from R
     page.screenshot({ fullPage: true, path: testInfo.outputPath(name) });
 
   await page.goto("/");
-  await expect(page.getByRole("img", { name: homeAlts.hero })).toHaveCount(0);
+  await expect(page.locator('main img[src*="/api/media/home/"]')).toHaveCount(0);
   await shot("1-home-empty-slots.png");
 
   await page.goto("/admin/settings");
@@ -56,8 +53,8 @@ test("the Admin fills the three Home image slots and the Home serves them from R
 
   await page.goto("/");
   const rows: Record<string, unknown> = {};
-  for (const [slot, alt] of Object.entries(homeAlts)) {
-    const image = page.getByRole("img", { name: alt });
+  for (const slot of slots) {
+    const image = page.locator(`main img[src*="/api/media/home/${slot}/"]`);
     // oxlint-disable-next-line no-await-in-loop -- sequential checks keep the evidence ordered
     await expect(image).toHaveAttribute(
       "src",
