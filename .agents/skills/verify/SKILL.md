@@ -13,9 +13,9 @@ All helpers live in `.claude/skills/verify/scripts/` and run from any directory 
 
 The app is pinned to port `3001` (`strictPort`, and Better Auth's URL is derived from it). Only ONE instance can run, so a verify run cannot coexist with the user's `bun run dev` or a `bun run test:e2e` run. `launch.sh` refuses to start when `:3001` is taken. Never stop a server you did not start; ask the user to stop theirs instead.
 
-The verify instance uses its own Alchemy stage (`verify`) with a fresh local D1 and R2 each launch, and `APP_ENV=e2e` so Stripe uses the E2E test keys. It never touches the user's `dev_*` stage data.
+The verify instance uses its own Alchemy stage (`verify`) with a fresh local D1 and R2 each launch, and `APP_ENV=e2e`, so every secret except Stripe is a placeholder from `.env.schema`. It never touches the user's `dev_*` stage data.
 
-Requires the 1Password desktop app to be unlocked (Varlock reads `op://Patche/Development/*` and `op://Patche/E2E/*`). Check with `APP_ENV=e2e bunx varlock load` if launch fails on secrets.
+Does not need 1Password. It needs a Stripe test-mode `STRIPE_SECRET_KEY` in the git-ignored `.env.local` or `.env.e2e.local` at the repository root. Check with `APP_ENV=e2e bunx varlock load` if launch fails on secrets, and ask the user to add the key if it is missing.
 
 ## Launch
 

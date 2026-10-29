@@ -81,14 +81,8 @@ jobs:
 
       - name: Run E2E tests
         run: bun run test:e2e
-        # Varlock reads the Stripe keys from the E2E item in 1Password (.env.schema). The other values run on local D1 and the Alchemy email simulator, so placeholders are enough.
-        # `alchemy dev` in CI insists on Cloudflare credentials but never calls the API for local resources.
+        # Varlock reads STRIPE_SECRET_KEY from the E2E item in 1Password; every other e2e value is a placeholder in .env.schema.
         env:
-          CLOUDFLARE_ACCOUNT_ID: "00000000000000000000000000000000"
-          CLOUDFLARE_API_TOKEN: ci-placeholder
-          BETTER_AUTH_SECRET: ci-placeholder-better-auth-secret-000000
-          R2_ACCESS_KEY_ID: ci-placeholder-r2-access-key-id
-          R2_SECRET_ACCESS_KEY: ci-placeholder-r2-secret-access-key
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Upload Playwright report and traces
@@ -144,7 +138,7 @@ jobs:
           bunx varlock run --path ../../.env.schema -- bunx alchemy deploy "${args[@]}"
         working-directory: packages/infra
         env:
-          APP_ENV: ${{ github.event_name == 'pull_request' && 'development' || 'production' }}
+          APP_ENV: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

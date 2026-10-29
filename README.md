@@ -104,7 +104,15 @@ Run the shadcn/ui CLI from `apps/web` when adding a block used only by the store
 
 `packages/infra/alchemy.run.ts` declares every Cloudflare resource: the web Worker, the D1 database, the media and digital R2 buckets, and the email binding. Alchemy creates and updates those resources, applies D1 migrations, builds the app with Vite, and uploads the Worker. The Worker is served from its `workers.dev` URL, which Alchemy also passes to the app as `BETTER_AUTH_URL` and `MEDIA_PUBLIC_BASE_URL`. The Worker proxies media requests.
 
-Varlock reads secrets from the root `.env.schema` through the 1Password plugin and passes them to Alchemy as environment variables. `APP_ENV` defaults to `production`; `bun run dev` sets `development`.
+Varlock reads secrets from the root `.env.schema` and passes them to Alchemy as environment variables. `APP_ENV` defaults to `production`, which reads the Production items in 1Password. Pull request previews set `preview`, which reads the Development items. `bun run dev` sets `development` and `bun run test:e2e` sets `e2e`. Both run on local D1, R2, and email, so they use placeholders from `.env.schema` and never open 1Password.
+
+The one real local secret is a Stripe test-mode key. Put it once in a git-ignored `.env.local` at the repository root:
+
+```bash
+STRIPE_SECRET_KEY=sk_test_...
+```
+
+Use `.env.development.local` or `.env.e2e.local` instead when dev and E2E need different Stripe sandboxes. Run `APP_ENV=e2e bunx varlock load` to check the result.
 
 Deploy production from your machine:
 
@@ -115,7 +123,7 @@ bun run deploy       # deploys the production stage from packages/infra
 
 Deployment state lives in a Cloudflare Worker that Alchemy creates on the first deploy, so any authorized machine sees the same resources. Local development and E2E keep their state in `packages/infra/.alchemy` and need no Cloudflare credentials.
 
-GitHub Actions deploys on its own. A push to `main` deploys the `production` stage. Each pull request deploys an isolated `pr-<number>` stage, comments the Worker URL on the pull request, and destroys that stage when the pull request closes. Preview stages read the Development items in 1Password. Varlock loads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from those items. Add `OP_SERVICE_ACCOUNT_TOKEN` as a repository secret so Actions can reach 1Password. Add a `CLOUDFLARE_API_TOKEN` field to the Production and Development items in the Patche vault.
+GitHub Actions deploys on its own. A push to `main` deploys the `production` stage. Each pull request deploys an isolated `pr-<number>` stage, comments the Worker URL on the pull request, and destroys that stage when the pull request closes. Preview stages run with `APP_ENV=preview` and read the Development items in 1Password. Varlock loads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from those items. Add `OP_SERVICE_ACCOUNT_TOKEN` as a repository secret so Actions can reach 1Password. Add a `CLOUDFLARE_API_TOKEN` field to the Production and Development items in the Patche vault.
 
 Any other stage name deploys an isolated copy of the whole stack, for example `bunx varlock run -- turbo run deploy -F @patche/infra -- --stage preview`. Remove it with `bun run destroy -- --stage preview`.
 
