@@ -42,7 +42,7 @@ Open questions: whether catalog server functions can be called cleanly from `pag
 | 6   | Payments integration coverage   | Slice 5    | done        |
 | 8   | Purchase E2E on the storefront  | Slice 6    | done        |
 | 9   | Customer orders page            | Slice 7    | done        |
-| 10  | Home images in R2               | Slice 8    | in-progress |
+| 10  | Home images in R2               | Slice 8    | done        |
 
 ## Already built
 
@@ -167,7 +167,7 @@ code in `apps/web/src/functions/customer-orders.ts`, `apps/web/src/routes/_auth/
 
 ## Slice 8: Home images in R2
 
-### 10. Home images in R2 · in-progress
+### 10. Home images in R2 · done
 
 The three home page images live in the repo (`apps/web/public/storefront/`). Serve them from R2 instead, which needs an upload path that does not depend on a Product. **Done when:** the home page renders its hero and collection images from R2 and no image file is committed.
 

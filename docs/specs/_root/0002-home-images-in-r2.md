@@ -1,6 +1,6 @@
 # 0002. Serve Home images from R2 through Admin-managed slots
 
-**Date**: 2026-10-28 **Status**: In Progress
+**Date**: 2026-10-28 **Status**: Accepted
 
 ## Summary
 
