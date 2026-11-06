@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": ["VITE_NEWSLETTER_ENABLED"],
   "remoteCache": { "signature": true },
   "tasks": {
     "build": {

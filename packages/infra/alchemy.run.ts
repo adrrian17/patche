@@ -70,6 +70,7 @@ export const Web = Cloudflare.Website.Vite("Web", {
     R2_SECRET_ACCESS_KEY: Config.Redacted("R2_SECRET_ACCESS_KEY"),
     STRIPE_SECRET_KEY: Config.Redacted("STRIPE_SECRET_KEY"),
     STRIPE_WEBHOOK_SECRET: Config.Redacted("STRIPE_WEBHOOK_SECRET"),
+    VITE_NEWSLETTER_ENABLED: process.env.VITE_NEWSLETTER_ENABLED ?? "false",
   },
   rootDir: "../../apps/web",
 });

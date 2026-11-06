@@ -1,3 +1,4 @@
+import { env } from "@patche/env/web";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowRightIcon, MailIcon, StarIcon } from "lucide-react";
 
@@ -177,40 +178,42 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto mb-20 px-4 py-16">
-        <div className="bg-brand flex flex-col items-center rounded-3xl p-8 text-center text-white md:p-16">
-          <MailIcon aria-hidden className="mb-4 size-12" strokeWidth={1.5} />
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Únete a la comunidad Patche
-          </h2>
-          <p className="mb-8 max-w-xl text-white/80">
-            Obtén 10% de descuento en tu primera compra y entérate de nuevos
-            productos, tips de planeación y descargables exclusivos.
-          </p>
-          <form
-            className="flex w-full max-w-lg flex-col gap-4 sm:flex-row"
-            onSubmit={handleNewsletterSubmit}
-          >
-            <label className="sr-only" htmlFor="home-newsletter-email">
-              Correo electrónico
-            </label>
-            <input
-              autoComplete="email"
-              className="focus:ring-mustard flex-1 rounded-3xl border-none bg-white px-6 py-4 text-slate-900 outline-none focus:ring-2"
-              id="home-newsletter-email"
-              placeholder="Escribe tu correo"
-              required
-              type="email"
-            />
-            <button
-              className="bg-mustard hover:bg-mustard/90 rounded-3xl px-8 py-4 font-bold shadow-lg transition-colors"
-              type="submit"
+      {env.VITE_NEWSLETTER_ENABLED ? (
+        <section className="container mx-auto mb-20 px-4 py-16">
+          <div className="bg-brand flex flex-col items-center rounded-3xl p-8 text-center text-white md:p-16">
+            <MailIcon aria-hidden className="mb-4 size-12" strokeWidth={1.5} />
+            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+              Únete a la comunidad Patche
+            </h2>
+            <p className="mb-8 max-w-xl text-white/80">
+              Obtén 10% de descuento en tu primera compra y entérate de nuevos
+              productos, tips de planeación y descargables exclusivos.
+            </p>
+            <form
+              className="flex w-full max-w-lg flex-col gap-4 sm:flex-row"
+              onSubmit={handleNewsletterSubmit}
             >
-              Suscribirme
-            </button>
-          </form>
-        </div>
-      </section>
+              <label className="sr-only" htmlFor="home-newsletter-email">
+                Correo electrónico
+              </label>
+              <input
+                autoComplete="email"
+                className="focus:ring-mustard flex-1 rounded-3xl border-none bg-white px-6 py-4 text-slate-900 outline-none focus:ring-2"
+                id="home-newsletter-email"
+                placeholder="Escribe tu correo"
+                required
+                type="email"
+              />
+              <button
+                className="bg-mustard hover:bg-mustard/90 rounded-3xl px-8 py-4 font-bold shadow-lg transition-colors"
+                type="submit"
+              >
+                Suscribirme
+              </button>
+            </form>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }
