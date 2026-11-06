@@ -64,3 +64,5 @@ No hay bloqueo para revisar el cambio local. No se ejecutaron la suite E2E compl
 ## Continuación del 2026-11-06
 
 El usuario autorizó crear el commit y abrir un PR hacia `main`. La autorización no incluye merge ni despliegue manual. Se conserva este handoff como registro de la entrega inicial y de sus verificaciones.
+
+La revisión independiente previa al PR encontró que Alchemy no detectaba un cambio exclusivo del flag. Se reprodujo con su provider instalado, sin red, un plan `noop` al pasar de `false` a `true`. El flag queda declarado también en `Web.env` de `packages/infra/alchemy.run.ts`. La comprobación corregida conserva `noop` sin cambios y produce `update` cuando cambia el flag. No se ejecutó ningún despliegue.
