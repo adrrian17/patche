@@ -68,7 +68,7 @@
     "lodash": "4.18.0",
     "srvx": "0.12.0",
     "valibot": "1.4.2",
-    "workerd": "1.20260901.1"
+    "workerd": "1.20261026.1"
   },
   "packageManager": "bun@1.4.0"
 }
