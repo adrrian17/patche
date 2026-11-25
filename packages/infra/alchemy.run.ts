@@ -9,6 +9,10 @@ import * as Layer from "effect/Layer";
 // Secrets come from Varlock (`varlock run -- ...`), which fills process.env from .env.schema.
 
 const isProductionStage = process.env.STAGE === "production";
+const isE2eDev =
+  Boolean(process.env.ALCHEMY_DEV) &&
+  process.env.APP_ENV === "e2e" &&
+  !isProductionStage;
 
 const Database = Cloudflare.D1.Database("Database", {
   migrations: "../../packages/db/src/migrations",
@@ -44,35 +48,45 @@ const AuthEmail = Cloudflare.Email.SendEmail("AuthEmail", {
   allowedSenderAddresses: ["noreply@adrianayala.mx"],
 });
 
+const baseWebEnv = {
+  AUTH_EMAIL: AuthEmail,
+  BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
+  BETTER_AUTH_URL: Cloudflare.Worker.URL,
+  // Only presigned R2 URLs need it; local dev serves R2 through the Worker.
+  CF_ACCOUNT_ID: Config.String("CLOUDFLARE_ACCOUNT_ID"),
+  DB: Database,
+  DIGITAL_BUCKET: DigitalBucket,
+  DIGITAL_BUCKET_NAME: DigitalBucket.pipe(
+    Effect.map((bucket) => bucket.bucketName)
+  ),
+  // Local R2 has no S3 endpoint, so `alchemy dev` uploads Digital Files through the Worker.
+  DIGITAL_UPLOAD_TRANSPORT:
+    process.env.ALCHEMY_DEV && !isProductionStage ? "worker" : "presigned",
+  MEDIA_BUCKET: MediaBucket,
+  // Media is served through the Worker (/media proxy), so it shares the Worker URL.
+  MEDIA_PUBLIC_BASE_URL: Cloudflare.Worker.URL,
+  MEDIA_PUBLIC_PROXY: "true",
+  R2_ACCESS_KEY_ID: Config.Redacted("R2_ACCESS_KEY_ID"),
+  R2_SECRET_ACCESS_KEY: Config.Redacted("R2_SECRET_ACCESS_KEY"),
+  STRIPE_SECRET_KEY: Config.Redacted("STRIPE_SECRET_KEY"),
+  STRIPE_WEBHOOK_SECRET: Config.Redacted("STRIPE_WEBHOOK_SECRET"),
+  VITE_NEWSLETTER_ENABLED: process.env.VITE_NEWSLETTER_ENABLED ?? "false",
+};
+
+const webEnv = isE2eDev
+  ? {
+      ...baseWebEnv,
+      APP_ENV: "e2e",
+      E2E_SEED_TOKEN: process.env.E2E_SEED_TOKEN ?? "",
+    }
+  : baseWebEnv;
+
 export const Web = Cloudflare.Website.Vite("Web", {
   // Matches the integration tests in apps/web/vitest.config.ts.
   compatibility: { date: "2026-08-15" },
   // WEB_PORT lets a second local instance run when :3001 is taken.
   dev: { port: Number(process.env.WEB_PORT ?? 3001), strictPort: true },
-  env: {
-    AUTH_EMAIL: AuthEmail,
-    BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL: Cloudflare.Worker.URL,
-    // Only presigned R2 URLs need it; local dev serves R2 through the Worker.
-    CF_ACCOUNT_ID: Config.String("CLOUDFLARE_ACCOUNT_ID"),
-    DB: Database,
-    DIGITAL_BUCKET: DigitalBucket,
-    DIGITAL_BUCKET_NAME: DigitalBucket.pipe(
-      Effect.map((bucket) => bucket.bucketName)
-    ),
-    // Local R2 has no S3 endpoint, so `alchemy dev` uploads Digital Files through the Worker.
-    DIGITAL_UPLOAD_TRANSPORT:
-      process.env.ALCHEMY_DEV && !isProductionStage ? "worker" : "presigned",
-    MEDIA_BUCKET: MediaBucket,
-    // Media is served through the Worker (/media proxy), so it shares the Worker URL.
-    MEDIA_PUBLIC_BASE_URL: Cloudflare.Worker.URL,
-    MEDIA_PUBLIC_PROXY: "true",
-    R2_ACCESS_KEY_ID: Config.Redacted("R2_ACCESS_KEY_ID"),
-    R2_SECRET_ACCESS_KEY: Config.Redacted("R2_SECRET_ACCESS_KEY"),
-    STRIPE_SECRET_KEY: Config.Redacted("STRIPE_SECRET_KEY"),
-    STRIPE_WEBHOOK_SECRET: Config.Redacted("STRIPE_WEBHOOK_SECRET"),
-    VITE_NEWSLETTER_ENABLED: process.env.VITE_NEWSLETTER_ENABLED ?? "false",
-  },
+  env: webEnv,
   rootDir: "../../apps/web",
 });
 
