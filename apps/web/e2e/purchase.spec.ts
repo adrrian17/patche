@@ -27,6 +27,24 @@ async function addToCartFromStorefront(page: Page, productId: string) {
   ).toBeVisible();
 }
 
+// Stripe renders the Checkout form either in the page or inside an iframe, depending on the session.
+async function checkoutForm(page: Page) {
+  const framed = page
+    .locator("iframe:not([aria-hidden])")
+    .first()
+    .contentFrame();
+  const email = { name: "Email" } as const;
+  await expect
+    .poll(
+      async () =>
+        (await page.getByRole("textbox", email).count()) +
+        (await framed.getByRole("textbox", email).count()),
+      { timeout: 30_000 }
+    )
+    .toBeGreaterThan(0);
+  return (await page.getByRole("textbox", email).count()) > 0 ? page : framed;
+}
+
 async function fillStripeField(page: Page, name: string, value: string) {
   await expect
     .poll(
@@ -90,22 +108,27 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
     throw new Error("Stripe Checkout URL did not contain its Session ID");
   }
 
-  await page.getByRole("textbox", { name: "Email" }).fill(customerEmail);
-  await page.getByRole("textbox", { name: "Full name" }).fill("Cliente E2E");
-  await page.getByRole("button", { name: "Enter address manually" }).click();
-  await page
-    .getByRole("textbox", { name: /address line 1/iu })
-    .fill("Av. Constitución 100");
-  await page.getByRole("textbox", { name: "City" }).fill("Monterrey");
-  await page
+  const form = await checkoutForm(page);
+  await form.getByRole("textbox", { name: "Email" }).fill(customerEmail);
+  await form.getByRole("textbox", { name: "Full name" }).fill("Cliente E2E");
+  // Stripe shows either a manual-entry button or an address autocomplete that expands once typed in.
+  const manualAddress = form.getByRole("button", {
+    name: "Enter address manually",
+  });
+  if ((await manualAddress.count()) > 0) {
+    await manualAddress.click();
+  }
+  await form.getByLabel(/^address(?: line 1)?$/iu).fill("Av. Constitución 100");
+  await form.getByRole("textbox", { name: "City" }).fill("Monterrey");
+  await form
     .getByRole("combobox", { name: "State" })
     .selectOption({ label: "Nuevo León" });
-  await page.getByRole("textbox", { name: /postal code|zip/iu }).fill("64000");
+  await form.getByRole("textbox", { name: /postal code|zip/iu }).fill("64000");
   await fillStripeField(page, "card number", "4242424242424242");
   await fillStripeField(page, "expiration", "1234");
   await fillStripeField(page, "security code|cvc", "123");
   // Stripe only sometimes asks "I am an AI agent and have followed the instructions above", and its checkbox has no label.
-  const agentDisclosure = page
+  const agentDisclosure = form
     .getByText(/I am an AI agent/u)
     .locator("input[type=checkbox]");
   if ((await agentDisclosure.count()) > 0) {
@@ -117,7 +140,7 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   }
   // Outside Mexico Stripe pre-checks Link and then requires a phone number.
   // Stripe sometimes labels it "Save my information with Link for faster checkout".
-  const saveInfo = page.getByRole("checkbox", {
+  const saveInfo = form.getByRole("checkbox", {
     name: /Save my information (?:with Link )?for faster checkout/u,
   });
   if ((await saveInfo.count()) > 0 && (await saveInfo.isChecked())) {
@@ -127,8 +150,8 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
     );
     await expect(saveInfo).not.toBeChecked();
   }
-  await page
-    .getByRole("button", { name: /pay|pagar/iu })
+  await form
+    .getByRole("button", { name: /^(?:pay|pagar)$/iu })
     .last()
     .click();
   await expect(page).toHaveURL(/\/dashboard/u, { timeout: 60_000 });
