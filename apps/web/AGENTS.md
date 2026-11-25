@@ -14,7 +14,8 @@ This workspace contains the TanStack Start storefront and admin application. It 
 | `src/components/storefront/` | Storefront header, footer, and product cards |
 | `src/lib/cart.ts` | Cart state kept in the browser |
 | `src/functions/` | Server functions used by routes and components |
-| `scripts/seed-storefront/` | Demo catalog seed for local development |
+| `scripts/seed-storefront/` | Local storefront seed using `src/lib/demo-catalog.ts` |
+| `scripts/seed-preview.ts` | Post-deploy PR preview seed runner for `/api/preview/seed` |
 | `src/middleware/` | Authentication and admin access checks |
 | `vite.config.ts` | TanStack Start, React, Tailwind, and Cloudflare build setup |
 | `nitro.config.ts` | Nitro server configuration |
@@ -32,7 +33,7 @@ bun run test:e2e
 bun run --cwd apps/web seed:storefront
 ```
 
-`seed:storefront` needs `bun run dev` running on port `3001`. It creates demo Products (slugs start with `demo-`) and uploads placeholder images from picsum.photos into local R2. Rerunning skips Products that already exist.
+`seed:storefront` needs `bun run dev` running on port `3001`. It creates demo Products from `src/lib/demo-catalog.ts` (slugs start with `demo-`) and uploads stationery images (with `picsum.photos` fallback) into local R2. Rerunning skips Products that already exist.
 
 ## Conventions
 

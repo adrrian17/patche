@@ -5,7 +5,15 @@ import { readFileSync, readdirSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 
-import { categories, products } from "./catalog";
+import {
+  demoCategories,
+  demoImageSources,
+  demoProducts,
+  demoShippingRateAmount,
+  demoVariantSku,
+  slugifyDemoProduct,
+} from "../../src/lib/demo-catalog";
+import type { DemoImageKey } from "../../src/lib/demo-catalog";
 
 const baseURL = process.env.SEED_BASE_URL ?? "http://localhost:3001";
 const alchemyDir = path.resolve(
@@ -25,15 +33,6 @@ const signInEndpoint = "sign-in/email";
 
 function randomId() {
   return crypto.randomUUID().replaceAll("-", "").slice(0, 21);
-}
-
-function slugify(name: string) {
-  return `demo-${name
-    .normalize("NFD")
-    .replaceAll(/[̀-ͯ]/gu, "")
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/gu, "-")
-    .replaceAll(/^-|-$/gu, "")}`;
 }
 
 interface AuthBody {
@@ -140,11 +139,20 @@ async function signInSeedAdmin() {
 async function uploadImage(
   cookie: string,
   productId: string,
-  image: string,
+  image: DemoImageKey,
   alt: string
 ) {
-  // Placeholder photos: nothing is stored in the repo, the file goes straight to local R2.
-  const source = await fetch(`https://picsum.photos/seed/${image}/800/800.jpg`);
+  // Stock photos: nothing is stored in the repo, the file goes straight to local R2.
+  const { fallbackUrl, primaryUrl } = demoImageSources[image];
+  let source: Response | null = null;
+  try {
+    source = await fetch(primaryUrl);
+  } catch {
+    // Fall back to the placeholder below.
+  }
+  if (!source?.ok) {
+    source = await fetch(fallbackUrl);
+  }
   if (!source.ok) {
     throw new Error(`Download of ${image} failed: ${source.status}`);
   }
@@ -172,7 +180,7 @@ async function uploadImage(
 const { cookie, db } = await signInSeedAdmin();
 
 const categoryIds = new Map<string, string>();
-for (const category of categories) {
+for (const category of demoCategories) {
   db.query(
     "INSERT OR IGNORE INTO category (id, name, slug) VALUES (?, ?, ?)"
   ).run(randomId(), category.name, category.slug);
@@ -184,14 +192,15 @@ for (const category of categories) {
   }
 }
 
-db.query(
-  "INSERT OR IGNORE INTO store_setting (key, value) VALUES (?, '9900')"
-).run(shippingRateKey);
+db.query("INSERT OR IGNORE INTO store_setting (key, value) VALUES (?, ?)").run(
+  shippingRateKey,
+  demoShippingRateAmount
+);
 
 let created = 0;
 const now = Date.now();
-for (const [index, item] of products.entries()) {
-  const slug = slugify(item.name);
+for (const [index, item] of demoProducts.entries()) {
+  const slug = slugifyDemoProduct(item.name);
   const existing = db
     .query<{ id: string }, [string]>("SELECT id FROM product WHERE slug = ?")
     .get(slug);
@@ -211,7 +220,7 @@ for (const [index, item] of products.entries()) {
   }
   const productId = randomId();
   // Stagger creation times so "Más recientes" has a stable order.
-  const createdAt = now - (products.length - index) * 60_000;
+  const createdAt = now - (demoProducts.length - index) * 60_000;
   db.query(
     "INSERT INTO product (id, name, slug, description, status, category_id, created_at, updated_at) VALUES (?, ?, ?, ?, 'active', ?, ?, ?)"
   ).run(
@@ -223,7 +232,7 @@ for (const [index, item] of products.entries()) {
     createdAt,
     createdAt
   );
-  for (const variant of item.variants) {
+  for (const [variantIndex, variant] of item.variants.entries()) {
     const variantId = randomId();
     db.query(
       "INSERT INTO variant (id, product_id, name, sku, kind, price_amount) VALUES (?, ?, ?, ?, ?, ?)"
@@ -231,7 +240,7 @@ for (const [index, item] of products.entries()) {
       variantId,
       productId,
       variant.name,
-      `DEMO-${variantId}`,
+      demoVariantSku(slug, variantIndex),
       variant.kind,
       variant.price
     );
@@ -251,5 +260,5 @@ for (const [index, item] of products.entries()) {
 
 db.close();
 console.log(
-  `${created} Products created, ${products.length - created} already existed.`
+  `${created} Products created, ${demoProducts.length - created} already existed.`
 );
