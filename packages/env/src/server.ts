@@ -16,6 +16,7 @@ export interface ServerEnv {
   MEDIA_BUCKET: R2Bucket;
   MEDIA_PUBLIC_BASE_URL: string;
   MEDIA_PUBLIC_PROXY: string;
+  PREVIEW_SEED_TOKEN?: string;
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
   STRIPE_SECRET_KEY: string;
