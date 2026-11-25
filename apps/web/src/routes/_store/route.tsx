@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/storefront/site-footer";
 import { SiteHeader } from "@/components/storefront/site-header";
 import { getUser } from "@/functions/get-user";
 import { listStoreCategories } from "@/functions/storefront";
+import type { StoreCategory } from "@/functions/storefront";
 
 export const Route = createFileRoute("/_store")({
   beforeLoad: async () => {
@@ -11,7 +12,14 @@ export const Route = createFileRoute("/_store")({
     return { user: session?.user ?? null };
   },
   component: StoreLayout,
-  loader: () => listStoreCategories(),
+  // The header links are optional; a failure must never take the page down.
+  loader: async (): Promise<StoreCategory[]> => {
+    try {
+      return await listStoreCategories();
+    } catch {
+      return [];
+    }
+  },
 });
 
 function StoreLayout() {

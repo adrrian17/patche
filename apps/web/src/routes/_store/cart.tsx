@@ -26,7 +26,7 @@ import {
 } from "@/components/storefront/product-card";
 import { createCheckoutSession } from "@/functions/create-checkout-session";
 import { getCartDetails, listStoreProducts } from "@/functions/storefront";
-import type { CartLineDetail } from "@/functions/storefront";
+import type { CartLineDetail, StoreProductCard } from "@/functions/storefront";
 import {
   cartCount,
   clearCart,
@@ -39,7 +39,14 @@ import { errorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/_store/cart")({
-  loader: () => listStoreProducts({ data: { limit: 8 } }),
+  // Suggestions are optional; a failure must never block the cart or checkout.
+  loader: async (): Promise<StoreProductCard[]> => {
+    try {
+      return await listStoreProducts({ data: { limit: 8 } });
+    } catch {
+      return [];
+    }
+  },
   head: () => ({ meta: [{ title: "Carrito · Patche" }] }),
   component: CartPage,
 });

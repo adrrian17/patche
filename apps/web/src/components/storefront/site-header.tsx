@@ -147,7 +147,11 @@ function CategoryNav({
   const link = `relative flex items-center whitespace-nowrap transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full hover:text-slate-900 ${focusRing} ${linkClassName}`;
 
   return (
-    <nav aria-label="Principal" className={className}>
+    // Scrolls sideways instead of overlapping the search when the categories do not fit.
+    <nav
+      aria-label="Principal"
+      className={`[scrollbar-width:none] overflow-x-auto ${className}`}
+    >
       <ul className="flex h-full items-center gap-4 text-sm font-medium text-slate-600 2xl:gap-6 2xl:text-[0.95rem]">
         <li className="h-full">
           <Link

@@ -3,6 +3,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { SiteHeader } from "@/components/storefront/site-header";
 import { listStoreCategories } from "@/functions/storefront";
+import type { StoreCategory } from "@/functions/storefront";
 
 export const Route = createFileRoute("/_auth/dashboard")({
   beforeLoad: ({ context }) => {
@@ -10,7 +11,14 @@ export const Route = createFileRoute("/_auth/dashboard")({
       throw redirect({ to: "/admin" });
     }
   },
-  loader: () => listStoreCategories(),
+  // The header links are optional; a failure must never take the page down.
+  loader: async (): Promise<StoreCategory[]> => {
+    try {
+      return await listStoreCategories();
+    } catch {
+      return [];
+    }
+  },
   component: DashboardLayout,
 });
 

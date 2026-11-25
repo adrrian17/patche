@@ -90,6 +90,9 @@ function CustomerOrderPage() {
   const order = orderQuery.data;
   const hasPhysicalItems = order.items.some((item) => item.kind === "physical");
   const steps = progressSteps({
+    downloadsReady: order.items.every(
+      (item) => item.kind !== "digital" || item.download.state === "available"
+    ),
     fulfillmentStatus: order.fulfillmentStatus,
     hasPhysicalItems,
     paymentStatus: order.paymentStatus,
@@ -225,10 +228,12 @@ interface ProgressStep {
 }
 
 function progressSteps({
+  downloadsReady,
   fulfillmentStatus,
   hasPhysicalItems,
   paymentStatus,
 }: {
+  downloadsReady: boolean;
   fulfillmentStatus: CustomerOrderDetail["fulfillmentStatus"];
   hasPhysicalItems: boolean;
   paymentStatus: CustomerOrderDetail["paymentStatus"];
@@ -242,7 +247,7 @@ function progressSteps({
   // How many steps are complete; the next one is in progress.
   let done = 0;
   if (paymentStatus === "succeeded") {
-    if (!hasPhysicalItems || fulfillmentStatus === "delivered") {
+    if (hasPhysicalItems ? fulfillmentStatus === "delivered" : downloadsReady) {
       done = labels.length;
     } else if (fulfillmentStatus === "shipped") {
       done = 3;

@@ -15,7 +15,8 @@ export const Route = createFileRoute("/_store/")({
   component: HomePage,
   loader: async () => {
     const [products, categories, homeImages] = await Promise.all([
-      listStoreProducts({ data: { limit: 100 } }),
+      // The whole catalog, so the digital row and category tiles see every Product.
+      listStoreProducts({ data: {} }),
       listStoreCategories(),
       getHomeImages(),
     ]);

@@ -117,17 +117,29 @@ async function loadVariantProducts(db: Db, variantIds: string[]) {
       .where(inArray(variant.id, batch))
   );
   const productIds = [...new Set(rows.map((row) => row.productId))];
-  const media = await inBatches(productIds, (batch) =>
-    db
-      .select({
-        alt: productMedia.alt,
-        productId: productMedia.productId,
-        r2Key: productMedia.r2Key,
-      })
-      .from(productMedia)
-      .where(inArray(productMedia.productId, batch))
-      .orderBy(asc(productMedia.sort), asc(productMedia.id))
-  );
+  // The storefront page 404s for a Product with every Variant archived, so only link the rest.
+  const [media, listed] = await Promise.all([
+    inBatches(productIds, (batch) =>
+      db
+        .select({
+          alt: productMedia.alt,
+          productId: productMedia.productId,
+          r2Key: productMedia.r2Key,
+        })
+        .from(productMedia)
+        .where(inArray(productMedia.productId, batch))
+        .orderBy(asc(productMedia.sort), asc(productMedia.id))
+    ),
+    inBatches(productIds, (batch) =>
+      db
+        .selectDistinct({ productId: variant.productId })
+        .from(variant)
+        .where(
+          and(inArray(variant.productId, batch), isNull(variant.archivedAt))
+        )
+    ),
+  ]);
+  const listedIds = new Set(listed.map(({ productId }) => productId));
   const baseUrl = getMediaPublicBaseUrl();
   const images = new Map<string, OrderItemImage>();
   for (const item of media) {
@@ -141,7 +153,10 @@ async function loadVariantProducts(db: Db, variantIds: string[]) {
   for (const row of rows) {
     result.set(row.variantId, {
       image: images.get(row.productId) ?? null,
-      productSlug: row.status === "active" ? row.slug : null,
+      productSlug:
+        row.status === "active" && listedIds.has(row.productId)
+          ? row.slug
+          : null,
     });
   }
   return result;
