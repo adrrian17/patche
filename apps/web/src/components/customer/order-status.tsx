@@ -1,34 +1,54 @@
-import { Badge } from "@patche/ui/components/badge";
+import { cn } from "cn";
 
 import type {
   FulfillmentStatus,
   PaymentStatus,
 } from "@/functions/customer-orders";
 
-const paymentStatusCopy: Record<
-  PaymentStatus,
-  { label: string; variant: "default" | "destructive" | "secondary" }
-> = {
-  canceled: { label: "Pago cancelado", variant: "secondary" },
-  failed: { label: "Pago fallido", variant: "destructive" },
-  pending: { label: "Pago pendiente", variant: "secondary" },
-  refund_pending: { label: "Reembolso pendiente", variant: "secondary" },
-  refunded: { label: "Reembolsado", variant: "secondary" },
-  succeeded: { label: "Pagado", variant: "default" },
-};
+type Tone = "danger" | "done" | "neutral" | "progress" | "waiting";
+
+const toneStyles = {
+  danger: "bg-red-50 text-red-700 ring-red-200",
+  done: "bg-mint text-brand-ink ring-brand/30",
+  neutral: "bg-slate-100 text-slate-700 ring-slate-200",
+  progress: "bg-sky-50 text-sky-800 ring-sky-200",
+  waiting: "bg-amber-50 text-amber-800 ring-amber-200",
+} satisfies Record<Tone, string>;
+
+const paymentStatusCopy: Record<PaymentStatus, { label: string; tone: Tone }> =
+  {
+    canceled: { label: "Pago cancelado", tone: "neutral" },
+    failed: { label: "Pago fallido", tone: "danger" },
+    pending: { label: "Pago pendiente", tone: "waiting" },
+    refund_pending: { label: "Reembolso pendiente", tone: "waiting" },
+    refunded: { label: "Reembolsado", tone: "neutral" },
+    succeeded: { label: "Pagado", tone: "done" },
+  };
 
 const fulfillmentStatusCopy: Record<
   FulfillmentStatus,
-  { label: string; variant: "default" | "secondary" }
+  { label: string; tone: Tone }
 > = {
-  delivered: { label: "Entregado", variant: "default" },
-  shipped: { label: "Enviado", variant: "secondary" },
-  unfulfilled: { label: "Por preparar", variant: "secondary" },
+  delivered: { label: "Entregado", tone: "done" },
+  shipped: { label: "Enviado", tone: "progress" },
+  unfulfilled: { label: "Por preparar", tone: "waiting" },
 };
 
+function StatusPill({ label, tone }: { label: string; tone: Tone }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold whitespace-nowrap ring-1 ring-inset",
+        toneStyles[tone]
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
-  const copy = paymentStatusCopy[status];
-  return <Badge variant={copy.variant}>{copy.label}</Badge>;
+  return <StatusPill {...paymentStatusCopy[status]} />;
 }
 
 export function FulfillmentStatusBadge({
@@ -36,6 +56,5 @@ export function FulfillmentStatusBadge({
 }: {
   status: FulfillmentStatus;
 }) {
-  const copy = fulfillmentStatusCopy[status];
-  return <Badge variant={copy.variant}>{copy.label}</Badge>;
+  return <StatusPill {...fulfillmentStatusCopy[status]} />;
 }
