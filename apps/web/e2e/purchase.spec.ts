@@ -1,6 +1,6 @@
 import type { Stripe } from "@patche/payments";
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Frame, Page } from "@playwright/test";
 
 import { baseURL } from "./support/env";
 import { registerWithPassword } from "./support/password-auth";
@@ -27,22 +27,40 @@ async function addToCartFromStorefront(page: Page, productId: string) {
   ).toBeVisible();
 }
 
-// Stripe renders the Checkout form either in the page or inside an iframe, depending on the session.
+// Stripe renders the Checkout form in the page or in an iframe, and may add other iframes
+// (such as a currency picker outside Mexico), so find the frame that holds the Email field.
 async function checkoutForm(page: Page) {
-  const framed = page
-    .locator("iframe:not([aria-hidden])")
-    .first()
-    .contentFrame();
-  const email = { name: "Email" } as const;
+  let form: Frame | undefined;
   await expect
     .poll(
-      async () =>
-        (await page.getByRole("textbox", email).count()) +
-        (await framed.getByRole("textbox", email).count()),
+      async () => {
+        for (const frame of page.frames()) {
+          try {
+            const email = frame.getByRole("textbox", { name: "Email" });
+            // oxlint-disable-next-line no-await-in-loop -- Stop at the first frame that holds the form.
+            if ((await email.count()) > 0) {
+              form = frame;
+              return true;
+            }
+          } catch (error) {
+            if (
+              error instanceof Error &&
+              error.message.includes("Frame was detached")
+            ) {
+              continue;
+            }
+            throw error;
+          }
+        }
+        return false;
+      },
       { timeout: 30_000 }
     )
-    .toBeGreaterThan(0);
-  return (await page.getByRole("textbox", email).count()) > 0 ? page : framed;
+    .toBe(true);
+  if (!form) {
+    throw new Error("Stripe Checkout form not found");
+  }
+  return form;
 }
 
 async function fillStripeField(page: Page, name: string, value: string) {
