@@ -1,5 +1,4 @@
 import { Button } from "@patche/ui/components/button";
-import { Input } from "@patche/ui/components/input";
 import { Label } from "@patche/ui/components/label";
 import {
   createFileRoute,
@@ -11,20 +10,25 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { AuthShell } from "@/components/auth-shell";
+import { PasswordInput } from "@/components/password-input";
+import { getHomeImages } from "@/functions/home-images";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/reset-password")({
-  component: ResetPassword,
   validateSearch: z.object({
     error: z.string().optional(),
     token: z.string().min(1).optional(),
   }),
+  loader: () => getHomeImages(),
+  component: ResetPassword,
 });
 
 function ResetPassword() {
   const hydrated = useHydrated();
   const navigate = useNavigate();
   const { token, error: linkError } = Route.useSearch();
+  const homeImages = Route.useLoaderData();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const invalidLink = !token || Boolean(linkError);
@@ -63,28 +67,29 @@ function ResetPassword() {
   }
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-white px-4 text-slate-900">
-      <fieldset
-        disabled={!hydrated}
-        className="w-full max-w-md space-y-4 rounded-2xl border p-6"
-      >
+    <AuthShell image={homeImages.hero}>
+      <fieldset className="space-y-5" disabled={!hydrated}>
         <legend className="sr-only">Nueva contraseña</legend>
-        <h1 className="text-3xl font-bold">Restablecer contraseña</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          Restablecer contraseña
+        </h1>
         {invalidLink ? (
-          <p role="alert">
+          <p
+            className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
             El enlace ya no es válido. Solicita una nueva recuperación.
           </p>
         ) : (
           <form method="post" className="space-y-4" onSubmit={handleSubmit}>
             <Label htmlFor="new-password">Nueva contraseña</Label>
-            <Input
+            <PasswordInput
               autoComplete="new-password"
               id="new-password"
               maxLength={128}
               minLength={8}
               name="password"
               required
-              type="password"
             />
             <p className="text-muted-foreground text-sm">
               Usa entre 8 y 128 caracteres.
@@ -94,15 +99,22 @@ function ResetPassword() {
                 {error}
               </p>
             ) : null}
-            <Button className="w-full" disabled={pending} type="submit">
+            <Button
+              className="h-11 w-full rounded-full text-base"
+              disabled={pending}
+              type="submit"
+            >
               {pending ? "Guardando..." : "Guardar contraseña"}
             </Button>
           </form>
         )}
-        <Link className="block text-center text-sm underline" to="/login">
+        <Link
+          className="text-brand-ink block text-sm font-semibold underline-offset-4 hover:underline"
+          to="/login"
+        >
           Volver a iniciar sesión
         </Link>
       </fieldset>
-    </main>
+    </AuthShell>
   );
 }

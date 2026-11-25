@@ -5,6 +5,7 @@ import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
 import { z } from "zod";
 
+import { PasswordInput } from "@/components/password-input";
 import { authClient } from "@/lib/auth-client";
 
 function SignInForm({
@@ -62,8 +63,13 @@ function SignInForm({
   });
 
   return (
-    <div className="mx-auto mt-2 w-full max-w-md p-4">
-      <h1 className="mb-6 text-center text-3xl font-bold">Iniciar sesión</h1>
+    <div className="w-full">
+      <h1 className="mb-2 text-3xl font-bold tracking-tight text-slate-900">
+        Iniciar sesión
+      </h1>
+      <p className="mb-8 text-slate-600">
+        Entra para ver tus pedidos y descargar tus archivos digitales.
+      </p>
 
       {authMessage ? (
         <p className="mb-4 text-sm text-red-600" role="alert">
@@ -72,7 +78,7 @@ function SignInForm({
       ) : null}
       <form
         method="post"
-        className="space-y-4"
+        className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -84,7 +90,9 @@ function SignInForm({
             <div className="space-y-2">
               <Label htmlFor={field.name}>Correo electrónico</Label>
               <Input
+                className="border-field h-11 rounded-xl bg-white px-3.5"
                 autoComplete="email"
+                placeholder="tu@correo.com"
                 id={field.name}
                 name={field.name}
                 type="email"
@@ -93,7 +101,7 @@ function SignInForm({
                 onChange={(event) => field.handleChange(event.target.value)}
               />
               {field.state.meta.errors.map((error) => (
-                <p className="text-sm text-red-500" key={error?.message}>
+                <p className="text-sm text-red-700" key={error?.message}>
                   {error?.message}
                 </p>
               ))}
@@ -104,12 +112,20 @@ function SignInForm({
         <form.Field name="password">
           {(field) => (
             <div className="space-y-2">
-              <Label htmlFor={field.name}>Contraseña</Label>
-              <Input
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor={field.name}>Contraseña</Label>
+                <button
+                  className="text-brand-ink text-sm font-medium underline-offset-4 hover:underline"
+                  onClick={onForgotPassword}
+                  type="button"
+                >
+                  Olvidé mi contraseña
+                </button>
+              </div>
+              <PasswordInput
                 autoComplete="current-password"
                 id={field.name}
                 name={field.name}
-                type="password"
                 required
                 maxLength={128}
                 value={field.state.value}
@@ -117,7 +133,7 @@ function SignInForm({
                 onChange={(event) => field.handleChange(event.target.value)}
               />
               {field.state.meta.errors.map((error) => (
-                <p className="text-sm text-red-500" key={error?.message}>
+                <p className="text-sm text-red-700" key={error?.message}>
                   {error?.message}
                 </p>
               ))}
@@ -133,7 +149,7 @@ function SignInForm({
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
-              className="w-full"
+              className="h-11 w-full rounded-full text-base"
               disabled={!canSubmit || isSubmitting}
               type="submit"
             >
@@ -143,17 +159,15 @@ function SignInForm({
         </form.Subscribe>
       </form>
 
-      <div className="mt-4 text-center">
-        <Button onClick={onForgotPassword} variant="link">
-          Olvidé mi contraseña
-        </Button>
-        <Button
-          className="text-teal-700 hover:text-teal-800"
+      <div className="mt-8 border-t border-slate-200 pt-6 text-center">
+        <button
+          className="text-slate-600 underline-offset-4 hover:underline"
           onClick={onSwitchToSignUp}
-          variant="link"
+          type="button"
         >
-          ¿Aún no tienes cuenta? Regístrate
-        </Button>
+          ¿Aún no tienes cuenta?{" "}
+          <span className="text-brand-ink font-semibold">Regístrate</span>
+        </button>
       </div>
     </div>
   );
