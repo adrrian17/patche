@@ -154,7 +154,8 @@ jobs:
       - name: Seed preview catalog
         if: github.event_name == 'pull_request'
         run: |
-          state="$(bunx varlock run --path ../../.env.schema -- bunx alchemy state read "patche/${STAGE}/output")"
+          # --log-format json routes Alchemy logs (such as version notices) to stderr so stdout is pure JSON.
+          state="$(bunx varlock run --path ../../.env.schema -- bunx alchemy --log-format json state read "patche/${STAGE}/output")"
           PREVIEW_URL="$(printf '%s' "$state" | bun -e 'const output = JSON.parse(await Bun.stdin.text()); process.stdout.write(String(output.url ?? ""))')"
           export PREVIEW_URL
           bun ../../apps/web/scripts/seed-preview.ts
