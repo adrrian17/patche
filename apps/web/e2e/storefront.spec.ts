@@ -30,7 +30,9 @@ test("a Customer finds a Product, fills the cart, and reaches Stripe Checkout", 
 
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Organiza tu flujo creativo/u })
+    page.getByRole("heading", {
+      name: /Papelería para planear, escribir y crear/u,
+    })
   ).toBeVisible();
   await shot("1-home");
 

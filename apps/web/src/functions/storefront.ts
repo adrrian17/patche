@@ -41,11 +41,16 @@ export interface StoreProductCard {
   name: string;
   // Set when the Product sells a single Variant, so a card can add it to the cart directly.
   onlyVariant: StoreVariant | null;
+  // Smallest Stock among in-stock Physical Variants when it is low, for a "Quedan N" hint.
+  lowStock: number | null;
+  soldOut: boolean;
+  variantCount: number;
   slug: string;
   summary: string;
 }
 
 const maxCartQuantity = 99;
+const lowStockLimit = 5;
 const shippingRateKey = "shipping_rate_amount";
 
 function toMaxQuantity(kind: VariantKind, stock: number) {
@@ -177,6 +182,15 @@ export const listStoreProducts = createServerFn({ method: "GET" })
       if (data.kind && !kinds.includes(data.kind)) {
         return [];
       }
+      const storeVariants = productVariants.map(toStoreVariant);
+      // Only warn when even the best-stocked physical Variant is nearly gone.
+      let largest: number | null = null;
+      for (const { kind, maxQuantity } of storeVariants) {
+        if (kind === "physical" && maxQuantity > 0) {
+          largest =
+            largest === null ? maxQuantity : Math.max(largest, maxQuantity);
+        }
+      }
       return [
         {
           card: {
@@ -187,11 +201,17 @@ export const listStoreProducts = createServerFn({ method: "GET" })
             ),
             image: images.get(row.id) ?? null,
             kinds,
+            lowStock:
+              largest !== null && largest <= lowStockLimit ? largest : null,
             name: row.name,
             onlyVariant:
               productVariants.length === 1 ? toStoreVariant(cheapest) : null,
             slug: row.slug,
+            soldOut: storeVariants.every(
+              ({ maxQuantity }) => maxQuantity === 0
+            ),
             summary: summarize(row.description),
+            variantCount: productVariants.length,
           },
           createdAt: row.createdAt.getTime(),
         },
@@ -218,6 +238,10 @@ export const listStoreCategories = createServerFn({ method: "GET" }).handler(
       .from(category)
       .orderBy(asc(category.name))
 );
+
+export type StoreCategory = Awaited<
+  ReturnType<typeof listStoreCategories>
+>[number];
 
 export const getStoreProduct = createServerFn({ method: "GET" })
   .validator(z.object({ slug: z.string().min(1).max(200) }))

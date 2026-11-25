@@ -1,13 +1,13 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { cn } from "cn";
-import { ListFilterIcon, PackageSearchIcon } from "lucide-react";
+import { ChevronDownIcon, SearchXIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { z } from "zod";
 
-import { CatalogProductCard } from "@/components/storefront/product-card";
+import { ProductCard } from "@/components/storefront/product-card";
 import { listStoreCategories, listStoreProducts } from "@/functions/storefront";
-import { catalogSorts, kindLabels, storeKinds } from "@/lib/catalog";
-import type { CatalogSort } from "@/lib/catalog";
+import { catalogSorts, storeKinds } from "@/lib/catalog";
+import type { CatalogSort, VariantKind } from "@/lib/catalog";
 
 const searchSchema = z.object({
   category: z.string().max(160).optional(),
@@ -27,6 +27,7 @@ export const Route = createFileRoute("/_store/products/")({
     ]);
     return { categories, products };
   },
+  head: () => ({ meta: [{ title: "Catálogo · Patche" }] }),
 });
 
 type CatalogSearch = z.infer<typeof searchSchema>;
@@ -41,12 +42,23 @@ function omitFilter(
 }
 
 const sortLabels = {
-  newest: "Más recientes",
-  "price-asc": "Precio: menor a mayor",
-  "price-desc": "Precio: mayor a menor",
+  newest: "Recientes",
+  "price-asc": "Menor precio",
+  "price-desc": "Mayor precio",
 } satisfies Record<CatalogSort, string>;
 
-function FilterOption({
+const kindFilterLabels = {
+  digital: "Digitales",
+  physical: "Físicos",
+} satisfies Record<VariantKind, string>;
+
+const kindDescriptions = {
+  digital:
+    "Planners y plantillas para tablet. Los descargas desde tu cuenta al pagar.",
+  physical: "Agendas, libretas y accesorios que te enviamos a casa.",
+} satisfies Record<VariantKind, string>;
+
+function Chip({
   active,
   children,
   search,
@@ -58,38 +70,17 @@ function FilterOption({
   return (
     <Link
       aria-current={active ? "true" : undefined}
-      className="group flex items-center gap-3 py-1.5 text-slate-600 transition-colors hover:text-slate-900"
+      className={cn(
+        "focus-visible:outline-brand inline-flex h-10 shrink-0 items-center rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+        active
+          ? "border-brand-ink bg-brand-ink text-white"
+          : "border-slate-200 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900"
+      )}
       search={search}
       to="/products"
     >
-      <span
-        aria-hidden
-        className={cn(
-          "flex size-4 items-center justify-center rounded-full border border-slate-300 transition-colors",
-          active && "border-brand bg-brand"
-        )}
-      >
-        {active ? <span className="size-1.5 rounded-full bg-white" /> : null}
-      </span>
       {children}
     </Link>
-  );
-}
-
-function FilterGroup({
-  children,
-  title,
-}: {
-  children: ReactNode;
-  title: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <h3 className="text-xs font-semibold tracking-[0.12em] text-slate-500 uppercase">
-        {title}
-      </h3>
-      <div>{children}</div>
-    </div>
   );
 }
 
@@ -97,76 +88,91 @@ function CatalogPage() {
   const { categories, products } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const title = search.q ? `Resultados para “${search.q}”` : "Catálogo";
+  const activeCategory = categories.find(
+    (category) => category.slug === search.category
+  );
+  let title = activeCategory?.name ?? "Todo el catálogo";
+  if (search.q) {
+    title = `Resultados para “${search.q}”`;
+  }
+  const description = search.kind
+    ? kindDescriptions[search.kind]
+    : "Papelería para planear, escribir y crear, física y digital.";
+  const hasFilters = Boolean(search.category || search.kind || search.q);
 
   return (
-    <div className="container mx-auto flex flex-col gap-10 px-4 py-10 lg:flex-row">
-      <aside className="shrink-0 space-y-8 lg:w-64">
-        <h2 className="flex items-center gap-3 text-lg font-semibold text-slate-900">
-          <ListFilterIcon aria-hidden className="text-brand size-5" />
-          Filtros
-        </h2>
-        <FilterGroup title="Tipo de producto">
-          {storeKinds.map((kind) => (
-            <FilterOption
-              active={search.kind === kind}
-              key={kind}
-              search={
-                search.kind === kind
-                  ? omitFilter(search, "kind")
-                  : { ...search, kind }
-              }
-            >
-              {kind === "digital" ? "Productos digitales" : "Productos físicos"}
-            </FilterOption>
-          ))}
-        </FilterGroup>
-        {categories.length > 0 ? (
-          <FilterGroup title="Categoría">
-            <FilterOption
+    <div className="mx-auto w-full max-w-7xl px-4 pt-8 pb-16 sm:px-6 md:pt-12 md:pb-24 lg:px-8">
+      <header className="mb-5 space-y-2 md:mb-8">
+        <h1
+          className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl"
+          id="catalog-title"
+        >
+          {title}
+        </h1>
+        <p className="hidden max-w-2xl text-slate-600 sm:block">
+          {description}
+        </p>
+      </header>
+
+      <nav aria-label="Categorías" className="mb-4">
+        <ul className="-mx-4 flex gap-2 overflow-x-auto [mask-image:linear-gradient(to_right,black_85%,transparent)] px-4 pb-1 sm:mx-0 sm:px-0 lg:flex-wrap lg:overflow-visible lg:[mask-image:none]">
+          <li>
+            <Chip
               active={!search.category}
               search={omitFilter(search, "category")}
             >
-              Todos los productos
-            </FilterOption>
-            {categories.map((category) => (
-              <FilterOption
+              Todo
+            </Chip>
+          </li>
+          {categories.map((category) => (
+            <li key={category.slug}>
+              <Chip
                 active={search.category === category.slug}
-                key={category.slug}
                 search={{ ...search, category: category.slug }}
               >
                 {category.name}
-              </FilterOption>
-            ))}
-          </FilterGroup>
-        ) : null}
-        <Link
-          className="border-brand text-brand hover:bg-brand flex w-full items-center justify-center rounded-full border-2 px-4 py-2.5 font-medium transition-colors hover:text-white"
-          to="/products"
-        >
-          Restablecer filtros
-        </Link>
-      </aside>
+              </Chip>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-      <section aria-labelledby="catalog-title" className="min-w-0 flex-1">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1
-              className="text-2xl font-semibold text-slate-900 md:text-3xl"
-              id="catalog-title"
-            >
-              {title}
-            </h1>
-            {search.kind ? (
-              <p className="mt-1 text-sm text-slate-500">
-                {kindLabels[search.kind]}
-              </p>
-            ) : null}
-          </div>
-          <label className="flex items-center gap-3 text-sm text-slate-500">
-            Ordenar por
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-y border-slate-200 py-3 md:mb-10">
+        <fieldset className="flex rounded-full border border-slate-200 bg-white p-1">
+          <legend className="sr-only">Tipo de producto</legend>
+          {[undefined, ...storeKinds].map((kind) => {
+            const active = search.kind === kind;
+            return (
+              <Link
+                aria-current={active ? "true" : undefined}
+                className={cn(
+                  "focus-visible:outline-brand inline-flex h-9 items-center rounded-full px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-4",
+                  active
+                    ? "bg-brand-ink text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+                key={kind ?? "all"}
+                search={kind ? { ...search, kind } : omitFilter(search, "kind")}
+                to="/products"
+              >
+                {kind ? kindFilterLabels[kind] : "Todos"}
+              </Link>
+            );
+          })}
+        </fieldset>
+        <div className="flex items-center gap-4">
+          <p
+            aria-live="polite"
+            className="hidden text-sm text-slate-600 tabular-nums sm:block"
+          >
+            {products.length === 1
+              ? "1 producto"
+              : `${products.length} productos`}
+          </p>
+          <label className="relative block">
+            <span className="sr-only">Ordenar por</span>
             <select
-              className="focus:border-brand rounded-full border border-slate-200 bg-white py-2 pr-8 pl-4 font-medium text-slate-900 outline-none"
+              className="focus:border-brand focus:ring-brand/20 border-field h-10 appearance-none rounded-full border bg-white pr-9 pl-4 text-sm font-medium text-slate-900 outline-none focus:ring-4"
               onChange={(event) => {
                 const sort = catalogSorts.find(
                   (value) => value === event.target.value
@@ -181,27 +187,44 @@ function CatalogPage() {
                 </option>
               ))}
             </select>
+            <ChevronDownIcon
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-slate-500"
+            />
           </label>
         </div>
+      </div>
 
+      <section aria-labelledby="catalog-title">
         {products.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => (
-              <CatalogProductCard key={product.slug} product={product} />
+              <ProductCard
+                headingLevel="h2"
+                key={product.slug}
+                product={product}
+                showCategory={!search.category}
+              />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-20 text-center">
-            <PackageSearchIcon
-              aria-hidden
-              className="mb-4 size-10 text-slate-300"
-            />
-            <p className="font-medium text-slate-900">
+          <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center md:py-20">
+            <SearchXIcon aria-hidden className="mb-4 size-9 text-slate-400" />
+            <p className="text-lg font-semibold text-slate-900">
               No encontramos productos con estos filtros.
             </p>
-            <Link className="text-brand mt-2 hover:underline" to="/products">
-              Ver todo el catálogo
-            </Link>
+            <p className="mt-1 max-w-sm text-slate-600">
+              Prueba con otra palabra o quita algún filtro para ver más
+              opciones.
+            </p>
+            {hasFilters ? (
+              <Link
+                className="bg-brand-ink mt-6 inline-flex h-11 items-center rounded-full px-6 font-semibold text-white transition-colors hover:bg-slate-900"
+                to="/products"
+              >
+                Ver todo el catálogo
+              </Link>
+            ) : null}
           </div>
         )}
       </section>

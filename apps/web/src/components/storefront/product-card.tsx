@@ -1,6 +1,6 @@
 import { Link, useHydrated } from "@tanstack/react-router";
 import { cn } from "cn";
-import { ShoppingCartIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 
 import type { StoreImage, StoreProductCard } from "@/functions/storefront";
 import { addToCart, notifyAddedToCart } from "@/lib/cart";
@@ -9,8 +9,8 @@ import type { VariantKind } from "@/lib/catalog";
 import { formatMoney } from "@/lib/format";
 
 const kindBadgeStyles = {
-  digital: "bg-brand",
-  physical: "bg-mustard",
+  digital: "bg-brand-ink text-white",
+  physical: "bg-white text-slate-800 ring-1 ring-slate-200",
 } satisfies Record<VariantKind, string>;
 
 export function KindBadge({
@@ -23,7 +23,7 @@ export function KindBadge({
   return (
     <span
       className={cn(
-        "rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm",
+        "inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold",
         kindBadgeStyles[kind],
         className
       )}
@@ -36,21 +36,23 @@ export function KindBadge({
 export function ProductImage({
   className,
   image,
+  loading = "lazy",
 }: {
   className?: string;
   image: StoreImage | null;
+  loading?: "eager" | "lazy";
 }) {
   if (!image) {
     return (
       <div
         className={cn(
-          "flex items-center justify-center bg-[#f6efe6]",
+          "flex items-center justify-center bg-slate-100",
           className
         )}
       >
         <img
           alt=""
-          className="w-1/3 max-w-24 opacity-40 grayscale"
+          className="w-1/4 max-w-20 opacity-30 grayscale"
           src="/logo-icon.png"
         />
       </div>
@@ -60,127 +62,146 @@ export function ProductImage({
     <img
       alt={image.alt}
       className={cn("object-cover", className)}
-      loading="lazy"
+      decoding="async"
+      loading={loading}
       src={image.url}
     />
   );
 }
 
-function PriceLabel({ product }: { product: StoreProductCard }) {
+export function PriceLabel({ product }: { product: StoreProductCard }) {
   return (
     <>
-      {product.hasPriceRange ? "Desde " : null}
+      {product.hasPriceRange ? (
+        <span className="font-normal text-slate-600">Desde </span>
+      ) : null}
       {formatMoney(product.fromPrice)}
     </>
   );
 }
 
-export function FeaturedProductCard({
-  product,
-}: {
-  product: StoreProductCard;
-}) {
-  return (
-    <Link
-      className="group block"
-      params={{ slug: product.slug }}
-      to="/products/$slug"
-    >
-      <div className="relative mb-4 aspect-[3/4] overflow-hidden rounded-[2rem] bg-slate-100 transition-shadow group-hover:shadow-xl">
-        <ProductImage
-          className="size-full transition-transform duration-500 group-hover:scale-105"
-          image={product.image}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-        <span className="text-brand absolute top-3 right-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold backdrop-blur">
-          {product.category ?? kindLabels[product.kinds[0] ?? "digital"]}
-        </span>
-      </div>
-      <h3 className="group-hover:text-brand text-lg font-bold text-slate-800 transition-colors">
-        {product.name}
-      </h3>
-      {product.summary ? (
-        <p className="mb-2 line-clamp-1 text-sm text-slate-500">
-          {product.summary}
-        </p>
-      ) : null}
-      <p className="text-xl font-bold text-slate-900">
-        <PriceLabel product={product} />
-      </p>
-    </Link>
-  );
+const badgeBase =
+  "inline-flex h-7 items-center rounded-full px-3 text-xs font-semibold";
+
+// One badge slot per card, most urgent first: sold out, low stock, then format.
+function CardBadge({ product }: { product: StoreProductCard }) {
+  if (product.soldOut) {
+    return (
+      <span className={cn(badgeBase, "bg-slate-900 text-white")}>Agotado</span>
+    );
+  }
+  if (product.lowStock !== null) {
+    return (
+      <span className={cn(badgeBase, "bg-amber-100 text-amber-950")}>
+        {product.lowStock === 1
+          ? "Última pieza"
+          : `Últimas ${product.lowStock}`}
+      </span>
+    );
+  }
+  if (product.kinds.length > 1) {
+    return (
+      <span className={cn(badgeBase, "bg-white text-slate-800")}>
+        Físico y digital
+      </span>
+    );
+  }
+  if (product.kinds[0] === "digital") {
+    return (
+      <span className={cn(badgeBase, "bg-brand-ink text-white")}>Digital</span>
+    );
+  }
+  return null;
 }
 
 function QuickAddButton({ product }: { product: StoreProductCard }) {
   const hydrated = useHydrated();
   const variant = product.onlyVariant;
   const className =
-    "flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-700 transition-colors hover:bg-brand hover:text-white";
+    "flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-900 hover:text-white hover:ring-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
+  // Products with options go through their page; only a single Variant adds straight away.
   if (!variant) {
-    return (
-      <Link
-        aria-label={`Elegir opciones de ${product.name}`}
-        className={className}
-        params={{ slug: product.slug }}
-        to="/products/$slug"
-      >
-        <ShoppingCartIcon aria-hidden className="size-5" />
-      </Link>
-    );
+    return null;
+  }
+  if (variant.maxQuantity === 0) {
+    return null;
   }
   return (
     <button
       aria-label={`Agregar ${product.name} al carrito`}
       className={cn(className, "disabled:opacity-40")}
-      disabled={!hydrated || variant.maxQuantity === 0}
+      disabled={!hydrated}
       onClick={() =>
         notifyAddedToCart(addToCart(variant.id, 1, variant.maxQuantity))
       }
       type="button"
     >
-      <ShoppingCartIcon aria-hidden className="size-5" />
+      <PlusIcon aria-hidden className="size-5" />
     </button>
   );
 }
 
-export function CatalogProductCard({ product }: { product: StoreProductCard }) {
+// One quiet line under the price for Products sold in several options.
+function CardDetail({ product }: { product: StoreProductCard }) {
+  let text = "";
+  if (product.soldOut) {
+    text = "Sin existencias por ahora";
+  } else if (product.variantCount > 1) {
+    text = `${product.variantCount} opciones`;
+  }
+  // Always one line tall so cards in a row stay aligned.
+  return <p className="min-h-5 text-sm text-slate-600">{text}</p>;
+}
+
+export function ProductCard({
+  headingLevel = "h3",
+  product,
+  showCategory = true,
+}: {
+  headingLevel?: "h2" | "h3";
+  product: StoreProductCard;
+  showCategory?: boolean;
+}) {
+  const Heading = headingLevel;
+  const { soldOut } = product;
+
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-lg">
-      <div className="relative aspect-square overflow-hidden bg-slate-100">
+    <article className="group relative flex flex-col">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-100">
         <ProductImage
-          className="size-full transition-transform duration-500 group-hover:scale-105"
+          className={cn(
+            "size-full transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none",
+            soldOut && "opacity-55 grayscale-[30%]"
+          )}
           image={product.image}
         />
-        <div className="absolute top-4 left-4 flex gap-2">
-          {product.kinds.map((kind) => (
-            <KindBadge key={kind} kind={kind} />
-          ))}
+        <div className="absolute top-3 left-3 flex gap-1.5">
+          <CardBadge product={product} />
         </div>
+        {soldOut ? null : (
+          <div className="absolute right-3 bottom-3 z-10">
+            <QuickAddButton product={product} />
+          </div>
+        )}
       </div>
-      <div className="flex flex-1 flex-col p-6">
-        <h3 className="text-lg font-semibold text-slate-900">
+      <div className="flex flex-1 flex-col gap-1 pt-3">
+        {showCategory && product.category ? (
+          <p className="text-sm text-slate-600">{product.category}</p>
+        ) : null}
+        <Heading className="text-base leading-snug font-semibold text-slate-900">
           <Link
-            className="after:absolute after:inset-0"
+            className="focus-visible:after:outline-brand decoration-slate-400 underline-offset-4 group-hover:underline after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-4"
             params={{ slug: product.slug }}
             to="/products/$slug"
           >
             {product.name}
           </Link>
-        </h3>
-        {product.summary ? (
-          <p className="mt-1 line-clamp-1 text-sm text-slate-500">
-            {product.summary}
-          </p>
-        ) : null}
-        <div className="mt-auto flex items-center justify-between pt-5">
-          <p className="text-xl font-semibold text-slate-900">
-            <PriceLabel product={product} />
-          </p>
-          <div className="relative z-10">
-            <QuickAddButton product={product} />
-          </div>
-        </div>
+        </Heading>
+        <p className="text-base font-semibold text-slate-900 tabular-nums">
+          <PriceLabel product={product} />
+        </p>
+        <CardDetail product={product} />
       </div>
     </article>
   );
