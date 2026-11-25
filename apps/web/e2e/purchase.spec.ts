@@ -2,6 +2,7 @@ import type { Stripe } from "@patche/payments";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
+import { baseURL } from "./support/env";
 import { registerWithPassword } from "./support/password-auth";
 import {
   seedProduct,
@@ -166,7 +167,7 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   });
 
   const adminContext = await browser.newContext({
-    baseURL: "http://localhost:3001",
+    baseURL,
     storageState: "e2e/.auth/admin.json",
   });
   try {
@@ -253,7 +254,7 @@ test("does not start Checkout when Stock is insufficient", async ({
   await expect(page.getByText("Stock insuficiente")).toBeVisible({
     timeout: 10_000,
   });
-  await expect(page).toHaveURL(/localhost:3001\/cart/u);
+  await expect(page).toHaveURL(`${baseURL}/cart`);
   await expect(
     page.getByRole("heading", { level: 2, name: productName })
   ).toBeVisible();

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { baseURL } from "./support/env";
 import {
   emailLink,
   password,
@@ -35,7 +36,7 @@ test("registers with a password and verified email and lands on the dashboard", 
   ).toBeVisible();
   const unverified = await page.request.post("/api/auth/sign-in/email", {
     data: {
-      callbackURL: "http://localhost:3001/auth/continue",
+      callbackURL: `${baseURL}/auth/continue`,
       email,
       password,
     },
@@ -156,7 +157,7 @@ test("recovers a legacy account, revokes sessions and rejects reused tokens", as
   expect(sessionData.user.role).toBe("admin");
   const context = await browser.newContext({ storageState: oldSession });
   const stalePage = await context.newPage();
-  await stalePage.goto("http://localhost:3001/dashboard");
+  await stalePage.goto(`${baseURL}/dashboard`);
   await expect(stalePage).toHaveURL(/\/login$/u);
   await context.close();
   await page.goto(resetURL);
