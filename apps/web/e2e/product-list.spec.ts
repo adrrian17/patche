@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  seedProduct,
-  seedVariant,
-  signedInEmail,
-} from "./support/seed-product";
+import { seedProduct, seedVariant } from "./support/seed";
 
 test.use({ storageState: "e2e/.auth/admin.json" });
 
@@ -17,19 +13,20 @@ const png = Buffer.from(
 test("lists each product with its main image and variant prices", async ({
   page,
 }, testInfo) => {
-  const adminEmail = await signedInEmail(page);
   const name = `Agenda ${crypto.randomUUID().slice(0, 8)}`;
-  const productId = seedProduct(name, adminEmail);
-  seedVariant(adminEmail, {
-    name: "Tapa dura",
-    priceAmount: 25_000,
-    productId,
-  });
-  seedVariant(adminEmail, {
-    name: "Tapa blanda",
-    priceAmount: 18_000,
-    productId,
-  });
+  const productId = await seedProduct(name);
+  await Promise.all([
+    seedVariant({
+      name: "Tapa dura",
+      priceAmount: 25_000,
+      productId,
+    }),
+    seedVariant({
+      name: "Tapa blanda",
+      priceAmount: 18_000,
+      productId,
+    }),
+  ]);
   for (const alt of ["Portada", "Interior"]) {
     // oxlint-disable-next-line no-await-in-loop -- uploads must land in order so Portada is the main image
     const upload = await page.request.post("/api/admin/media", {

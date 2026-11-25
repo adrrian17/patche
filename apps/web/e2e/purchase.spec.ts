@@ -4,12 +4,7 @@ import type { Frame, Page } from "@playwright/test";
 
 import { baseURL } from "./support/env";
 import { registerWithPassword } from "./support/password-auth";
-import {
-  seedProduct,
-  seedStock,
-  seedVariant,
-  signedInEmail,
-} from "./support/seed-product";
+import { seedProduct, seedStock, seedVariant } from "./support/seed";
 import { findStripeEvent, postSignedEvent } from "./support/stripe-events";
 
 test.use({ storageState: "e2e/.auth/customer.json" });
@@ -109,13 +104,13 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   const productName = `Compra E2E ${crypto.randomUUID().slice(0, 8)}`;
   const variantName = "Tapa dura";
   const priceAmount = 25_000;
-  const productId = seedProduct(productName, customerEmail, "active");
-  const variantId = seedVariant(customerEmail, {
+  const productId = await seedProduct(productName, "active");
+  const variantId = await seedVariant({
     name: variantName,
     priceAmount,
     productId,
   });
-  seedStock(customerEmail, variantId, 2);
+  await seedStock(variantId, 2);
 
   await addToCartFromStorefront(page, productId);
   await page.getByRole("button", { name: "Proceder al pago" }).click();
@@ -278,19 +273,18 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
 test("does not start Checkout when Stock is insufficient", async ({
   page,
 }, testInfo) => {
-  const customerEmail = await signedInEmail(page);
   const productName = `Sin Stock E2E ${crypto.randomUUID().slice(0, 8)}`;
-  const productId = seedProduct(productName, customerEmail, "active");
-  const variantId = seedVariant(customerEmail, {
+  const productId = await seedProduct(productName, "active");
+  const variantId = await seedVariant({
     name: "Tapa dura",
     priceAmount: 25_000,
     productId,
   });
-  seedStock(customerEmail, variantId, 1);
+  await seedStock(variantId, 1);
 
   await addToCartFromStorefront(page, productId);
   // Someone else takes the last unit after the cart loaded, so Checkout must refuse.
-  seedStock(customerEmail, variantId, -1, "adjusted");
+  await seedStock(variantId, -1, "adjusted");
   await page.getByRole("button", { name: "Proceder al pago" }).click();
   await expect(page.getByText("Stock insuficiente")).toBeVisible({
     timeout: 10_000,

@@ -8,7 +8,7 @@ import {
   requestReset,
   signIn,
 } from "./support/password-auth";
-import { promoteToAdmin, removeCredential } from "./support/promote-to-admin";
+import { promoteToAdmin, removeCredential } from "./support/seed";
 
 // Each test registers its own user, so signing out never kills the shared storageState sessions.
 test.afterEach(async ({ page }, testInfo) => {
@@ -130,8 +130,8 @@ test("recovers a legacy account, revokes sessions and rejects reused tokens", as
 }) => {
   const email = uniqueEmail("legacy");
   await registerWithPassword(page, { email, name: "Cliente Existente" });
-  promoteToAdmin(email);
-  const userId = removeCredential(email);
+  await promoteToAdmin(email);
+  const userId = await removeCredential(email);
   const oldSession = await page.context().storageState();
   await requestReset(page, email);
   const link = await emailLink(email, "/reset-password/");

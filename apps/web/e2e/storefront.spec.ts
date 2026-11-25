@@ -1,11 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  seedProduct,
-  seedStock,
-  seedVariant,
-  signedInEmail,
-} from "./support/seed-product";
+import { seedProduct, seedStock, seedVariant } from "./support/seed";
 
 test.use({ storageState: "e2e/.auth/customer.json" });
 
@@ -18,15 +13,14 @@ test("a Customer finds a Product, fills the cart, and reaches Stripe Checkout", 
       path: testInfo.outputPath(`${step}.png`),
     });
   }
-  const email = await signedInEmail(page);
   const productName = `Agenda Tienda ${crypto.randomUUID().slice(0, 8)}`;
-  const productId = seedProduct(productName, email, "active");
-  const variantId = seedVariant(email, {
+  const productId = await seedProduct(productName, "active");
+  const variantId = await seedVariant({
     name: "Tapa dura",
     priceAmount: 32_000,
     productId,
   });
-  seedStock(email, variantId, 3);
+  await seedStock(variantId, 3);
 
   await page.goto("/");
   await expect(

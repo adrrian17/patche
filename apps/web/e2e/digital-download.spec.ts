@@ -5,12 +5,7 @@ import type { Page } from "@playwright/test";
 
 import { baseURL } from "./support/env";
 import { registerCustomer } from "./support/password-auth";
-import { seedOrder } from "./support/seed-order";
-import {
-  seedProduct,
-  seedVariant,
-  signedInEmail,
-} from "./support/seed-product";
+import { seedOrder, seedProduct, seedVariant } from "./support/seed";
 
 test.use({ storageState: "e2e/.auth/admin.json" });
 
@@ -56,12 +51,11 @@ test("an uploaded Digital File downloads through a paid Download Grant", async (
   browser,
   page,
 }, testInfo) => {
-  const adminEmail = await signedInEmail(page);
   const suffix = crypto.randomUUID().slice(0, 8);
   const productName = `Planner Descargable ${suffix}`;
   const variantName = `PDF ${suffix}`;
-  const productId = seedProduct(productName, adminEmail, "active");
-  const variantId = seedVariant(adminEmail, {
+  const productId = await seedProduct(productName, "active");
+  const variantId = await seedVariant({
     kind: "digital",
     name: variantName,
     priceAmount: 9900,
@@ -80,7 +74,7 @@ test("an uploaded Digital File downloads through a paid Download Grant", async (
       customerPage,
       "Cliente Descarga"
     );
-    const { grantIds, orderId } = seedOrder(customerEmail, {
+    const { grantIds, orderId } = await seedOrder(customerEmail, {
       createdAt: new Date(),
       items: [
         {

@@ -3,6 +3,7 @@
 /// <reference path="../env.d.ts" />
 
 export interface ServerEnv {
+  APP_ENV?: string;
   AUTH_EMAIL: SendEmail;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
@@ -11,6 +12,7 @@ export interface ServerEnv {
   DIGITAL_BUCKET: R2Bucket;
   DIGITAL_BUCKET_NAME: string;
   DIGITAL_UPLOAD_TRANSPORT: string;
+  E2E_SEED_TOKEN?: string;
   MEDIA_BUCKET: R2Bucket;
   MEDIA_PUBLIC_BASE_URL: string;
   MEDIA_PUBLIC_PROXY: string;

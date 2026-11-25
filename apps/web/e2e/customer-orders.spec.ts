@@ -2,40 +2,44 @@ import { expect, test } from "@playwright/test";
 
 import { formatOrderReference } from "../src/lib/format";
 import { registerCustomer } from "./support/password-auth";
-import { seedOrder } from "./support/seed-order";
-import { seedProduct, seedVariant } from "./support/seed-product";
+import { seedOrder, seedProduct, seedVariant } from "./support/seed";
 
 const day = 86_400_000;
 
-function seedCatalog(email: string) {
+async function seedCatalog() {
   const suffix = crypto.randomUUID().slice(0, 8);
   const notebookName = `Libreta Pedidos ${suffix}`;
   const plannerName = `Planner Digital ${suffix}`;
-  const notebookId = seedVariant(email, {
-    name: "Tapa dura",
-    priceAmount: 25_000,
-    productId: seedProduct(notebookName, email, "active"),
-  });
-  const plannerProductId = seedProduct(plannerName, email, "active");
-  const plannerId = seedVariant(email, {
-    digitalFile: { key: `e2e/${suffix}.pdf`, name: "planner.pdf" },
-    name: "PDF imprimible",
-    priceAmount: 9900,
-    productId: plannerProductId,
-  });
-  const calendarId = seedVariant(email, {
-    digitalFile: { key: `e2e/${suffix}-cal.pdf`, name: "calendario.pdf" },
-    name: "Calendario PDF",
-    priceAmount: 5000,
-    productId: plannerProductId,
-  });
-  // A digital Variant can be sold before the Admin uploads its file.
-  const stickersId = seedVariant(email, {
-    kind: "digital",
-    name: "Stickers sin archivo",
-    priceAmount: 3000,
-    productId: plannerProductId,
-  });
+  const [notebookProductId, plannerProductId] = await Promise.all([
+    seedProduct(notebookName, "active"),
+    seedProduct(plannerName, "active"),
+  ]);
+  const [notebookId, plannerId, calendarId, stickersId] = await Promise.all([
+    seedVariant({
+      name: "Tapa dura",
+      priceAmount: 25_000,
+      productId: notebookProductId,
+    }),
+    seedVariant({
+      digitalFile: { key: `e2e/${suffix}.pdf`, name: "planner.pdf" },
+      name: "PDF imprimible",
+      priceAmount: 9900,
+      productId: plannerProductId,
+    }),
+    seedVariant({
+      digitalFile: { key: `e2e/${suffix}-cal.pdf`, name: "calendario.pdf" },
+      name: "Calendario PDF",
+      priceAmount: 5000,
+      productId: plannerProductId,
+    }),
+    // A digital Variant can be sold before the Admin uploads its file.
+    seedVariant({
+      kind: "digital",
+      name: "Stickers sin archivo",
+      priceAmount: 3000,
+      productId: plannerProductId,
+    }),
+  ]);
   return {
     calendarId,
     notebookId,
@@ -68,77 +72,79 @@ test("lists Orders, opens one, and downloads through its Download Grant", async 
   page,
 }, testInfo) => {
   const email = await registerCustomer(page, "Cliente Pedidos");
-  const catalog = seedCatalog(email);
-  const paid = seedOrder(email, {
-    createdAt: new Date(Date.now() - day),
-    fulfillmentStatus: "shipped",
-    items: [
-      {
-        kind: "physical",
-        productName: catalog.notebookName,
-        quantity: 2,
-        unitAmount: 25_000,
-        variantId: catalog.notebookId,
-        variantName: "Tapa dura",
+  const catalog = await seedCatalog();
+  const [paid, pending] = await Promise.all([
+    seedOrder(email, {
+      createdAt: new Date(Date.now() - day),
+      fulfillmentStatus: "shipped",
+      items: [
+        {
+          kind: "physical",
+          productName: catalog.notebookName,
+          quantity: 2,
+          unitAmount: 25_000,
+          variantId: catalog.notebookId,
+          variantName: "Tapa dura",
+        },
+        {
+          grant: "active",
+          kind: "digital",
+          productName: catalog.plannerName,
+          quantity: 1,
+          unitAmount: 9900,
+          variantId: catalog.plannerId,
+          variantName: "PDF imprimible",
+        },
+        {
+          grant: "revoked",
+          kind: "digital",
+          productName: catalog.plannerName,
+          quantity: 1,
+          unitAmount: 5000,
+          variantId: catalog.calendarId,
+          variantName: "Calendario PDF",
+        },
+        {
+          grant: "active",
+          kind: "digital",
+          productName: catalog.plannerName,
+          quantity: 1,
+          unitAmount: 3000,
+          variantId: catalog.stickersId,
+          variantName: "Stickers sin archivo",
+        },
+      ],
+      paymentStatus: "succeeded",
+      shipping: {
+        address: {
+          city: "Monterrey",
+          country: "MX",
+          line1: "Av. Constitución 100",
+          line2: null,
+          postalCode: "64000",
+          state: "Nuevo León",
+        },
+        name: "Cliente Pedidos",
       },
-      {
-        grant: "active",
-        kind: "digital",
-        productName: catalog.plannerName,
-        quantity: 1,
-        unitAmount: 9900,
-        variantId: catalog.plannerId,
-        variantName: "PDF imprimible",
-      },
-      {
-        grant: "revoked",
-        kind: "digital",
-        productName: catalog.plannerName,
-        quantity: 1,
-        unitAmount: 5000,
-        variantId: catalog.calendarId,
-        variantName: "Calendario PDF",
-      },
-      {
-        grant: "active",
-        kind: "digital",
-        productName: catalog.plannerName,
-        quantity: 1,
-        unitAmount: 3000,
-        variantId: catalog.stickersId,
-        variantName: "Stickers sin archivo",
-      },
-    ],
-    paymentStatus: "succeeded",
-    shipping: {
-      address: {
-        city: "Monterrey",
-        country: "MX",
-        line1: "Av. Constitución 100",
-        line2: null,
-        postalCode: "64000",
-        state: "Nuevo León",
-      },
-      name: "Cliente Pedidos",
-    },
-    shippingAmount: 9900,
-  });
-  const pending = seedOrder(email, {
-    createdAt: new Date(Date.now() - 2 * day),
-    items: [
-      {
-        grant: "active",
-        kind: "digital",
-        productName: catalog.plannerName,
-        quantity: 1,
-        unitAmount: 9900,
-        variantId: catalog.plannerId,
-        variantName: "PDF imprimible",
-      },
-    ],
-    paymentStatus: "pending",
-    shippingAmount: 0,
-  });
+      shippingAmount: 9900,
+    }),
+    seedOrder(email, {
+      createdAt: new Date(Date.now() - 2 * day),
+      items: [
+        {
+          grant: "active",
+          kind: "digital",
+          productName: catalog.plannerName,
+          quantity: 1,
+          unitAmount: 9900,
+          variantId: catalog.plannerId,
+          variantName: "PDF imprimible",
+        },
+      ],
+      paymentStatus: "pending",
+      shippingAmount: 0,
+    }),
+  ]);
 
   await page.goto("/dashboard");
   const orderLinks = page
@@ -217,8 +223,8 @@ test("hides another Customer's Order and refuses its download", async ({
   page,
 }, testInfo) => {
   const ownerEmail = await registerCustomer(page, "Dueño Pedido");
-  const catalog = seedCatalog(ownerEmail);
-  const owned = seedOrder(ownerEmail, {
+  const catalog = await seedCatalog();
+  const owned = await seedOrder(ownerEmail, {
     createdAt: new Date(),
     items: [
       {

@@ -1,7 +1,7 @@
 import { test as setup } from "@playwright/test";
 
 import { registerWithPassword } from "./support/password-auth";
-import { promoteToAdmin } from "./support/promote-to-admin";
+import { promoteToAdmin } from "./support/seed";
 
 const runId = Date.now().toString(36);
 
@@ -16,6 +16,6 @@ setup("log in a Customer", async ({ page }) => {
 setup("log in an Admin", async ({ page }) => {
   const email = `admin-${runId}@e2e.patche.test`;
   await registerWithPassword(page, { email, name: "Admin E2E" });
-  promoteToAdmin(email);
+  await promoteToAdmin(email);
   await page.context().storageState({ path: "e2e/.auth/admin.json" });
 });
