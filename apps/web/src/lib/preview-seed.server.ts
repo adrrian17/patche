@@ -98,7 +98,8 @@ async function downloadImage(
   return image;
 }
 
-// Downloads a photo, uploads it to R2, then records it. A failed record removes the object again.
+// Downloads a photo, uploads it to its deterministic R2 key, then records it.
+// A failed record leaves the key untouched so an overlapping run's committed row cannot lose its object.
 async function storeDemoImage<T>(
   imageKey: DemoImageKey,
   objectKey: string,
@@ -110,12 +111,7 @@ async function storeDemoImage<T>(
   await bucket.put(objectKey, image.bytes, {
     httpMetadata: { contentType: image.contentType },
   });
-  try {
-    return await record();
-  } catch (error) {
-    await deleteStorageObjectWithRetry(bucket, objectKey);
-    throw error;
-  }
+  return await record();
 }
 
 async function seedHomeImage(
@@ -215,7 +211,14 @@ async function seedVariants(
           .values(missing)
           .onConflictDoNothing({ target: variant.sku })
           .returning({ id: variant.id, sku: variant.sku });
-  return { existing, inserted, isNew };
+  if (inserted.length === missing.length) {
+    return { existing, inserted, isNew };
+  }
+  const persisted = await db
+    .select({ id: variant.id, name: variant.name, sku: variant.sku })
+    .from(variant)
+    .where(eq(variant.productId, productId));
+  return { existing: persisted, inserted, isNew: false };
 }
 
 async function findVariantsWithMovements(
