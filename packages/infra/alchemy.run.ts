@@ -47,7 +47,8 @@ const AuthEmail = Cloudflare.Email.SendEmail("AuthEmail", {
 export const Web = Cloudflare.Website.Vite("Web", {
   // Matches the integration tests in apps/web/vitest.config.ts.
   compatibility: { date: "2026-08-15" },
-  dev: { port: 3001, strictPort: true },
+  // WEB_PORT lets a second local instance run when :3001 is taken.
+  dev: { port: Number(process.env.WEB_PORT ?? 3001), strictPort: true },
   env: {
     AUTH_EMAIL: AuthEmail,
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),

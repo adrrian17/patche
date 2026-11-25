@@ -1,140 +1,179 @@
-import { Button, buttonVariants } from "@patche/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@patche/ui/components/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@patche/ui/components/empty";
+import { Button } from "@patche/ui/components/button";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRightIcon, ReceiptTextIcon } from "lucide-react";
+import { ChevronRightIcon, ReceiptTextIcon } from "lucide-react";
 
+import { AccountHeader } from "@/components/customer/account-header";
 import {
   FulfillmentStatusBadge,
   PaymentStatusBadge,
 } from "@/components/customer/order-status";
+import { ProductImage } from "@/components/storefront/product-card";
 import { listCustomerOrders } from "@/functions/customer-orders";
-import { formatDate, formatMoney } from "@/lib/format";
+import type { CustomerOrderListEntry } from "@/functions/customer-orders";
+import { formatDay, formatMoney, formatOrderReference } from "@/lib/format";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
+  head: () => ({ meta: [{ title: "Mis pedidos · Patche" }] }),
   component: CustomerOrdersPage,
 });
 
+function itemSummary(order: CustomerOrderListEntry) {
+  const [first] = order.preview;
+  if (!first) {
+    return "";
+  }
+  const others = order.lineCount - 1;
+  if (others <= 0) {
+    return first.productName;
+  }
+  return `${first.productName} y ${others} ${others === 1 ? "artículo más" : "artículos más"}`;
+}
+
+function OrderThumbnail({ order }: { order: CustomerOrderListEntry }) {
+  const [first] = order.preview;
+  const more = order.lineCount - 1;
+
+  return (
+    <div aria-hidden className="relative shrink-0">
+      <ProductImage
+        className="size-16 rounded-xl bg-slate-100 sm:size-[4.5rem]"
+        image={first?.image ? { alt: "", url: first.image.url } : null}
+      />
+      {more > 0 ? (
+        <span className="absolute -right-1.5 -bottom-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-900 px-1.5 text-xs font-semibold text-white tabular-nums ring-2 ring-white">
+          +{more}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function OrderRow({ order }: { order: CustomerOrderListEntry }) {
+  return (
+    <Link
+      className="group focus-visible:outline-brand flex items-center gap-4 px-4 py-4 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 sm:gap-5 sm:px-6 sm:py-5"
+      params={{ orderId: order.id }}
+      to="/dashboard/orders/$orderId"
+    >
+      <OrderThumbnail order={order} />
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+          <p className="font-semibold text-slate-900">
+            Pedido {formatOrderReference(order.id)}
+          </p>
+          <p className="font-semibold text-slate-900 tabular-nums">
+            {formatMoney(order.totalAmount)}
+          </p>
+        </div>
+        <p className="truncate text-sm text-slate-600">{itemSummary(order)}</p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-sm text-slate-600">
+            {formatDay(order.createdAt)}
+          </span>
+          {/* A paid Order shows only where the goods are; any other payment state is what matters. */}
+          {order.paymentStatus === "succeeded" ? (
+            <FulfillmentStatusBadge status={order.fulfillmentStatus} />
+          ) : (
+            <PaymentStatusBadge status={order.paymentStatus} />
+          )}
+        </div>
+      </div>
+      <ChevronRightIcon
+        aria-hidden="true"
+        className="hidden size-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-700 sm:block"
+      />
+    </Link>
+  );
+}
+
 function CustomerOrdersPage() {
+  const { session } = Route.useRouteContext();
   const orders = useQuery({
     queryFn: () => listCustomerOrders(),
     queryKey: ["customer", "orders"],
   });
 
   return (
-    <section aria-labelledby="customer-orders-title" className="space-y-6">
-      <header className="space-y-2">
-        <h1
-          className="font-heading text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl"
-          id="customer-orders-title"
-        >
-          Mis pedidos
-        </h1>
-        <p className="max-w-2xl text-slate-600">
-          Consulta tus compras y el estado de tus productos digitales.
-        </p>
-      </header>
+    <div className="space-y-10">
+      <AccountHeader user={session.user} />
+      <section aria-labelledby="customer-orders-title" className="space-y-6">
+        <header className="space-y-2 border-t border-slate-200 pt-8">
+          <h1
+            className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl"
+            id="customer-orders-title"
+          >
+            Mis pedidos
+          </h1>
+          <p className="max-w-2xl text-slate-600">
+            Revisa el estado de tus envíos y descarga tus archivos digitales.
+          </p>
+        </header>
 
-      {orders.isPending && (
-        <p aria-live="polite" className="text-sm text-slate-600">
-          Cargando tus pedidos…
-        </p>
-      )}
+        {orders.isPending && (
+          <ul
+            aria-busy="true"
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+          >
+            {["a", "b"].map((key) => (
+              <li className="flex items-center gap-5 px-6 py-5" key={key}>
+                <span className="size-16 animate-pulse rounded-xl bg-slate-100 motion-reduce:animate-none" />
+                <span className="h-4 w-1/2 animate-pulse rounded-full bg-slate-100 motion-reduce:animate-none" />
+              </li>
+            ))}
+            <li className="sr-only" aria-live="polite">
+              Cargando tus pedidos…
+            </li>
+          </ul>
+        )}
 
-      {orders.isError && (
-        <Card className="border-destructive/30 rounded-3xl shadow-sm">
-          <CardContent className="flex flex-col items-start gap-3">
-            <p className="text-destructive text-sm">
+        {orders.isError && (
+          <div className="flex flex-col items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-6">
+            <p className="text-sm text-red-700">
               No se pudieron cargar tus pedidos.
             </p>
             <Button
+              className="rounded-full bg-white"
               onClick={() => orders.refetch()}
               size="sm"
               variant="outline"
             >
               Reintentar
             </Button>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {orders.isSuccess && orders.data.length === 0 && (
-        <Card className="rounded-3xl shadow-sm">
-          <CardContent>
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia className="bg-brand/10 text-brand" variant="icon">
-                  <ReceiptTextIcon />
-                </EmptyMedia>
-                <EmptyTitle>Aún no tienes pedidos</EmptyTitle>
-                <EmptyDescription>
-                  Cuando completes una compra, aparecerá aquí.
-                </EmptyDescription>
-              </EmptyHeader>
-              <Link className={buttonVariants()} to="/">
-                Explorar la tienda
-              </Link>
-            </Empty>
-          </CardContent>
-        </Card>
-      )}
+        {orders.isSuccess && orders.data.length === 0 && (
+          <div className="bg-mint paper-dots flex flex-col items-center rounded-2xl px-6 py-14 text-center">
+            <span className="text-brand-ink mb-5 flex size-14 items-center justify-center rounded-full bg-white">
+              <ReceiptTextIcon aria-hidden className="size-6" />
+            </span>
+            <p className="text-xl font-semibold text-slate-900">
+              Aún no tienes pedidos
+            </p>
+            <p className="mt-1 max-w-sm text-slate-600">
+              Cuando completes una compra, aparecerá aquí con su estado y tus
+              descargas.
+            </p>
+            <Link
+              className="bg-brand-ink focus-visible:outline-brand mt-6 inline-flex h-12 items-center rounded-full px-7 font-semibold text-white transition-colors hover:bg-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2"
+              to="/products"
+            >
+              Explorar la tienda
+            </Link>
+          </div>
+        )}
 
-      {orders.isSuccess && orders.data.length > 0 && (
-        <ul className="grid gap-4">
-          {orders.data.map((order) => (
-            <li key={order.id}>
-              <Link
-                className="group focus-visible:outline-brand block rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-4"
-                params={{ orderId: order.id }}
-                to="/dashboard/orders/$orderId"
-              >
-                <Card className="rounded-3xl bg-white shadow-sm transition-shadow group-hover:shadow-md">
-                  <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <CardTitle className="text-base font-semibold text-slate-950">
-                        Pedido {order.id}
-                      </CardTitle>
-                      <p className="text-sm text-slate-500">
-                        {formatDate(order.createdAt)}
-                      </p>
-                    </div>
-                    <span className="font-heading text-lg font-semibold text-slate-950 tabular-nums">
-                      {formatMoney(order.totalAmount)}
-                    </span>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap gap-2">
-                      <PaymentStatusBadge status={order.paymentStatus} />
-                      <FulfillmentStatusBadge
-                        status={order.fulfillmentStatus}
-                      />
-                    </div>
-                    <span className="text-brand inline-flex items-center gap-1 text-sm font-medium">
-                      Ver pedido
-                      <ArrowRightIcon
-                        aria-hidden="true"
-                        className="size-4 transition-transform group-hover:translate-x-0.5"
-                      />
-                    </span>
-                  </CardContent>
-                </Card>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+        {orders.isSuccess && orders.data.length > 0 && (
+          <ul className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            {orders.data.map((order) => (
+              <li key={order.id}>
+                <OrderRow order={order} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

@@ -7,6 +7,12 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", {
   timeStyle: "short",
 });
 
+const dayFormatter = new Intl.DateTimeFormat("es-MX", { dateStyle: "long" });
+
+export function formatDay(value: Date | string): string {
+  return dayFormatter.format(new Date(value));
+}
+
 export function formatMoney(amount: number): string {
   return moneyFormatter.format(amount / 100);
 }
@@ -23,4 +29,9 @@ export function formatFileSize(bytes: number): string {
     return `${(bytes / 1024).toFixed(1)} KB`;
   }
   return `${(bytes / 1_048_576).toFixed(1)} MB`;
+}
+
+// Short, readable Order reference for Customers; the full id stays on the detail page for support.
+export function formatOrderReference(id: string): string {
+  return `#${id.slice(0, 8).toUpperCase()}`;
 }

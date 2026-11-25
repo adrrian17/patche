@@ -8,6 +8,10 @@
   --font-display: "Quicksand Variable", sans-serif;
   --font-body: "Outfit Variable", sans-serif;
   --color-brand: #38a396;
+  /* Darker teal for text and bars: AA on white and under white text. */
+  --color-brand-ink: #1d6b62;
+  /* Input and control outlines: 3:1 against white for WCAG 1.4.11. */
+  --color-field: #8391a3;
   --color-mustard: #e9b44c;
   --color-paper: #fdfcf8;
   --color-mint: #f0f7f6;
@@ -69,10 +73,21 @@ body:has(.storefront) {
 }
 
 .storefront {
-  --primary: #38a396;
+  /* brand-ink keeps white button text at AA contrast. */
+  --primary: #1d6b62;
   --ring: #38a396;
 }
 
 .storefront :is(h1, h2, h3, h4) {
   font-family: var(--font-display);
+}
+
+/* Dot-grid page, like a bullet journal sheet; used on tinted panels only. */
+.paper-dots {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--color-brand-ink) 16%, transparent) 1px,
+    transparent 1.3px
+  );
+  background-size: 18px 18px;
 }

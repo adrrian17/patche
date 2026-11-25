@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
+import { baseURL } from "./support/env";
 import { registerCustomer } from "./support/password-auth";
 import { seedOrder } from "./support/seed-order";
 import {
@@ -71,7 +72,7 @@ test("an uploaded Digital File downloads through a paid Download Grant", async (
   await uploadDigitalFileAsAdmin(page, productId, variantName, file);
 
   const customerContext = await browser.newContext({
-    baseURL: "http://localhost:3001",
+    baseURL,
   });
   try {
     const customerPage = await customerContext.newPage();
@@ -148,7 +149,7 @@ test("the local upload route refuses Customers and unknown intents", async ({
   expect(unknown.status()).toBe(404);
 
   const customerContext = await browser.newContext({
-    baseURL: "http://localhost:3001",
+    baseURL,
   });
   try {
     const customerPage = await customerContext.newPage();

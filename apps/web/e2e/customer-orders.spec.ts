@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { formatOrderReference } from "../src/lib/format";
 import { registerCustomer } from "./support/password-auth";
 import { seedOrder } from "./support/seed-order";
 import { seedProduct, seedVariant } from "./support/seed-product";
@@ -146,18 +147,26 @@ test("lists Orders, opens one, and downloads through its Download Grant", async 
     .getByRole("link");
   await expect(orderLinks).toHaveCount(2);
   // Newest first: the paid Order was placed a day after the pending one.
-  await expect(orderLinks.nth(0)).toContainText(`Pedido ${paid.orderId}`);
+  await expect(orderLinks.nth(0)).toContainText(
+    `Pedido ${formatOrderReference(paid.orderId)}`
+  );
   await expect(orderLinks.nth(0)).toContainText("$778.00");
-  await expect(orderLinks.nth(0)).toContainText("Pagado");
+  // The row names what was bought, not only the reference.
+  await expect(orderLinks.nth(0)).toContainText(catalog.notebookName);
+  // A paid Order shows only its fulfillment; an unpaid one shows its payment state.
   await expect(orderLinks.nth(0)).toContainText("Enviado");
-  await expect(orderLinks.nth(1)).toContainText(`Pedido ${pending.orderId}`);
+  await expect(orderLinks.nth(1)).toContainText(
+    `Pedido ${formatOrderReference(pending.orderId)}`
+  );
   await expect(orderLinks.nth(1)).toContainText("Pago pendiente");
-  await expect(orderLinks.nth(1)).toContainText("Por preparar");
 
   await orderLinks.nth(0).click();
   await expect(page).toHaveURL(`/dashboard/orders/${paid.orderId}`);
   await expect(
-    page.getByRole("heading", { level: 1, name: `Pedido ${paid.orderId}` })
+    page.getByRole("heading", {
+      level: 1,
+      name: `Pedido ${formatOrderReference(paid.orderId)}`,
+    })
   ).toBeVisible();
   const items = page.getByRole("listitem");
   const notebook = items.filter({ hasText: catalog.notebookName });

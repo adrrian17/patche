@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { PasswordInput } from "@/components/password-input";
 import { authClient } from "@/lib/auth-client";
 
 function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
@@ -53,8 +54,10 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
 
   if (sent) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-4 p-6 text-center">
-        <h1 className="text-3xl font-bold">Verifica tu correo</h1>
+      <div className="w-full space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          Verifica tu correo
+        </h1>
         <output className="block" aria-live="polite">
           Revisa tu correo y abre el enlace para verificar tu cuenta. Si ya
           tienes una cuenta, inicia sesión o recupera tu contraseña.
@@ -67,15 +70,17 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
   }
 
   return (
-    <div className="mx-auto mt-2 w-full max-w-md p-4">
-      <h1 className="mb-2 text-center text-3xl font-bold">Crear cuenta</h1>
-      <p className="text-muted-foreground mb-6 text-center text-sm">
+    <div className="w-full">
+      <h1 className="mb-2 text-3xl font-bold tracking-tight text-slate-900">
+        Crear cuenta
+      </h1>
+      <p className="mb-8 text-slate-600">
         Regístrate con tu correo y una contraseña.
       </p>
 
       <form
         method="post"
-        className="space-y-4"
+        className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -87,6 +92,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
             <div className="space-y-2">
               <Label htmlFor={field.name}>Nombre</Label>
               <Input
+                className="border-field h-11 rounded-xl bg-white px-3.5"
                 autoComplete="name"
                 id={field.name}
                 name={field.name}
@@ -95,7 +101,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
                 onChange={(event) => field.handleChange(event.target.value)}
               />
               {field.state.meta.errors.map((error) => (
-                <p className="text-sm text-red-500" key={error?.message}>
+                <p className="text-sm text-red-700" key={error?.message}>
                   {error?.message}
                 </p>
               ))}
@@ -108,6 +114,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
             <div className="space-y-2">
               <Label htmlFor={field.name}>Correo electrónico</Label>
               <Input
+                className="border-field h-11 rounded-xl bg-white px-3.5"
                 autoComplete="email"
                 id={field.name}
                 name={field.name}
@@ -117,7 +124,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
                 onChange={(event) => field.handleChange(event.target.value)}
               />
               {field.state.meta.errors.map((error) => (
-                <p className="text-sm text-red-500" key={error?.message}>
+                <p className="text-sm text-red-700" key={error?.message}>
                   {error?.message}
                 </p>
               ))}
@@ -129,11 +136,10 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
           {(field) => (
             <div className="space-y-2">
               <Label htmlFor={field.name}>Contraseña</Label>
-              <Input
+              <PasswordInput
                 autoComplete="new-password"
                 id={field.name}
                 name={field.name}
-                type="password"
                 required
                 maxLength={128}
                 value={field.state.value}
@@ -141,7 +147,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
                 onChange={(event) => field.handleChange(event.target.value)}
               />
               {field.state.meta.errors.map((error) => (
-                <p className="text-sm text-red-500" key={error?.message}>
+                <p className="text-sm text-red-700" key={error?.message}>
                   {error?.message}
                 </p>
               ))}
@@ -157,7 +163,7 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
-              className="w-full"
+              className="h-11 w-full rounded-full text-base"
               disabled={!canSubmit || isSubmitting}
               type="submit"
             >
@@ -167,9 +173,9 @@ function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
         </form.Subscribe>
       </form>
 
-      <div className="mt-4 text-center">
+      <div className="mt-6 flex flex-col items-center gap-1 border-t border-slate-200 pt-6">
         <Button
-          className="text-teal-700 hover:text-teal-800"
+          className="text-brand-ink"
           onClick={onSwitchToSignIn}
           variant="link"
         >

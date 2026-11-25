@@ -1,7 +1,8 @@
 import type { Stripe } from "@patche/payments";
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Frame, Page } from "@playwright/test";
 
+import { baseURL } from "./support/env";
 import { registerWithPassword } from "./support/password-auth";
 import {
   seedProduct,
@@ -24,6 +25,42 @@ async function addToCartFromStorefront(page: Page, productId: string) {
   await expect(
     page.getByRole("heading", { name: "Carrito de compras" })
   ).toBeVisible();
+}
+
+// Stripe renders the Checkout form in the page or in an iframe, and may add other iframes
+// (such as a currency picker outside Mexico), so find the frame that holds the Email field.
+async function checkoutForm(page: Page) {
+  let form: Frame | undefined;
+  await expect
+    .poll(
+      async () => {
+        for (const frame of page.frames()) {
+          try {
+            const email = frame.getByRole("textbox", { name: "Email" });
+            // oxlint-disable-next-line no-await-in-loop -- Stop at the first frame that holds the form.
+            if ((await email.count()) > 0) {
+              form = frame;
+              return true;
+            }
+          } catch (error) {
+            if (
+              error instanceof Error &&
+              error.message.includes("Frame was detached")
+            ) {
+              continue;
+            }
+            throw error;
+          }
+        }
+        return false;
+      },
+      { timeout: 30_000 }
+    )
+    .toBe(true);
+  if (!form) {
+    throw new Error("Stripe Checkout form not found");
+  }
+  return form;
 }
 
 async function fillStripeField(page: Page, name: string, value: string) {
@@ -89,22 +126,27 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
     throw new Error("Stripe Checkout URL did not contain its Session ID");
   }
 
-  await page.getByRole("textbox", { name: "Email" }).fill(customerEmail);
-  await page.getByRole("textbox", { name: "Full name" }).fill("Cliente E2E");
-  await page.getByRole("button", { name: "Enter address manually" }).click();
-  await page
-    .getByRole("textbox", { name: /address line 1/iu })
-    .fill("Av. Constitución 100");
-  await page.getByRole("textbox", { name: "City" }).fill("Monterrey");
-  await page
+  const form = await checkoutForm(page);
+  await form.getByRole("textbox", { name: "Email" }).fill(customerEmail);
+  await form.getByRole("textbox", { name: "Full name" }).fill("Cliente E2E");
+  // Stripe shows either a manual-entry button or an address autocomplete that expands once typed in.
+  const manualAddress = form.getByRole("button", {
+    name: "Enter address manually",
+  });
+  if ((await manualAddress.count()) > 0) {
+    await manualAddress.click();
+  }
+  await form.getByLabel(/^address(?: line 1)?$/iu).fill("Av. Constitución 100");
+  await form.getByRole("textbox", { name: "City" }).fill("Monterrey");
+  await form
     .getByRole("combobox", { name: "State" })
     .selectOption({ label: "Nuevo León" });
-  await page.getByRole("textbox", { name: /postal code|zip/iu }).fill("64000");
+  await form.getByRole("textbox", { name: /postal code|zip/iu }).fill("64000");
   await fillStripeField(page, "card number", "4242424242424242");
   await fillStripeField(page, "expiration", "1234");
   await fillStripeField(page, "security code|cvc", "123");
   // Stripe only sometimes asks "I am an AI agent and have followed the instructions above", and its checkbox has no label.
-  const agentDisclosure = page
+  const agentDisclosure = form
     .getByText(/I am an AI agent/u)
     .locator("input[type=checkbox]");
   if ((await agentDisclosure.count()) > 0) {
@@ -116,7 +158,7 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   }
   // Outside Mexico Stripe pre-checks Link and then requires a phone number.
   // Stripe sometimes labels it "Save my information with Link for faster checkout".
-  const saveInfo = page.getByRole("checkbox", {
+  const saveInfo = form.getByRole("checkbox", {
     name: /Save my information (?:with Link )?for faster checkout/u,
   });
   if ((await saveInfo.count()) > 0 && (await saveInfo.isChecked())) {
@@ -126,8 +168,8 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
     );
     await expect(saveInfo).not.toBeChecked();
   }
-  await page
-    .getByRole("button", { name: /pay|pagar/iu })
+  await form
+    .getByRole("button", { name: /^(?:pay|pagar)$/iu })
     .last()
     .click();
   await expect(page).toHaveURL(/\/dashboard/u, { timeout: 60_000 });
@@ -166,7 +208,7 @@ test("purchase, fulfillment, and refund complete through Stripe", async ({
   });
 
   const adminContext = await browser.newContext({
-    baseURL: "http://localhost:3001",
+    baseURL,
     storageState: "e2e/.auth/admin.json",
   });
   try {
@@ -253,7 +295,7 @@ test("does not start Checkout when Stock is insufficient", async ({
   await expect(page.getByText("Stock insuficiente")).toBeVisible({
     timeout: 10_000,
   });
-  await expect(page).toHaveURL(/localhost:3001\/cart/u);
+  await expect(page).toHaveURL(`${baseURL}/cart`);
   await expect(
     page.getByRole("heading", { level: 2, name: productName })
   ).toBeVisible();

@@ -32,8 +32,10 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-4 p-4">
-      <h1 className="text-center text-3xl font-bold">Cambiar contraseña</h1>
+    <div className="w-full space-y-4">
+      <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+        Cambiar contraseña
+      </h1>
       {sent ? null : (
         <p className="text-muted-foreground text-sm">
           Escribe tu correo y te enviaremos un enlace para cambiar tu
@@ -52,6 +54,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         <form method="post" className="space-y-4" onSubmit={submit}>
           <Label htmlFor="recovery-email">Correo electrónico</Label>
           <Input
+            className="border-field h-11 rounded-xl bg-white px-3.5"
             autoComplete="email"
             id="recovery-email"
             name="email"
@@ -63,12 +66,20 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
               {error}
             </p>
           ) : null}
-          <Button className="w-full" disabled={pending} type="submit">
+          <Button
+            className="h-11 w-full rounded-full text-base"
+            disabled={pending}
+            type="submit"
+          >
             {pending ? "Enviando..." : "Enviar"}
           </Button>
         </form>
       )}
-      <Button className="w-full" onClick={onBack} variant="link">
+      <Button
+        className="h-11 w-full rounded-full text-base"
+        onClick={onBack}
+        variant="link"
+      >
         Volver a iniciar sesión
       </Button>
     </div>
