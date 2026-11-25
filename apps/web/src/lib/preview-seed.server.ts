@@ -29,11 +29,7 @@ import {
 } from "./demo-catalog";
 import type { DemoImageKey, DemoProduct } from "./demo-catalog";
 import type { PreviewSeedRequest, PreviewSeedSummary } from "./preview-seed";
-import {
-  deleteStorageObjectWithRetry,
-  getMediaBucket,
-  validateMediaFile,
-} from "./storage.server";
+import { getMediaBucket, validateMediaFile } from "./storage.server";
 
 const downloadTimeoutMs = 10_000;
 const productStaggerMs = 60_000;
@@ -121,7 +117,7 @@ async function seedHomeImage(
 ): Promise<"created" | "skipped"> {
   const settingKey = homeImageSettingKey(slot);
   const objectKey = homeImageObjectKey(slot, "preview");
-  const inserted = await storeDemoImage(
+  const written = await storeDemoImage(
     demoHomeImages[slot],
     objectKey,
     cache,
@@ -129,22 +125,14 @@ async function seedHomeImage(
       db
         .insert(storeSetting)
         .values({ key: settingKey, value: objectKey })
-        .onConflictDoNothing({ target: storeSetting.key })
+        .onConflictDoUpdate({
+          set: { value: objectKey },
+          setWhere: eq(storeSetting.value, ""),
+          target: storeSetting.key,
+        })
         .returning({ key: storeSetting.key })
   );
-  if (inserted.length > 0) {
-    return "created";
-  }
-  const current = await db
-    .select({ value: storeSetting.value })
-    .from(storeSetting)
-    .where(eq(storeSetting.key, settingKey))
-    .get();
-  // Drop our upload only when another writer owns the slot under a different key.
-  if (current?.value !== objectKey) {
-    await deleteStorageObjectWithRetry(getMediaBucket(), objectKey);
-  }
-  return "skipped";
+  return written.length > 0 ? "created" : "skipped";
 }
 
 async function seedHomeImages(
@@ -270,10 +258,12 @@ async function seedStock(
     // oxlint-disable-next-line no-await-in-loop, react-doctor/async-await-in-loop -- at most 3 physical variants per product.
     const result = await db.run(
       sql`INSERT INTO stock_movement (id, variant_id, quantity, reason, note)
-        SELECT ${nanoid()}, ${candidate.variantId}, ${candidate.quantity}, 'received', ${stockNote}
-        WHERE NOT EXISTS (
-          SELECT 1 FROM stock_movement WHERE variant_id = ${candidate.variantId}
-        )`
+        SELECT ${nanoid()}, variant.id, ${candidate.quantity}, 'received', ${stockNote}
+        FROM variant
+        WHERE variant.id = ${candidate.variantId} AND variant.kind = 'physical'
+          AND NOT EXISTS (
+            SELECT 1 FROM stock_movement WHERE variant_id = variant.id
+          )`
     );
     created += result.meta.changes ?? 0;
   }

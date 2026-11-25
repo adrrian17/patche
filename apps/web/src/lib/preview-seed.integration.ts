@@ -1,3 +1,4 @@
+import { homeImageObjectKey } from "@patche/storage";
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -278,6 +279,45 @@ describe("seedPreviewCatalog", () => {
     expect(await mediaKeys()).toEqual([]);
   });
 
+  test("fills empty home images without replacing Admin choices or deleting shared uploads", async () => {
+    const adminWashi = homeImageObjectKey("washi", "admin");
+    const adminPens = homeImageObjectKey("pens", "admin");
+    await env.DB.prepare(
+      "INSERT INTO store_setting (key, value) VALUES ('home_image_hero', ''), ('home_image_washi', ''), ('home_image_pens', ?)"
+    )
+      .bind(adminPens)
+      .run();
+    stubFetch().mockImplementationOnce(async () => {
+      await env.DB.prepare(
+        "UPDATE store_setting SET value = ? WHERE key = 'home_image_washi'"
+      )
+        .bind(adminWashi)
+        .run();
+      return new Response(jpegBytes, {
+        headers: { "content-type": "image/jpeg" },
+      });
+    });
+
+    const summary = await seedPreviewCatalog({ limit: 1 });
+
+    const previewHero = homeImageObjectKey("hero", "preview");
+    const rows = await env.DB.prepare(
+      "SELECT key, value FROM store_setting WHERE key LIKE 'home_image_%' ORDER BY key"
+    ).all<{ key: string; value: string }>();
+    expect(rows.results).toEqual([
+      { key: "home_image_hero", value: previewHero },
+      { key: "home_image_pens", value: adminPens },
+      { key: "home_image_washi", value: adminWashi },
+    ]);
+    expect(summary.homeImages).toEqual({ created: 1, skipped: 2 });
+    expect(await mediaKeys()).toEqual(
+      expect.arrayContaining([
+        previewHero,
+        homeImageObjectKey("washi", "preview"),
+      ])
+    );
+  });
+
   test("is idempotent across repeated full runs", async () => {
     stubFetch();
     await seedPreviewCatalog();
@@ -395,6 +435,34 @@ describe("seedPreviewCatalog", () => {
       "SELECT COALESCE(SUM(quantity), 0) AS stock FROM stock_movement WHERE variant_id = 'legacy-v0'"
     ).first<{ stock: number }>();
     expect(legacyStock?.stock).toBe(firstVariant.stock ?? 0);
+  });
+
+  test("does not seed stock when a stocked fixture matches a persisted Digital Variant", async () => {
+    stubFetch();
+    const offset = 1;
+    const item = demoProducts[offset];
+    const firstVariant = item?.variants[0];
+    if (!(item && firstVariant)) {
+      throw new Error("The demo product has no variants");
+    }
+    const slug = slugifyDemoProduct(item.name);
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO product (id, name, slug, status) VALUES ('custom-product', ?, ?, 'active')"
+      ).bind(item.name, slug),
+      env.DB.prepare(
+        "INSERT INTO variant (id, product_id, name, sku, kind, price_amount) VALUES ('custom-digital', 'custom-product', 'Digital edition', ?, 'digital', ?)"
+      ).bind(demoVariantSku(slug, 0), firstVariant.price),
+    ]);
+
+    const summary = await seedPreviewCatalog({ limit: 1, offset });
+
+    expect(
+      await env.DB.prepare(
+        "SELECT id FROM stock_movement WHERE variant_id = 'custom-digital'"
+      ).first()
+    ).toBeNull();
+    expect(summary.stockMovements.created).toBe(1);
   });
 
   test("stays idempotent when two runs overlap concurrently", async () => {
