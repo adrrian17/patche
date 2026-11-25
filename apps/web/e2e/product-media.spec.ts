@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { seedProduct, signedInEmail } from "./support/seed-product";
+import { seedProduct } from "./support/seed";
 
 test.use({ storageState: "e2e/.auth/admin.json" });
 
@@ -30,7 +30,7 @@ function mediaAltsInOrder(page: Page) {
 test("uploads several images at once and reorders them", async ({
   page,
 }, testInfo) => {
-  const productId = seedProduct("Libreta de medios", await signedInEmail(page));
+  const productId = await seedProduct("Libreta de medios");
   await page.goto(`/admin/products/${productId}`);
 
   // A click before hydration does nothing, so retry until the dialog opens.
