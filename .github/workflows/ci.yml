@@ -129,6 +129,13 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Generate preview seed token
+        if: github.event_name == 'pull_request'
+        run: |
+          token="$(openssl rand -hex 32)"
+          echo "::add-mask::$token"
+          echo "PREVIEW_SEED_TOKEN=$token" >> "$GITHUB_ENV"
+
       - name: Deploy
         run: |
           args=(--stage "$STAGE" --yes)
@@ -143,3 +150,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
+
+      - name: Seed preview catalog
+        if: github.event_name == 'pull_request'
+        run: |
+          state="$(bunx varlock run --path ../../.env.schema -- bunx alchemy state read "patche/${STAGE}/output")"
+          PREVIEW_URL="$(printf '%s' "$state" | bun -e 'const output = JSON.parse(await Bun.stdin.text()); process.stdout.write(String(output.url ?? ""))')"
+          export PREVIEW_URL
+          bun ../../apps/web/scripts/seed-preview.ts
+        working-directory: packages/infra
+        env:
+          APP_ENV: preview
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
