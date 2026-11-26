@@ -1,20 +1,62 @@
 // oxlint-disable sonarjs/no-duplicate-string -- fixture data repeats kinds and variant names by design.
-export interface SeedVariant {
+import type { HomeImageSlot } from "@patche/storage";
+
+// Single source of truth for the demo catalog, shared by the local seed script and the preview seeder.
+export const demoShippingRateAmount = "9900";
+
+export interface DemoVariant {
   kind: "digital" | "physical";
   name: string;
   price: number;
   stock?: number;
 }
 
-export interface SeedProduct {
+export type DemoImageKey =
+  | "hero"
+  | "washi"
+  | "pens"
+  | "daily-planner"
+  | "planner-view-1"
+  | "planner-view-2"
+  | "planner-view-3"
+  | "planner-view-4"
+  | "canvas-planner"
+  | "daily-journal"
+  | "journal-kit"
+  | "wall-calendar"
+  | "calendar-template"
+  | "digital-planner"
+  | "task-manager"
+  | "habit-tracker"
+  | "habit-tracker-app"
+  | "washi-set"
+  | "washi-tape"
+  | "washi-tapes"
+  | "lettering-pens"
+  | "gel-pens"
+  | "fine-pens"
+  | "sticky-notes"
+  | "desk-organizer";
+
+export interface DemoProduct {
   category: string;
   description: string;
-  images: string[];
+  images: readonly DemoImageKey[];
   name: string;
-  variants: SeedVariant[];
+  variants: readonly DemoVariant[];
 }
 
-export const categories = [
+export interface DemoCategory {
+  name: string;
+  slug: string;
+}
+
+export interface DemoImageSource {
+  fallbackUrl: string;
+  primaryUrl: string;
+}
+
+export const demoCategories: readonly DemoCategory[] = [
   { name: "Agendas", slug: "agendas" },
   { name: "Libretas", slug: "libretas" },
   { name: "Calendarios", slug: "calendarios" },
@@ -24,14 +66,20 @@ export const categories = [
   { name: "Escritorio", slug: "escritorio" },
 ];
 
+export const demoHomeImages: Readonly<Record<HomeImageSlot, DemoImageKey>> = {
+  hero: "hero",
+  pens: "pens",
+  washi: "washi",
+};
+
 const plannerViews = [
   "planner-view-1",
   "planner-view-2",
   "planner-view-3",
   "planner-view-4",
-];
+] as const satisfies readonly DemoImageKey[];
 
-export const products: SeedProduct[] = [
+export const demoProducts: readonly DemoProduct[] = [
   {
     category: "agendas",
     description:
@@ -283,3 +331,167 @@ export const products: SeedProduct[] = [
     ],
   },
 ];
+
+function unsplash(photo: string, width: number, height: number): string {
+  return `https://images.unsplash.com/photo-${photo}?auto=format&fit=crop&w=${width}&h=${height}&q=80`;
+}
+
+function imageSource(
+  key: DemoImageKey,
+  photo: string,
+  width: number,
+  height: number
+): DemoImageSource {
+  return {
+    fallbackUrl: `https://picsum.photos/seed/${key}/${width}/${height}.jpg`,
+    primaryUrl: unsplash(photo, width, height),
+  };
+}
+
+// Stationery photos verified to answer 200 image/jpeg; picsum is the fallback when one disappears.
+export const demoImageSources: Readonly<Record<DemoImageKey, DemoImageSource>> =
+  {
+    "calendar-template": imageSource(
+      "calendar-template",
+      "1611224923853-80b023f02d71",
+      800,
+      800
+    ),
+    "canvas-planner": imageSource(
+      "canvas-planner",
+      "1531346878377-a5be20888e57",
+      800,
+      800
+    ),
+    "daily-journal": imageSource(
+      "daily-journal",
+      "1519682337058-a94d519337bc",
+      800,
+      800
+    ),
+    "daily-planner": imageSource(
+      "daily-planner",
+      "1506784983877-45594efa4cbe",
+      800,
+      800
+    ),
+    "desk-organizer": imageSource(
+      "desk-organizer",
+      "1499750310107-5fef28a66643",
+      800,
+      800
+    ),
+    "digital-planner": imageSource(
+      "digital-planner",
+      "1544256718-3bcf237f3974",
+      800,
+      800
+    ),
+    "fine-pens": imageSource(
+      "fine-pens",
+      "1585336261022-680e295ce3fe",
+      800,
+      800
+    ),
+    "gel-pens": imageSource("gel-pens", "1513542789411-b6a5d4f31634", 800, 800),
+    "habit-tracker": imageSource(
+      "habit-tracker",
+      "1456735190827-d1262f71b8a3",
+      800,
+      800
+    ),
+    "habit-tracker-app": imageSource(
+      "habit-tracker-app",
+      "1512314889357-e157c22f938d",
+      800,
+      800
+    ),
+    hero: imageSource("hero", "1517842645767-c639042777db", 1200, 825),
+    "journal-kit": imageSource(
+      "journal-kit",
+      "1501504905252-473c47e087f8",
+      800,
+      800
+    ),
+    "lettering-pens": imageSource(
+      "lettering-pens",
+      "1583485088034-697b5bc54ccd",
+      800,
+      800
+    ),
+    pens: imageSource("pens", "1455390582262-044cdead277a", 1200, 825),
+    "planner-view-1": imageSource(
+      "planner-view-1",
+      "1484480974693-6ca0a78fb36b",
+      800,
+      800
+    ),
+    "planner-view-2": imageSource(
+      "planner-view-2",
+      "1544716278-ca5e3f4abd8c",
+      800,
+      800
+    ),
+    "planner-view-3": imageSource(
+      "planner-view-3",
+      "1517842645767-c639042777db",
+      800,
+      800
+    ),
+    "planner-view-4": imageSource(
+      "planner-view-4",
+      "1434030216411-0b793f4b4173",
+      800,
+      800
+    ),
+    "sticky-notes": imageSource(
+      "sticky-notes",
+      "1586281380117-5a60ae2050cc",
+      800,
+      800
+    ),
+    "task-manager": imageSource(
+      "task-manager",
+      "1488190211105-8b0e65b80b4e",
+      800,
+      800
+    ),
+    "wall-calendar": imageSource(
+      "wall-calendar",
+      "1506784365847-bbad939e9335",
+      800,
+      800
+    ),
+    washi: imageSource("washi", "1513519245088-0e12902e5a38", 1200, 825),
+    "washi-set": imageSource(
+      "washi-set",
+      "1513519245088-0e12902e5a38",
+      800,
+      800
+    ),
+    "washi-tape": imageSource(
+      "washi-tape",
+      "1452860606245-08befc0ff44b",
+      800,
+      800
+    ),
+    "washi-tapes": imageSource(
+      "washi-tapes",
+      "1513364776144-60967b0f800f",
+      800,
+      800
+    ),
+  };
+
+export function slugifyDemoProduct(name: string): string {
+  return `demo-${name
+    .normalize("NFD")
+    .replaceAll(/[̀-ͯ]/gu, "")
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/gu, "-")
+    .replaceAll(/^-|-$/gu, "")}`;
+}
+
+export function demoVariantSku(productSlug: string, index: number): string {
+  return `DEMO-${productSlug.replace(/^demo-/u, "").toUpperCase()}-${index + 1}`;
+}

@@ -2,47 +2,67 @@ import * as Cloudflare from "@alchemy.run/cloudflare";
 import * as GitHub from "@alchemy.run/github";
 import * as Alchemy from "alchemy";
 import * as Output from "alchemy/Output";
+import { Stage } from "alchemy/Stage";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Redacted from "effect/Redacted";
 
 // Secrets come from Varlock (`varlock run -- ...`), which fills process.env from .env.schema.
 
-const isProductionStage = process.env.STAGE === "production";
-const isE2eDev =
-  Boolean(process.env.ALCHEMY_DEV) &&
-  process.env.APP_ENV === "e2e" &&
-  !isProductionStage;
+// Only `pr-<number>` stages may be emptied and destroyed along with their buckets.
+const previewStagePattern = /^pr-\d+$/u;
 
-const Database = Cloudflare.D1.Database("Database", {
-  migrations: "../../packages/db/src/migrations",
-  name: isProductionStage ? "patche" : undefined,
-});
+function isPreviewStage(stage: string) {
+  return previewStagePattern.test(stage);
+}
 
-const MediaBucket = Cloudflare.R2.Bucket("MediaBucket", {
-  name: isProductionStage ? "patche-media" : undefined,
-});
+const Database = Cloudflare.D1.Database(
+  "Database",
+  Stage.pipe(
+    Effect.map((stage) => ({
+      migrations: "../../packages/db/src/migrations",
+      name: stage === "production" ? "patche" : undefined,
+    }))
+  )
+);
 
-const DigitalBucket = Cloudflare.R2.Bucket("DigitalBucket", {
-  cors: [
-    {
-      allowedHeaders: ["content-type"],
-      allowedMethods: ["PUT"],
-      // ponytail: presigned URLs already authorize each PUT; pin the origin once there is a custom domain.
-      allowedOrigins: ["*"],
-    },
-  ],
-  lifecycleRules: [
-    {
-      deleteObjectsTransition: {
-        condition: { maxAge: 86_400, type: "Age" },
-      },
-      id: "delete-abandoned-digital-uploads",
-      prefix: "uploads/",
-    },
-  ],
-  name: isProductionStage ? "patche-digital" : undefined,
-});
+const MediaBucket = Cloudflare.R2.Bucket(
+  "MediaBucket",
+  Stage.pipe(
+    Effect.map((stage) => ({
+      forceDestroy: isPreviewStage(stage),
+      name: stage === "production" ? "patche-media" : undefined,
+    }))
+  )
+);
+
+const DigitalBucket = Cloudflare.R2.Bucket(
+  "DigitalBucket",
+  Stage.pipe(
+    Effect.map((stage) => ({
+      cors: [
+        {
+          allowedHeaders: ["content-type"],
+          allowedMethods: ["PUT" as const],
+          // ponytail: presigned URLs already authorize each PUT; pin the origin once there is a custom domain.
+          allowedOrigins: ["*"],
+        },
+      ],
+      forceDestroy: isPreviewStage(stage),
+      lifecycleRules: [
+        {
+          deleteObjectsTransition: {
+            condition: { maxAge: 86_400, type: "Age" as const },
+          },
+          id: "delete-abandoned-digital-uploads",
+          prefix: "uploads/",
+        },
+      ],
+      name: stage === "production" ? "patche-digital" : undefined,
+    }))
+  )
+);
 
 const AuthEmail = Cloudflare.Email.SendEmail("AuthEmail", {
   allowedSenderAddresses: ["noreply@adrianayala.mx"],
@@ -59,9 +79,6 @@ const baseWebEnv = {
   DIGITAL_BUCKET_NAME: DigitalBucket.pipe(
     Effect.map((bucket) => bucket.bucketName)
   ),
-  // Local R2 has no S3 endpoint, so `alchemy dev` uploads Digital Files through the Worker.
-  DIGITAL_UPLOAD_TRANSPORT:
-    process.env.ALCHEMY_DEV && !isProductionStage ? "worker" : "presigned",
   MEDIA_BUCKET: MediaBucket,
   // Media is served through the Worker (/media proxy), so it shares the Worker URL.
   MEDIA_PUBLIC_BASE_URL: Cloudflare.Worker.URL,
@@ -73,22 +90,53 @@ const baseWebEnv = {
   VITE_NEWSLETTER_ENABLED: process.env.VITE_NEWSLETTER_ENABLED ?? "false",
 };
 
-const webEnv = isE2eDev
-  ? {
-      ...baseWebEnv,
+function webEnvFor(stage: string) {
+  const isProduction = stage === "production";
+  const isE2eDev =
+    Boolean(process.env.ALCHEMY_DEV) &&
+    process.env.APP_ENV === "e2e" &&
+    !isProduction;
+  const env = {
+    ...baseWebEnv,
+    // Local R2 has no S3 endpoint, so `alchemy dev` uploads Digital Files through the Worker.
+    DIGITAL_UPLOAD_TRANSPORT:
+      process.env.ALCHEMY_DEV && !isProduction ? "worker" : "presigned",
+  };
+  if (isE2eDev) {
+    return {
+      ...env,
       APP_ENV: "e2e",
       E2E_SEED_TOKEN: process.env.E2E_SEED_TOKEN ?? "",
-    }
-  : baseWebEnv;
+    };
+  }
+  // Preview seeding exists only on `pr-<number>` stages deployed with APP_ENV=preview, never in production.
+  if (
+    isPreviewStage(stage) &&
+    process.env.APP_ENV === "preview" &&
+    !process.env.ALCHEMY_DEV
+  ) {
+    return {
+      ...env,
+      APP_ENV: "preview",
+      PREVIEW_SEED_TOKEN: Redacted.make(process.env.PREVIEW_SEED_TOKEN ?? ""),
+    };
+  }
+  return env;
+}
 
-export const Web = Cloudflare.Website.Vite("Web", {
-  // Matches the integration tests in apps/web/vitest.config.ts.
-  compatibility: { date: "2026-08-15" },
-  // WEB_PORT lets a second local instance run when :3001 is taken.
-  dev: { port: Number(process.env.WEB_PORT ?? 3001), strictPort: true },
-  env: webEnv,
-  rootDir: "../../apps/web",
-});
+export const Web = Cloudflare.Website.Vite(
+  "Web",
+  Stage.pipe(
+    Effect.map((stage) => ({
+      // Matches the integration tests in apps/web/vitest.config.ts.
+      compatibility: { date: "2026-08-15" },
+      // WEB_PORT lets a second local instance run when :3001 is taken.
+      dev: { port: Number(process.env.WEB_PORT ?? 3001), strictPort: true },
+      env: webEnvFor(stage),
+      rootDir: "../../apps/web",
+    }))
+  )
+);
 
 function previewCommentTarget() {
   const [owner, repository] = (process.env.GITHUB_REPOSITORY ?? "").split("/");
