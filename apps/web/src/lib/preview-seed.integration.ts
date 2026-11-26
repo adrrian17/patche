@@ -325,12 +325,15 @@ describe("seedPreviewCatalog", () => {
     // A sale after the first seed must not be topped up again.
     // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- the sale needs the seeded movement to exist.
     const variantRow = await env.DB.prepare(
-      "SELECT variant_id AS id FROM stock_movement ORDER BY variant_id LIMIT 1"
-    ).first<{ id: string }>();
+      "SELECT m.variant_id AS id, m.quantity AS quantity FROM stock_movement m JOIN variant v ON v.id = m.variant_id ORDER BY v.sku LIMIT 1"
+    ).first<{ id: string; quantity: number }>();
+    if (!variantRow) {
+      throw new Error("Expected at least one seeded stock movement");
+    }
     await env.DB.prepare(
-      "INSERT INTO stock_movement (id, variant_id, quantity, reason) VALUES ('sale-1', ?, -3, 'sold')"
+      "INSERT INTO stock_movement (id, variant_id, quantity, reason) VALUES ('sale-1', ?, ?, 'sold')"
     )
-      .bind(variantRow?.id)
+      .bind(variantRow.id, -variantRow.quantity)
       .run();
     const counts = {
       media: await count("product_media"),
