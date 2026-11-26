@@ -82,13 +82,13 @@ describe("isAuthorizedPreviewSeedRequest", () => {
 });
 
 describe("previewSeedRequestSchema", () => {
-  test("defaults the offset and leaves the limit open", () => {
-    expect(previewSeedRequestSchema.parse({})).toEqual({ offset: 0 });
+  test("defaults to the first two-product page", () => {
+    expect(previewSeedRequestSchema.parse({})).toEqual({ limit: 2, offset: 0 });
   });
 
-  test("accepts a chunk", () => {
-    expect(previewSeedRequestSchema.parse({ limit: 5, offset: 10 })).toEqual({
-      limit: 5,
+  test("accepts the maximum page size with a nonzero offset", () => {
+    expect(previewSeedRequestSchema.parse({ limit: 2, offset: 10 })).toEqual({
+      limit: 2,
       offset: 10,
     });
   });
@@ -100,7 +100,7 @@ describe("previewSeedRequestSchema", () => {
     expect(previewSeedRequestSchema.safeParse({ limit: 0 }).success).toBe(
       false
     );
-    expect(previewSeedRequestSchema.safeParse({ limit: 101 }).success).toBe(
+    expect(previewSeedRequestSchema.safeParse({ limit: 3 }).success).toBe(
       false
     );
     expect(previewSeedRequestSchema.safeParse({ limit: 1.5 }).success).toBe(

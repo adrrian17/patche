@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 export const previewSeedTokenHeader = "x-preview-seed-token";
+export const previewSeedPageLimit = 2;
 const minTokenLength = 16;
 const encoder = new TextEncoder();
 
@@ -37,7 +38,12 @@ export function isAuthorizedPreviewSeedRequest({
 }
 
 export const previewSeedRequestSchema = z.object({
-  limit: z.number().int().min(1).max(100).optional(),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(previewSeedPageLimit)
+    .default(previewSeedPageLimit),
   offset: z.number().int().min(0).default(0),
 });
 

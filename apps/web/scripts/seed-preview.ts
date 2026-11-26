@@ -1,10 +1,11 @@
 // Seeds the demo catalog into a deployed PR preview, one small chunk at a time.
 // Each chunk is idempotent, so a failed chunk is simply retried.
-import { previewSeedTokenHeader } from "../src/lib/preview-seed";
+import {
+  previewSeedPageLimit,
+  previewSeedTokenHeader,
+} from "../src/lib/preview-seed";
 import type { PreviewSeedSummary } from "../src/lib/preview-seed";
 
-// Two products per chunk keeps chunk 0 (which also seeds categories and home images) under Workers' 50-subrequest free limit.
-const chunkSize = 2;
 const maxAttempts = 3;
 const retryBaseDelayMs = 1000;
 
@@ -25,7 +26,7 @@ async function seedChunk(offset: number): Promise<PreviewSeedSummary> {
     try {
       // oxlint-disable-next-line no-await-in-loop -- retries are sequential by design.
       const response = await fetch(`${baseUrl}/api/preview/seed`, {
-        body: JSON.stringify({ limit: chunkSize, offset }),
+        body: JSON.stringify({ limit: previewSeedPageLimit, offset }),
         headers: {
           "content-type": "application/json",
           [previewSeedTokenHeader]: token,
